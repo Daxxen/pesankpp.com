@@ -775,7 +775,8 @@ let pendingAction = null; // {type:'history'} or {type:'booking', roomId, date}
 function requireAuth(destination, payload){
   const user = getUser();
   if(user){
-    if(destination === 'history') go('history');
+    if(destination === 'history'){ go('history'); return; }
+    if(destination === 'booking'){ openBookingForm(payload.roomId, payload.date); return; }
     return;
   }
   pendingAction = { type: destination, ...payload };
