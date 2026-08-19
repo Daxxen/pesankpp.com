@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kawasan Pendidikan dan Pelatihan BI Kemang — Pemesanan Ruang & Fasilitas</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-950:#0c1a2e;
+    --navy-900:#11294a;
+    --navy-800:#173763;
+    --navy-700:#1e4a82;
+    --blue-accent:#3b6fd6;
+    --slate-600:#4b5768;
+    --slate-500:#64748b;
+    --paper:#f7f8fa;
+    --ok:#1a7f4f;
+    --warn:#b3812c;
+    --danger:#b3455c;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;color:var(--slate-600);}
+  .font-display{font-family:'Playfair Display',serif;}
+  .navy-bg{background-color:var(--navy-900);}
+  .navy-950{background-color:var(--navy-950);}
+  .navy-text{color:var(--navy-900);}
+  .btn-primary{background-color:var(--navy-900);color:#fff;transition:background-color .2s ease, transform .15s ease;}
+  .btn-primary:hover{background-color:var(--navy-700);}
+  .btn-primary:active{transform:scale(.98);}
+  .btn-primary:disabled{background-color:#a8b3c2;cursor:not-allowed;}
+  .btn-outline{border:1px solid var(--navy-900);color:var(--navy-900);transition:all .2s ease;}
+  .btn-outline:hover{background-color:var(--navy-900);color:#fff;}
+  .card-shadow{box-shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px -12px rgba(15,23,42,.12);}
+  .card-shadow:hover{box-shadow:0 4px 8px rgba(15,23,42,.06),0 20px 40px -16px rgba(15,23,42,.18);}
+  .fade-in{animation:fadeIn .4s ease both;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .hero-bg{
+    background:
+      linear-gradient(120deg, rgba(12,26,46,.92) 0%, rgba(17,41,74,.78) 45%, rgba(30,74,130,.55) 100%),
+      url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat;
+  }
+  .page{display:none;}
+  .page.active{display:block;}
+  .nav-link{position:relative;padding-bottom:4px;color:var(--slate-600);}
+  .nav-link.active{color:var(--navy-900);font-weight:600;}
+  .nav-link.active::after{content:'';position:absolute;left:0;bottom:-2px;width:100%;height:2px;background:var(--blue-accent);}
+  .cal-day{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;font-size:.8rem;border-radius:6px;}
+  .cal-available{background:#eef2f7;color:var(--navy-900);cursor:pointer;}
+  .cal-available:hover{background:#dbe6f4;}
+  .cal-booked{background:#fbe3e6;color:var(--danger);}
+  .cal-empty{background:transparent;}
+  .cal-selected{background:var(--navy-900)!important;color:#fff!important;}
+  .cal-past{background:transparent;color:#cbd5e1;}
+  input:focus, select:focus, textarea:focus{outline:none;box-shadow:0 0 0 3px rgba(59,111,214,.15);border-color:var(--blue-accent);}
+  .input-error{border-color:var(--danger)!important;}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;}
+  .badge-pending{background:#fdf2e2;color:var(--warn);}
+  .badge-confirmed{background:#e5f4ec;color:var(--ok);}
+  .badge-cancelled{background:#fbe3e6;color:var(--danger);}
+  #toast-container{position:fixed;bottom:20px;right:20px;z-index:100;display:flex;flex-direction:column;gap:10px;}
+  .toast{min-width:280px;max-width:360px;background:#fff;border-left:4px solid var(--ok);border-radius:8px;box-shadow:0 8px 30px -8px rgba(15,23,42,.25);padding:14px 16px;display:flex;gap:10px;align-items:flex-start;animation:toastIn .25s ease both;}
+  .toast.error{border-left-color:var(--danger);}
+  @keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+  .mobile-menu{transform:translateX(100%);transition:transform .25s ease;}
+  .mobile-menu.open{transform:translateX(0);}
+  .skeleton{background:linear-gradient(90deg,#eef1f5 25%,#f7f9fb 37%,#eef1f5 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite;}
+  @keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+  .modal-overlay{position:fixed;inset:0;background:rgba(12,26,46,.6);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease both;}
+  .modal-box{background:#fff;border-radius:14px;max-width:600px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 24px 70px -20px rgba(15,23,42,.4);}
+  .admin-tab{padding:9px 16px;font-size:13px;font-weight:600;border-radius:8px;color:var(--slate-600);cursor:pointer;white-space:nowrap;transition:all .15s ease;}
+  .admin-tab.active{background:var(--navy-900);color:#fff;}
+  .admin-tab:not(.active):hover{background:#eef2f7;}
+  .kpi-card{border:1px solid #e2e8f0;border-radius:12px;padding:18px;background:#fff;}
+  .admin-table{width:100%;border-collapse:collapse;}
+  .admin-table th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate-500);text-align:left;padding:10px 14px;border-bottom:1px solid #e2e8f0;white-space:nowrap;}
+  .admin-table td{padding:13px 14px;font-size:13px;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+  .admin-table tbody tr{cursor:pointer;transition:background .15s ease;}
+  .admin-table tbody tr:hover td{background:#f8fafc;}
+  .admin-link-topbar{display:flex;align-items:center;gap:5px;color:#a9c1de;transition:color .15s ease;}
+  .admin-link-topbar:hover{color:#fff;}
+  .icon-btn-sm{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid #e2e8f0;transition:all .15s ease;}
+  .icon-btn-sm:hover{background:#f1f5f9;}
+  .status-pill-row{display:flex;align-items:center;gap:8px;}
+  .pay-option{border:1.5px solid #e2e8f0;border-radius:10px;padding:14px;cursor:pointer;transition:all .15s ease;}
+  .pay-option:hover{border-color:#cbd5e1;}
+  .pay-option.selected{border-color:var(--blue-accent);background:#eef4fc;}
+  .pay-option-icon{width:34px;height:34px;border-radius:8px;background:#eef2f7;display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
+</style>
+</head>
+<body class="bg-white">
+
+<div id="toast-container"></div>
+<div id="booking-modal-root"></div>
+
+<!-- ===== TOP BAR ===== -->
+<div class="navy-950 text-white text-xs">
+  <div class="max-w-7xl mx-auto px-6 py-2 flex items-center justify-between flex-wrap gap-2">
+    <div class="flex items-center gap-2">
+      <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+      <span class="tracking-wide font-medium">KAWASAN PENDIDIKAN DAN PELATIHAN BI KEMANG</span>
+    </div>
+    <div class="hidden sm:flex items-center gap-5">
+      <a href="tel:+622171954740" class="flex items-center gap-1.5 hover:text-blue-300 transition"><i data-lucide="phone" class="w-3.5 h-3.5"></i>(021) 7195474</a>
+      <a href="mailto:venue@kppbi-kemang.id" class="flex items-center gap-1.5 hover:text-blue-300 transition"><i data-lucide="mail" class="w-3.5 h-3.5"></i>venue@kppbi-kemang.id</a>
+      <button onclick="goAdminEntry()" class="admin-link-topbar text-xs font-medium"><i data-lucide="user-cog" class="w-3.5 h-3.5"></i>Portal Admin</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NAVBAR ===== -->
+<header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <button onclick="go('home')" class="text-left">
+      <div class="font-display text-xl font-bold navy-text leading-tight">Kawasan Pendidikan dan Pelatihan</div>
+      <div class="text-[11px] tracking-[0.18em] text-slate-500 font-medium">VENUE &amp; MEETING FACILITY — BANK INDONESIA</div>
+    </button>
+    <nav class="hidden md:flex items-center gap-8 text-sm">
+      <a href="#" onclick="go('home');return false;" class="nav-link" data-nav="home">Beranda</a>
+      <a href="#" onclick="go('rooms');return false;" class="nav-link" data-nav="rooms">Ruangan</a>
+      <a href="#" onclick="requireAuth('history');return false;" class="nav-link" data-nav="history">Riwayat</a>
+      <a href="#" onclick="go('contact');return false;" class="nav-link" data-nav="contact">Kontak</a>
+    </nav>
+    <div class="flex items-center gap-3">
+      <div id="nav-auth-area" class="hidden sm:flex items-center gap-3"></div>
+      <button onclick="go('rooms')" class="btn-primary text-sm font-semibold px-5 py-2.5 rounded-md">Pesan Ruangan</button>
+      <button onclick="toggleMobileMenu(true)" class="md:hidden w-9 h-9 flex items-center justify-center rounded-md border border-slate-200"><i data-lucide="menu" class="w-4.5 h-4.5"></i></button>
+    </div>
+  </div>
+</header>
+
+<!-- ===== MOBILE MENU ===== -->
+<div id="mobile-overlay" class="fixed inset-0 bg-black/40 z-50 hidden" onclick="toggleMobileMenu(false)"></div>
+<div id="mobile-menu" class="mobile-menu fixed top-0 right-0 h-full w-72 bg-white z-50 shadow-2xl p-6 flex flex-col gap-1">
+  <div class="flex items-center justify-between mb-6">
+    <span class="font-display font-bold navy-text">Menu</span>
+    <button onclick="toggleMobileMenu(false)" class="w-8 h-8 flex items-center justify-center rounded-md border border-slate-200"><i data-lucide="x" class="w-4 h-4"></i></button>
+  </div>
+  <a href="#" onclick="go('home');toggleMobileMenu(false);return false;" class="py-3 border-b border-slate-100 text-sm font-medium">Beranda</a>
+  <a href="#" onclick="go('rooms');toggleMobileMenu(false);return false;" class="py-3 border-b border-slate-100 text-sm font-medium">Ruangan</a>
+  <a href="#" onclick="requireAuth('history');toggleMobileMenu(false);return false;" class="py-3 border-b border-slate-100 text-sm font-medium">Riwayat Pemesanan</a>
+  <a href="#" onclick="go('contact');toggleMobileMenu(false);return false;" class="py-3 border-b border-slate-100 text-sm font-medium">Kontak</a>
+  <a href="#" onclick="goAdminEntry();toggleMobileMenu(false);return false;" class="py-3 border-b border-slate-100 text-sm font-medium text-slate-500 flex items-center gap-1.5"><i data-lucide="user-cog" class="w-3.5 h-3.5"></i>Portal Admin</a>
+  <div id="mobile-auth-area" class="pt-4"></div>
+</div>
+
+<!-- ================= HOME PAGE ================= -->
+<main id="page-home" class="page active">
+  <section class="hero-bg text-white">
+    <div class="max-w-7xl mx-auto px-6 py-24 md:py-32">
+      <div class="max-w-2xl fade-in">
+        <p class="uppercase tracking-[0.2em] text-blue-200 text-xs font-semibold mb-4">KPP BI Kemang · Jakarta Selatan</p>
+        <h1 class="font-display text-5xl md:text-6xl font-bold leading-[1.05] mb-6">Pemesanan Ruang &amp; Fasilitas</h1>
+        <p class="text-slate-200 text-lg leading-relaxed mb-8">Cek ketersediaan ruang secara real-time dan ajukan pemesanan untuk mendukung diklat, rapat, dan acara kelembagaan di Kawasan Pendidikan dan Pelatihan BI Kemang.</p>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="go('rooms')" class="font-semibold px-6 py-3 rounded-md hover:bg-slate-100 transition" style="background:#fff;color:var(--navy-900);">Lihat Semua Ruangan</button>
+          <button onclick="go('contact')" class="border border-white/40 text-white font-semibold px-6 py-3 rounded-md hover:bg-white/10 transition">Hubungi Kami</button>
+        </div>
+        <div class="flex items-center gap-6 mt-10 text-sm text-slate-200/90">
+          <span class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-blue-300"></i>Konfirmasi tervalidasi otomatis</span>
+          <span class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-blue-300"></i>Anti bentrok jadwal</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-6 py-20">
+    <div class="flex items-end justify-between mb-10 flex-wrap gap-3">
+      <h2 class="font-display text-3xl font-bold navy-text">Pilihan Fasilitas Unggulan</h2>
+      <button onclick="go('rooms')" class="text-sm font-semibold text-[var(--blue-accent)] hover:underline flex items-center gap-1">Lihat semua ruangan <i data-lucide="arrow-right" class="w-4 h-4"></i></button>
+    </div>
+    <div id="featured-grid" class="grid md:grid-cols-3 gap-8"></div>
+  </section>
+
+  <section class="border-t border-slate-200 bg-[var(--paper)]">
+    <div class="max-w-7xl mx-auto px-6 py-16 grid md:grid-cols-3 gap-10">
+      <div>
+        <div class="w-11 h-11 rounded-lg bg-white card-shadow flex items-center justify-center mb-4"><i data-lucide="calendar-check" class="w-5 h-5" style="color:var(--navy-900)"></i></div>
+        <h3 class="font-display text-lg font-bold navy-text mb-2">Kalender ketersediaan</h3>
+        <p class="text-sm leading-relaxed">Setiap ruangan memiliki kalender real-time yang menandai tanggal terpesan sehingga bentrok jadwal dapat dihindari.</p>
+      </div>
+      <div>
+        <div class="w-11 h-11 rounded-lg bg-white card-shadow flex items-center justify-center mb-4"><i data-lucide="wifi" class="w-5 h-5" style="color:var(--navy-900)"></i></div>
+        <h3 class="font-display text-lg font-bold navy-text mb-2">Fasilitas lengkap</h3>
+        <p class="text-sm leading-relaxed">Proyektor, sistem konferensi video, tata suara profesional, jaringan berkecepatan tinggi, dan dukungan teknis on-site.</p>
+      </div>
+      <div>
+        <div class="w-11 h-11 rounded-lg bg-white card-shadow flex items-center justify-center mb-4"><i data-lucide="users" class="w-5 h-5" style="color:var(--navy-900)"></i></div>
+        <h3 class="font-display text-lg font-bold navy-text mb-2">Layanan kelembagaan</h3>
+        <p class="text-sm leading-relaxed">Pendampingan penyelenggaraan diklat, seminar, dan rapat kerja dengan standar formal lembaga keuangan.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ================= ROOMS LIST PAGE ================= -->
+<main id="page-rooms" class="page">
+  <div class="max-w-7xl mx-auto px-6 py-12">
+    <h1 class="font-display text-3xl font-bold navy-text mb-2">Daftar Ruangan</h1>
+    <p class="text-sm text-slate-500 mb-8">Pilih ruangan, cek ketersediaan tanggal, lalu ajukan pemesanan dalam beberapa langkah.</p>
+
+    <div class="flex flex-col md:flex-row gap-3 mb-10">
+      <div class="relative flex-1">
+        <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+        <input id="search-input" oninput="renderRoomsGrid()" type="text" placeholder="Cari nama ruangan atau fasilitas..." class="w-full border border-slate-300 rounded-md pl-10 pr-4 py-2.5 text-sm">
+      </div>
+      <select id="filter-category" onchange="renderRoomsGrid()" class="border border-slate-300 rounded-md px-4 py-2.5 text-sm bg-white">
+        <option value="">Semua kategori</option>
+        <option>Auditorium</option>
+        <option>Ballroom</option>
+        <option>Ruang Rapat</option>
+        <option>Ruang Diskusi</option>
+      </select>
+      <select id="filter-capacity" onchange="renderRoomsGrid()" class="border border-slate-300 rounded-md px-4 py-2.5 text-sm bg-white">
+        <option value="">Semua kapasitas</option>
+        <option value="20">Sampai 20 orang</option>
+        <option value="50">Sampai 50 orang</option>
+        <option value="9999">50+ orang</option>
+      </select>
+    </div>
+
+    <div id="rooms-grid" class="grid md:grid-cols-3 gap-8"></div>
+  </div>
+</main>
+
+<!-- ================= ROOM DETAIL PAGE ================= -->
+<main id="page-detail" class="page">
+  <div class="max-w-7xl mx-auto px-6 py-10">
+    <button onclick="go('rooms')" class="text-sm font-medium text-slate-500 hover:text-navy-900 flex items-center gap-1.5 mb-6"><i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali ke daftar ruangan</button>
+    <div id="detail-content" class="grid lg:grid-cols-3 gap-12"></div>
+  </div>
+</main>
+
+<!-- ================= BOOKING FORM PAGE ================= -->
+<main id="page-booking" class="page">
+  <div class="max-w-6xl mx-auto px-6 py-10">
+    <button id="booking-back-btn" class="text-sm font-medium text-slate-500 hover:text-navy-900 flex items-center gap-1.5 mb-6"><i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali ke detail ruangan</button>
+
+    <div class="grid lg:grid-cols-3 gap-10">
+      <!-- Form -->
+      <div class="lg:col-span-2">
+        <h1 id="booking-room-title" class="font-display text-2xl font-bold navy-text mb-1">Formulir Pemesanan</h1>
+        <p id="booking-room-subtitle" class="text-sm text-slate-500 mb-8"></p>
+
+        <form id="booking-form" onsubmit="submitBooking(event)" class="space-y-6">
+          <div class="grid md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-semibold navy-text mb-1.5">Tanggal pemakaian</label>
+              <input id="bk-date" type="date" onchange="onBookingFieldChange()" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+              <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold navy-text mb-1.5">Jenis tarif</label>
+              <select id="bk-tariff" onchange="onBookingFieldChange()" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm bg-white">
+                <option value="jam">Per jam</option>
+                <option value="hari">Per hari (paket harian)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-semibold navy-text mb-1.5">Jam mulai</label>
+              <input id="bk-start" type="time" step="900" onchange="onBookingFieldChange()" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold navy-text mb-1.5">Jam selesai</label>
+              <input id="bk-end" type="time" step="900" onchange="onBookingFieldChange()" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+            </div>
+          </div>
+          <p id="availability-badge" class="text-xs -mt-3 flex items-center gap-1.5"></p>
+
+          <div class="grid md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-semibold navy-text mb-1.5">Jumlah peserta</label>
+              <input id="bk-participants" type="number" min="1" placeholder="Jumlah orang" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+              <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold navy-text mb-1.5">Instansi / Perusahaan</label>
+              <input id="bk-org" type="text" placeholder="Contoh: DPRN — Bank Indonesia" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+              <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+            </div>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-semibold navy-text mb-1.5">Nama penanggung jawab</label>
+              <input id="bk-name" type="text" placeholder="Nama lengkap" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+              <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold navy-text mb-1.5">Nomor telepon</label>
+              <input id="bk-phone" type="tel" placeholder="08xx-xxxx-xxxx" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+              <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold navy-text mb-1.5">Email</label>
+            <input id="bk-email" type="email" placeholder="nama@email.com" class="w-full md:w-1/2 border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+            <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold navy-text mb-1.5">Keperluan acara</label>
+            <textarea id="bk-purpose" rows="3" placeholder="Contoh: Pelatihan Manajemen Risiko Batch III" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm"></textarea>
+            <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold navy-text mb-1.5">Catatan tambahan <span class="font-normal text-slate-400">(opsional)</span></label>
+            <textarea id="bk-notes" rows="2" placeholder="Contoh: Membutuhkan pengaturan meja berbentuk U" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm"></textarea>
+          </div>
+
+          <div id="conflict-warning" class="hidden bg-red-50 border border-red-200 text-sm rounded-md p-4 flex items-start gap-2" style="color:var(--danger)">
+            <i data-lucide="alert-triangle" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+            <span id="conflict-warning-text"></span>
+          </div>
+
+          <div>
+            <p class="text-sm font-semibold navy-text mb-3">Metode Pembayaran</p>
+            <div class="grid sm:grid-cols-3 gap-3" id="payment-methods">
+              <div class="pay-option" data-method="transfer" onclick="selectPaymentMethod('transfer')">
+                <div class="pay-option-icon"><i data-lucide="landmark" class="w-4 h-4" style="color:var(--navy-900)"></i></div>
+                <p class="text-sm font-semibold navy-text">Transfer Bank</p>
+                <p class="text-xs text-slate-500 mt-0.5">Virtual account BCA / Mandiri / BNI</p>
+              </div>
+              <div class="pay-option" data-method="kartu" onclick="selectPaymentMethod('kartu')">
+                <div class="pay-option-icon"><i data-lucide="credit-card" class="w-4 h-4" style="color:var(--navy-900)"></i></div>
+                <p class="text-sm font-semibold navy-text">Kartu Kredit</p>
+                <p class="text-xs text-slate-500 mt-0.5">Visa, Mastercard, JCB</p>
+              </div>
+              <div class="pay-option" data-method="ewallet" onclick="selectPaymentMethod('ewallet')">
+                <div class="pay-option-icon"><i data-lucide="wallet" class="w-4 h-4" style="color:var(--navy-900)"></i></div>
+                <p class="text-sm font-semibold navy-text">E-Wallet</p>
+                <p class="text-xs text-slate-500 mt-0.5">GoPay, OVO, DANA, ShopeePay</p>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 mt-3 leading-relaxed">Instruksi pembayaran beserta nomor tagihan dikirimkan melalui email setelah pemesanan tercatat, dan status pembayaran akan diverifikasi oleh admin pengelola.</p>
+          </div>
+
+          <label class="flex items-start gap-2.5 text-xs text-slate-500 leading-relaxed">
+            <input id="bk-consent" type="checkbox" class="mt-0.5 rounded border-slate-300">
+            Saya menyetujui bahwa data pada formulir ini digunakan oleh pengelola Kawasan Pendidikan dan Pelatihan BI Kemang untuk keperluan verifikasi dan konfirmasi pemesanan ruangan.
+          </label>
+
+          <button type="submit" id="booking-submit-btn" class="btn-primary w-full py-3.5 rounded-md font-semibold text-sm">Kirim Pemesanan</button>
+        </form>
+      </div>
+
+      <!-- Sidebar -->
+      <div>
+        <div class="border border-slate-200 rounded-xl overflow-hidden card-shadow sticky top-24">
+          <div id="booking-room-image" class="h-44 bg-slate-100"></div>
+          <div class="p-6">
+            <h3 class="font-display text-lg font-bold navy-text mb-1">Ringkasan Biaya</h3>
+            <p id="booking-room-loc" class="text-xs text-slate-400 mb-5"></p>
+            <div id="booking-summary-panel" class="space-y-3 text-sm"></div>
+            <p class="text-xs text-slate-400 mt-5 leading-relaxed">Tarif belum termasuk PPN dan paket konsumsi. <a href="#" onclick="go('contact');return false;" class="text-[var(--blue-accent)] hover:underline">Hubungi kami</a> untuk penawaran paket acara.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ================= BOOKING SUCCESS PAGE ================= -->
+<main id="page-success" class="page">
+  <div class="max-w-2xl mx-auto px-6 py-20 text-center fade-in">
+    <div class="w-16 h-16 rounded-full bg-[#e5f4ec] flex items-center justify-center mx-auto mb-6">
+      <i data-lucide="check" class="w-8 h-8" style="color:var(--ok)"></i>
+    </div>
+    <h1 class="font-display text-3xl font-bold navy-text mb-3">Pemesanan berhasil dikirim</h1>
+    <p class="text-sm text-slate-500 mb-8">Permohonan Anda menunggu konfirmasi dari pengelola. Notifikasi status akan tersedia pada halaman Riwayat Pemesanan. Simpan nomor referensi berikut untuk keperluan pelacakan.</p>
+    <div id="success-summary" class="text-left border border-slate-200 rounded-xl p-6 mb-8 card-shadow"></div>
+    <div class="flex items-center justify-center gap-3 flex-wrap">
+      <button onclick="requireAuth('history')" class="btn-primary px-6 py-3 rounded-md font-semibold text-sm">Lihat Riwayat Pemesanan</button>
+      <button onclick="window.print()" class="btn-outline px-6 py-3 rounded-md font-semibold text-sm flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i>Cetak Bukti</button>
+      <button onclick="go('home')" class="text-sm font-semibold text-slate-500 hover:text-navy-900 px-4 py-3">Kembali ke Beranda</button>
+    </div>
+  </div>
+</main>
+
+<!-- ================= HISTORY PAGE ================= -->
+<main id="page-history" class="page">
+  <div class="max-w-6xl mx-auto px-6 py-12">
+    <div class="flex items-center justify-between mb-2 flex-wrap gap-3">
+      <h1 class="font-display text-3xl font-bold navy-text">Riwayat Pemesanan</h1>
+      <button onclick="go('rooms')" class="btn-primary text-sm font-semibold px-5 py-2.5 rounded-md">+ Pesan Ruangan Baru</button>
+    </div>
+    <p class="text-sm text-slate-500 mb-6">Daftar pemesanan yang diajukan menggunakan akun ini.</p>
+    <div id="history-filter" class="flex items-center gap-2 mb-6 flex-wrap"></div>
+    <div id="history-list" class="space-y-4"></div>
+  </div>
+</main>
+
+<!-- ================= CONTACT PAGE ================= -->
+<main id="page-contact" class="page">
+  <div class="navy-bg text-white">
+    <div class="max-w-7xl mx-auto px-6 py-14">
+      <h1 class="font-display text-3xl font-bold">Kontak &amp; Informasi Lokasi</h1>
+    </div>
+  </div>
+  <div class="max-w-7xl mx-auto px-6 py-14 grid md:grid-cols-2 gap-12">
+    <div class="space-y-8">
+      <div class="border-b border-slate-200 pb-6">
+        <div class="flex items-center gap-2 text-[var(--blue-accent)] mb-2"><i data-lucide="map-pin" class="w-4 h-4"></i></div>
+        <h3 class="font-display text-lg font-bold navy-text mb-1">Alamat</h3>
+        <p class="text-sm">Kawasan Pendidikan dan Pelatihan BI Kemang, Jl. Kemang Raya No. 35, Bangka, Mampang Prapatan, Jakarta Selatan 12730</p>
+      </div>
+      <div class="border-b border-slate-200 pb-6">
+        <div class="flex items-center gap-2 text-[var(--blue-accent)] mb-2"><i data-lucide="phone" class="w-4 h-4"></i></div>
+        <h3 class="font-display text-lg font-bold navy-text mb-1">Telepon / WhatsApp</h3>
+        <p class="text-sm">(021) 7195474 · 0811-1900-350</p>
+      </div>
+      <div class="border-b border-slate-200 pb-6">
+        <div class="flex items-center gap-2 text-[var(--blue-accent)] mb-2"><i data-lucide="mail" class="w-4 h-4"></i></div>
+        <h3 class="font-display text-lg font-bold navy-text mb-1">Surel</h3>
+        <p class="text-sm">venue@kppbi-kemang.id</p>
+      </div>
+      <div>
+        <div class="flex items-center gap-2 text-[var(--blue-accent)] mb-2"><i data-lucide="clock" class="w-4 h-4"></i></div>
+        <h3 class="font-display text-lg font-bold navy-text mb-1">Jam Layanan</h3>
+        <p class="text-sm">Senin – Jumat, 08.00 – 17.00 WIB</p>
+      </div>
+    </div>
+    <div class="rounded-xl overflow-hidden card-shadow h-80 md:h-full min-h-[320px]">
+      <iframe class="w-full h-full" style="border:0" loading="lazy" src="https://www.google.com/maps?q=Jl.+Kemang+Raya+No.35,+Bangka,+Mampang+Prapatan,+Jakarta+Selatan&output=embed"></iframe>
+    </div>
+  </div>
+</main>
+
+<!-- ================= LOGIN / REGISTER PAGE ================= -->
+<main id="page-login" class="page">
+  <div class="max-w-7xl mx-auto px-6 py-16 grid lg:grid-cols-2 gap-16 items-start">
+    <div class="fade-in">
+      <p class="uppercase tracking-[0.2em] text-[var(--blue-accent)] text-xs font-semibold mb-4">Akun Pelanggan</p>
+      <h1 id="auth-heading" class="font-display text-4xl md:text-5xl font-bold navy-text mb-5 leading-tight">Masuk ke akun Anda</h1>
+      <p id="auth-subtext" class="text-sm leading-relaxed max-w-md">Akun diperlukan untuk mengirim pemesanan, memantau status konfirmasi, dan melihat riwayat penggunaan ruangan di Kawasan Pendidikan dan Pelatihan BI Kemang.</p>
+      <div class="mt-10 space-y-5 hidden md:block">
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:#eef2f7"><i data-lucide="calendar-check" class="w-4 h-4" style="color:var(--navy-900)"></i></div>
+          <p class="text-sm pt-1">Kirim dan pantau status pemesanan ruangan secara real-time.</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:#eef2f7"><i data-lucide="history" class="w-4 h-4" style="color:var(--navy-900)"></i></div>
+          <p class="text-sm pt-1">Lihat riwayat penggunaan ruangan dan nomor referensi pemesanan.</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:#eef2f7"><i data-lucide="shield-check" class="w-4 h-4" style="color:var(--navy-900)"></i></div>
+          <p class="text-sm pt-1">Verifikasi khusus untuk pengguna dengan domain @bi.go.id.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="border border-slate-200 rounded-xl p-8 card-shadow fade-in">
+      <div class="mb-6">
+        <p class="text-xs font-semibold navy-text mb-3">Staf Bank Indonesia (@bi.go.id)</p>
+        <div id="google-signin-btn" class="flex justify-center"></div>
+        <p class="text-xs text-slate-400 mt-2 leading-relaxed">Menggunakan akun Google Workspace resmi Anda — identitas terverifikasi otomatis, tidak perlu kata sandi terpisah.</p>
+      </div>
+
+      <div class="relative my-7">
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
+        <div class="relative flex justify-center text-xs"><span class="bg-white px-3 text-slate-400">atau untuk tamu eksternal</span></div>
+      </div>
+
+      <div class="grid grid-cols-2 rounded-lg overflow-hidden border border-slate-200 mb-8 text-sm font-semibold">
+        <button id="tab-masuk" onclick="setAuthTab('masuk')" class="py-3 transition">Masuk</button>
+        <button id="tab-daftar" onclick="setAuthTab('daftar')" class="py-3 transition">Daftar</button>
+      </div>
+
+      <form id="form-masuk" onsubmit="submitLogin(event)" class="space-y-5">
+        <div>
+          <label class="block text-sm font-semibold navy-text mb-1.5">Email</label>
+          <input id="login-email" type="email" placeholder="nama@email.com" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+          <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold navy-text mb-1.5">Kata sandi</label>
+          <input id="login-password" type="password" placeholder="••••••••" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+          <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+        </div>
+        <p class="text-xs text-slate-400 -mt-2">Untuk tamu eksternal, kolom ini hanya mengidentifikasi Anda pada riwayat pemesanan — bukan autentikasi berbasis kata sandi.</p>
+        <button type="submit" class="btn-primary w-full py-3 rounded-md font-semibold text-sm">Masuk sebagai Tamu</button>
+        <p class="text-xs text-center text-slate-400">Pengelola gedung? <a href="#" onclick="go('admin-login');return false;" class="font-semibold text-[var(--blue-accent)] hover:underline">Masuk sebagai Admin</a></p>
+      </form>
+
+      <form id="form-daftar" onsubmit="submitRegister(event)" class="space-y-5 hidden">
+        <div>
+          <label class="block text-sm font-semibold navy-text mb-1.5">Nama lengkap</label>
+          <input id="reg-name" type="text" placeholder="Nama sesuai identitas" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+          <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold navy-text mb-1.5">Email</label>
+          <input id="reg-email" type="email" placeholder="nama@email.com" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+          <p class="text-xs text-slate-400 mt-1.5">Gunakan email @bi.go.id untuk akses sebagai pengguna internal.</p>
+          <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold navy-text mb-1.5">Instansi / Unit Kerja</label>
+          <input id="reg-org" type="text" placeholder="Contoh: DPRN — Bank Indonesia" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-semibold navy-text mb-1.5">Kata sandi</label>
+          <input id="reg-password" type="password" placeholder="Minimal 8 karakter" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+          <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+        </div>
+        <button type="submit" class="btn-primary w-full py-3 rounded-md font-semibold text-sm">Buat Akun</button>
+      </form>
+    </div>
+  </div>
+</main>
+
+<!-- ================= ADMIN LOGIN PAGE ================= -->
+<main id="page-admin-login" class="page">
+  <div class="navy-bg text-white">
+    <div class="max-w-7xl mx-auto px-6 py-14">
+      <p class="uppercase tracking-[0.2em] text-blue-200 text-xs font-semibold mb-3">Area Terbatas</p>
+      <h1 class="font-display text-3xl font-bold">Portal Admin Pengelola</h1>
+      <p class="text-slate-200 text-sm mt-2 max-w-xl">Khusus untuk petugas pengelola Kawasan Pendidikan dan Pelatihan BI Kemang untuk memverifikasi dan mengelola pemesanan ruangan.</p>
+    </div>
+  </div>
+  <div class="max-w-md mx-auto px-6 py-16">
+    <div class="border border-slate-200 rounded-xl p-8 card-shadow fade-in">
+      <div class="w-12 h-12 rounded-lg navy-bg flex items-center justify-center mb-5"><i data-lucide="shield-check" class="w-6 h-6 text-white"></i></div>
+      <h2 class="font-display text-xl font-bold navy-text mb-1">Masuk Dashboard Admin</h2>
+      <p class="text-xs text-slate-500 mb-6">Gunakan kredensial resmi pengelola untuk mengakses panel manajemen pemesanan.</p>
+      <form id="form-admin-login" onsubmit="submitAdminLogin(event)" class="space-y-5">
+        <div>
+          <label class="block text-sm font-semibold navy-text mb-1.5">Email Admin</label>
+          <input id="admin-login-email" type="email" placeholder="admin@kppbi-kemang.id" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+          <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold navy-text mb-1.5">Kata Sandi</label>
+          <input id="admin-login-password" type="password" placeholder="••••••••" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+          <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+        </div>
+        <button type="submit" class="btn-primary w-full py-3 rounded-md font-semibold text-sm">Masuk sebagai Admin</button>
+        <button type="button" onclick="go('home')" class="w-full text-center text-xs font-medium text-slate-400 hover:text-navy-900">← Kembali ke situs pemesanan</button>
+      </form>
+    </div>
+  </div>
+</main>
+
+<!-- ================= ADMIN DASHBOARD PAGE ================= -->
+<main id="page-admin" class="page">
+  <div class="navy-950 text-white">
+    <div class="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <p class="uppercase tracking-[0.2em] text-blue-200 text-[11px] font-semibold mb-1">Dashboard Pengelola</p>
+        <h1 class="font-display text-2xl font-bold">Manajemen Pemesanan Ruangan</h1>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="go('home')" class="text-xs font-medium text-slate-300 hover:text-white flex items-center gap-1.5"><i data-lucide="external-link" class="w-3.5 h-3.5"></i>Lihat Situs</button>
+        <button onclick="logout()" class="text-xs font-semibold bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md flex items-center gap-1.5"><i data-lucide="log-out" class="w-3.5 h-3.5"></i>Keluar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="flex items-center gap-2 mb-8 border border-slate-200 rounded-lg p-1.5 w-fit bg-[var(--paper)] flex-wrap">
+      <div id="admin-tab-ringkasan" class="admin-tab" onclick="setAdminTab('ringkasan')">Ringkasan</div>
+      <div id="admin-tab-pemesanan" class="admin-tab" onclick="setAdminTab('pemesanan')">Semua Pemesanan</div>
+    </div>
+
+    <div id="admin-panel-ringkasan">
+      <div id="admin-kpi-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10"></div>
+      <div class="grid lg:grid-cols-2 gap-8">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-display text-lg font-bold navy-text">Menunggu Konfirmasi</h3>
+            <button onclick="setAdminTab('pemesanan')" class="text-xs font-semibold text-[var(--blue-accent)] hover:underline">Lihat semua →</button>
+          </div>
+          <div id="admin-pending-list" class="space-y-3"></div>
+        </div>
+        <div>
+          <h3 class="font-display text-lg font-bold navy-text mb-4">Pemesanan per Ruangan</h3>
+          <div id="admin-room-stats" class="space-y-3 border border-slate-200 rounded-xl p-5"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="admin-panel-pemesanan" class="hidden">
+      <div class="border border-slate-200 rounded-xl p-4 mb-5 flex flex-wrap gap-3 items-center">
+        <div class="relative flex-1 min-w-[200px]">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+          <input id="admin-search" oninput="renderAdminTable()" type="text" placeholder="Cari ref, nama, instansi, atau email..." class="w-full border border-slate-300 rounded-md pl-10 pr-4 py-2.5 text-sm">
+        </div>
+        <select id="admin-filter-status" onchange="renderAdminTable()" class="border border-slate-300 rounded-md px-3 py-2.5 text-sm bg-white">
+          <option value="">Semua status</option>
+          <option value="pending">Menunggu Konfirmasi</option>
+          <option value="confirmed">Terkonfirmasi</option>
+          <option value="rejected">Ditolak</option>
+          <option value="cancelled">Dibatalkan</option>
+        </select>
+        <select id="admin-filter-room" onchange="renderAdminTable()" class="border border-slate-300 rounded-md px-3 py-2.5 text-sm bg-white">
+          <option value="">Semua ruangan</option>
+        </select>
+        <input id="admin-filter-date" onchange="renderAdminTable()" type="date" class="border border-slate-300 rounded-md px-3 py-2.5 text-sm bg-white">
+        <button onclick="resetAdminFilters()" class="icon-btn-sm" title="Reset filter"><i data-lucide="rotate-ccw" class="w-4 h-4 text-slate-500"></i></button>
+        <button onclick="exportAdminCSV()" class="btn-outline text-xs font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i>Unduh CSV</button>
+      </div>
+      <p id="admin-result-count" class="text-xs text-slate-400 mb-3"></p>
+      <div class="border border-slate-200 rounded-xl overflow-x-auto card-shadow">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Referensi</th><th>Ruangan</th><th>Tanggal &amp; Jam</th><th>Pemesan</th><th>Instansi</th><th>Peserta</th><th>Status</th><th>Aksi Cepat</th>
+            </tr>
+          </thead>
+          <tbody id="admin-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="border-t border-slate-200 bg-white">
+  <div class="max-w-7xl mx-auto px-6 py-14 grid md:grid-cols-3 gap-10">
+    <div>
+      <h3 class="font-display text-lg font-bold navy-text mb-3">Kawasan Pendidikan dan Pelatihan BI Kemang</h3>
+      <p class="text-sm leading-relaxed">Fasilitas ruang pertemuan, kelas diklat, auditorium, dan ballroom untuk kebutuhan pelatihan dan acara kelembagaan di Jakarta Selatan.</p>
+    </div>
+    <div>
+      <h4 class="font-semibold navy-text mb-3 text-sm tracking-wide">Navigasi</h4>
+      <ul class="space-y-2 text-sm">
+        <li><a href="#" onclick="go('rooms');return false;" class="hover:text-[var(--blue-accent)]">Daftar Ruangan</a></li>
+        <li><a href="#" onclick="requireAuth('history');return false;" class="hover:text-[var(--blue-accent)]">Riwayat Pemesanan</a></li>
+        <li><a href="#" onclick="go('contact');return false;" class="hover:text-[var(--blue-accent)]">Kontak &amp; Lokasi</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4 class="font-semibold navy-text mb-3 text-sm tracking-wide">Alamat</h4>
+      <p class="text-sm flex items-start gap-2"><i data-lucide="map-pin" class="w-4 h-4 mt-0.5 flex-shrink-0" style="color:var(--navy-900)"></i>Jl. Kemang Raya No. 35, Bangka, Mampang Prapatan, Jakarta Selatan 12730</p>
+    </div>
+  </div>
+  <div class="border-t border-slate-200 text-center text-xs text-slate-400 py-5">© 2026 Kawasan Pendidikan dan Pelatihan BI Kemang. Seluruh hak cipta dilindungi.</div>
+</footer>
+
+<script>
+/* ===================== BACKEND CONFIG ===================== */
+// Tempel URL Web App hasil deploy Google Apps Script (lihat SETUP.md).
+// Contoh: https://script.google.com/macros/s/AKfycb.../exec
+const API_URL = 'https://script.google.com/macros/s/AKfycbxQWbno_AH6Koy5cNsDgm5AX4ssF00CHhHwsTkpixxsGp1hTJtCXSqbMUOWitFgvI6aSA/exec';
+
+// Sama persis dengan GOOGLE_CLIENT_ID di Code.gs. Buat lewat Google Cloud
+// Console > Credentials > OAuth client ID > Web application. Tambahkan
+// domain hosting situs ini ke "Authorized JavaScript origins".
+const GOOGLE_CLIENT_ID = '282735792630-rome5sucmf7qcl00jokf0sa9ng59dfj2.apps.googleusercontent.com';
+
+async function apiGet(action, params){
+  const qs = new URLSearchParams(Object.assign({ action }, params || {})).toString();
+  const res = await fetch(`${API_URL}?${qs}`);
+  if(!res.ok) throw new Error('Gagal menghubungi server (' + res.status + ').');
+  return res.json();
+}
+async function apiPost(action, payload){
+  // Dikirim sebagai text/plain agar tidak memicu CORS preflight yang
+  // tidak didukung Apps Script Web App.
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action }, payload || {}))
+  });
+  return res.json();
+}
+
+/* ===================== LOCAL SESSION (bukan penyimpanan data) ===================== */
+// Hanya menyimpan identitas sesi di perangkat ini (nama/email yang sedang
+// login + token admin). Data pemesanan sesungguhnya SELALU diambil dari
+// server (Google Sheets) lewat API_URL, bukan dari sini.
+const LS_USER = 'kpp_session_user_v2';
+const LS_ADMIN_TOKEN = 'kpp_admin_token_v2';
+const LS_USER_TOKEN = 'kpp_user_token_v2';
+
+function getUser(){ try{ return JSON.parse(localStorage.getItem(LS_USER)); }catch(e){ return null; } }
+function setUser(u){ localStorage.setItem(LS_USER, JSON.stringify(u)); }
+function clearUser(){ localStorage.removeItem(LS_USER); localStorage.removeItem(LS_ADMIN_TOKEN); localStorage.removeItem(LS_USER_TOKEN); }
+function getAdminToken(){ return localStorage.getItem(LS_ADMIN_TOKEN) || ''; }
+function setAdminToken(t){ localStorage.setItem(LS_ADMIN_TOKEN, t); }
+function getUserToken(){ return localStorage.getItem(LS_USER_TOKEN) || ''; }
+function setUserToken(t){ localStorage.setItem(LS_USER_TOKEN, t); }
+
+function isAdmin(){ const u = getUser(); return !!(u && u.role === 'admin' && getAdminToken()); }
+
+/* ===================== BOOKINGS CACHE ===================== */
+// bookingsCache diisi lewat refreshBookings() dan dibaca oleh semua
+// fungsi render agar tetap sinkron (bukan lagi localStorage).
+let bookingsCache = [];
+
+async function refreshBookings(){
+  try{
+    const params = {};
+    if(isAdmin()) params.token = getAdminToken();
+    else {
+      const u = getUser();
+      if(u && u.isInternal && getUserToken()) params.userToken = getUserToken();
+      else if(u && u.email) params.email = u.email;
+    }
+    const data = await apiGet('bookings', params);
+    if(data.ok) bookingsCache = data.bookings;
+    return bookingsCache;
+  }catch(err){
+    console.error(err);
+    toast('Gagal memuat data pemesanan dari server. Periksa koneksi Anda.', 'error');
+    return bookingsCache;
+  }
+}
+// Fungsi lama getBookings() dipertahankan sebagai alias sinkron ke cache
+// supaya kode render yang sudah ada tidak perlu ditulis ulang total.
+function getBookings(){ return bookingsCache; }
+
+/* ===================== TOASTS ===================== */
+function toast(message, type){
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type === 'error' ? ' error' : '');
+  el.innerHTML = `
+    <i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle-2'}" class="w-4.5 h-4.5 flex-shrink-0 mt-0.5" style="color:${type === 'error' ? 'var(--danger)' : 'var(--ok)'}"></i>
+    <span class="text-sm text-slate-700">${message}</span>
+  `;
+  container.appendChild(el);
+  lucide.createIcons();
+  setTimeout(() => {
+    el.style.transition = 'opacity .3s ease, transform .3s ease';
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(20px)';
+    setTimeout(() => el.remove(), 300);
+  }, 3800);
+}
+
+/* ===================== DATA: ROOMS ===================== */
+const ROOMS = [
+  { id: "sudirman", name: "Ruang Diskusi Sudirman", category: "Ruang Diskusi", capacity: 12, area: 40, floor: "Lantai 2, Gedung Diklat", priceHour: 350000, priceDay: 2200000,
+    desc: "Ruang diskusi kelompok dengan sofa modular dan panel akustik, ideal untuk focus group discussion dan sesi mentoring.",
+    facilities: ["Sofa modular", "Panel akustik dinding", "Layar presentasi", "Wi-Fi berkecepatan tinggi"],
+    img: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1000&q=80" },
+  { id: "eksekutif-kemang", name: "Ruang Rapat Eksekutif Kemang", category: "Ruang Rapat", capacity: 8, area: 32, floor: "Lantai 3, Gedung Diklat", priceHour: 400000, priceDay: 2600000,
+    desc: "Ruang rapat tertutup dengan aksen dinding biru, cocok untuk pertemuan pimpinan dan diskusi terbatas.",
+    facilities: ["Meja rapat kayu solid", "TV konferensi 65\"", "Sistem konferensi video", "Kedap suara"],
+    img: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1000&q=80" },
+  { id: "diponegoro", name: "Ruang Rapat Diponegoro", category: "Ruang Rapat", capacity: 30, area: 80, floor: "Lantai 3, Gedung Diklat", priceHour: 750000, priceDay: 4800000,
+    desc: "Ruang rapat besar dengan konfigurasi meja U, dilengkapi jendela panorama kota untuk rapat kerja formal.",
+    facilities: ["Meja konfigurasi U", "Proyektor & layar 100\"", "Sistem tata suara", "Coffee break area"],
+    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1000&q=80" },
+  { id: "auditorium-kemang", name: "Auditorium Kemang", category: "Auditorium", capacity: 250, area: 420, floor: "Lantai 1, Gedung Konvensi", priceHour: 3500000, priceDay: 22000000,
+    desc: "Auditorium bertingkat dengan panggung, layar lebar, dan tata suara profesional untuk seminar nasional, workshop kebanksentralan, dan konferensi.",
+    facilities: ["Panggung + podium", "LED screen 6m", "Tata suara profesional", "Live streaming ready", "Ruang tunggu pembicara", "Lobi registrasi"],
+    img: "https://images.unsplash.com/photo-1478147427282-58a87a120781?auto=format&fit=crop&w=1000&q=80",
+    gallery: ["https://images.unsplash.com/photo-1478147427282-58a87a120781?auto=format&fit=crop&w=1000&q=80","https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1000&q=80"] },
+  { id: "ballroom-nusantara", name: "Ballroom Nusantara", category: "Ballroom", capacity: 400, area: 600, floor: "Lantai 1, Gedung Konvensi", priceHour: 4500000, priceDay: 28000000,
+    desc: "Ballroom elegan untuk gala dinner, pelantikan, dan resepsi kelembagaan. Tersedia paket katering dan penataan meja sesuai kebutuhan acara.",
+    facilities: ["Panggung modular", "Tata cahaya event", "Sistem tata suara", "Ruang persiapan VIP", "Area foto backdrop", "Lobi pre-function"],
+    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1000&q=80" },
+  { id: "anggrek", name: "Ruang Kelas Anggrek", category: "Ruang Rapat", capacity: 40, area: 65, floor: "Lantai 2, Gedung Diklat", priceHour: 550000, priceDay: 3600000,
+    desc: "Ruang kelas fleksibel dengan konfigurasi kelas atau theatre, digunakan untuk pelatihan internal dan diklat fungsional.",
+    facilities: ["Konfigurasi fleksibel", "Whiteboard interaktif", "Proyektor HD", "Sound system"],
+    img: "https://images.unsplash.com/photo-1503389152951-9f343605f61e?auto=format&fit=crop&w=1000&q=80" }
+];
+const FEATURED_IDS = ["sudirman", "eksekutif-kemang", "diponegoro"];
+function findRoom(id){ return ROOMS.find(r => r.id === id); }
+
+/* ===================== AUTH (DEMO) ===================== */
+let pendingAction = null; // {type:'history'} or {type:'booking', roomId, date}
+
+function requireAuth(destination, payload){
+  const user = getUser();
+  if(user){
+    if(destination === 'history') go('history');
+    return;
+  }
+  pendingAction = { type: destination, ...payload };
+  go('login');
+  toast('Silakan masuk terlebih dahulu untuk melanjutkan.', 'error');
+}
+
+function renderAuthArea(){
+  const user = getUser();
+  const desktop = document.getElementById('nav-auth-area');
+  const mobile = document.getElementById('mobile-auth-area');
+  if(user && user.role === 'admin'){
+    const html = `
+      <button onclick="go('admin')" class="text-sm font-semibold text-[var(--blue-accent)] hover:underline flex items-center gap-1.5"><i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>Dashboard Admin</button>
+      <button onclick="logout()" class="text-xs font-medium text-slate-400 hover:text-[var(--danger)]">Keluar</button>`;
+    desktop.innerHTML = html;
+    mobile.innerHTML = `<button onclick="go('admin')" class="w-full btn-primary py-2.5 rounded-md font-semibold text-sm mb-2">Dashboard Admin</button><button onclick="logout()" class="text-sm font-medium text-[var(--danger)]">Keluar</button>`;
+    lucide.createIcons();
+  } else if(user){
+    const html = `
+      <div class="flex items-center gap-2 text-sm font-medium navy-text">
+        <div class="w-7 h-7 rounded-full navy-bg text-white flex items-center justify-center text-xs font-bold">${(user.name||'U').charAt(0).toUpperCase()}</div>
+        <span class="max-w-[110px] truncate">${user.name}</span>
+      </div>
+      <button onclick="logout()" class="text-xs font-medium text-slate-400 hover:text-[var(--danger)]">Keluar</button>`;
+    desktop.innerHTML = html;
+    mobile.innerHTML = `<div class="flex items-center gap-2 text-sm font-semibold navy-text mb-3"><div class="w-8 h-8 rounded-full navy-bg text-white flex items-center justify-center text-xs font-bold">${(user.name||'U').charAt(0).toUpperCase()}</div>${user.name}</div><button onclick="logout()" class="text-sm font-medium text-[var(--danger)]">Keluar</button>`;
+  } else {
+    desktop.innerHTML = `<button onclick="go('login')" class="text-sm font-medium text-slate-600 hover:text-navy-900">Masuk</button>`;
+    mobile.innerHTML = `<button onclick="go('login');toggleMobileMenu(false);" class="w-full btn-primary py-2.5 rounded-md font-semibold text-sm">Masuk / Daftar</button>`;
+  }
+}
+
+function logout(){
+  clearUser();
+  renderAuthArea();
+  try{ if(window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); }catch(e){}
+  toast('Anda telah keluar dari akun.');
+  go('home');
+}
+
+/* ===================== GOOGLE SIGN-IN (khusus @bi.go.id) ===================== */
+function initGoogleSignIn(){
+  if(!window.google || !google.accounts || !google.accounts.id) return; // library belum siap
+  if(GOOGLE_CLIENT_ID.indexOf('PASTE_GOOGLE') !== -1) return; // belum dikonfigurasi
+
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredential,
+    hosted_domain: 'bi.go.id',
+    auto_select: false
+  });
+  const target = document.getElementById('google-signin-btn');
+  if(target){
+    target.innerHTML = '';
+    google.accounts.id.renderButton(target, { theme: 'outline', size: 'large', width: 320, text: 'signin_with', locale: 'id' });
+  }
+}
+
+async function handleGoogleCredential(response){
+  try{
+    const data = await apiPost('googleLogin', { credential: response.credential });
+    if(!data.ok){
+      toast(data.error || 'Gagal masuk dengan akun Google.', 'error');
+      return;
+    }
+    setUserToken(data.token);
+    setUser({ name: data.user.name, email: data.user.email, org: data.user.org, role: 'user', isInternal: true });
+    renderAuthArea();
+    toast(`Selamat datang, ${data.user.name}.`);
+    resolvePendingOrGo('home');
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }
+}
+
+function setFieldError(inputId, message){
+  const input = document.getElementById(inputId);
+  const err = input.parentElement.querySelector('.field-error');
+  if(message){ input.classList.add('input-error'); if(err) err.textContent = message; }
+  else { input.classList.remove('input-error'); if(err) err.textContent = ''; }
+}
+
+async function submitLogin(e){
+  e.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  let ok = true;
+  if(!email || !email.includes('@')){ setFieldError('login-email','Masukkan alamat email yang valid.'); ok = false; } else setFieldError('login-email', null);
+  if(!password || password.length < 4){ setFieldError('login-password','Kata sandi minimal 4 karakter.'); ok = false; } else setFieldError('login-password', null);
+  if(!ok) return;
+  if(email.toLowerCase().endsWith('@bi.go.id')){
+    toast('Email @bi.go.id terdeteksi — silakan gunakan tombol "Masuk dengan Google" di atas untuk verifikasi otomatis.', 'error');
+    return;
+  }
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  submitBtn.disabled = true; submitBtn.textContent = 'Memproses...';
+  try{
+    // Catatan: form ini mengidentifikasi tamu eksternal (untuk mengaitkan
+    // riwayat pemesanan lewat email), BUKAN autentikasi kata sandi yang
+    // diverifikasi server. Staf @bi.go.id memakai Google Sign-In di atas.
+    const data = await apiPost('registerUser', { name: email.split('@')[0].replace(/[._]/g,' ').replace(/\b\w/g, c => c.toUpperCase()), email });
+    const name = data.user ? data.user.name : email.split('@')[0];
+    setUser({ name, email, org: data.user ? data.user.org : '', role: 'user', isInternal: false });
+    renderAuthArea();
+    toast(`Selamat datang kembali, ${name}.`);
+    resolvePendingOrGo('home');
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }finally{
+    submitBtn.disabled = false; submitBtn.textContent = 'Masuk sebagai Tamu';
+  }
+}
+
+async function submitRegister(e){
+  e.preventDefault();
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const org = document.getElementById('reg-org').value.trim();
+  const password = document.getElementById('reg-password').value;
+  let ok = true;
+  if(!name){ setFieldError('reg-name','Nama lengkap wajib diisi.'); ok = false; } else setFieldError('reg-name', null);
+  if(!email || !email.includes('@')){ setFieldError('reg-email','Masukkan alamat email yang valid.'); ok = false; } else setFieldError('reg-email', null);
+  if(!password || password.length < 8){ setFieldError('reg-password','Kata sandi minimal 8 karakter.'); ok = false; } else setFieldError('reg-password', null);
+  if(!ok) return;
+  if(email.toLowerCase().endsWith('@bi.go.id')){
+    toast('Email @bi.go.id terdeteksi — silakan gunakan tombol "Masuk dengan Google" di tab Masuk untuk verifikasi otomatis.', 'error');
+    return;
+  }
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  submitBtn.disabled = true; submitBtn.textContent = 'Memproses...';
+  try{
+    const data = await apiPost('registerUser', { name, email, org });
+    setUser({ name, email, org, role: 'user', isInternal: false });
+    renderAuthArea();
+    toast(`Akun berhasil dibuat. Selamat datang, ${name}.`);
+    resolvePendingOrGo('home');
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }finally{
+    submitBtn.disabled = false; submitBtn.textContent = 'Buat Akun';
+  }
+}
+
+async function submitAdminLogin(e){
+  e.preventDefault();
+  const email = document.getElementById('admin-login-email').value.trim();
+  const password = document.getElementById('admin-login-password').value;
+  let ok = true;
+  if(!email || !email.includes('@')){ setFieldError('admin-login-email','Masukkan alamat email yang valid.'); ok = false; } else setFieldError('admin-login-email', null);
+  if(!password){ setFieldError('admin-login-password','Kata sandi wajib diisi.'); ok = false; } else setFieldError('admin-login-password', null);
+  if(!ok) return;
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  submitBtn.disabled = true; submitBtn.textContent = 'Memverifikasi...';
+  try{
+    const data = await apiPost('adminLogin', { email, password });
+    if(!data.ok){
+      setFieldError('admin-login-password','Email atau kata sandi admin tidak sesuai.');
+      toast(data.error || 'Kredensial admin tidak valid.', 'error');
+      return;
+    }
+    setAdminToken(data.token);
+    setUser({ name: 'Administrator', email, org: 'Pengelola KPP BI Kemang', role: 'admin' });
+    renderAuthArea();
+    toast('Selamat datang, Administrator.');
+    go('admin');
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }finally{
+    submitBtn.disabled = false; submitBtn.textContent = 'Masuk sebagai Admin';
+  }
+}
+
+function goAdminEntry(){
+  if(isAdmin()){ go('admin'); return; }
+  go('admin-login');
+}
+
+function resolvePendingOrGo(fallback){
+  if(pendingAction){
+    const p = pendingAction; pendingAction = null;
+    if(p.type === 'history'){ go('history'); return; }
+    if(p.type === 'booking'){ openBookingForm(p.roomId, p.date); return; }
+  }
+  go(fallback);
+}
+
+function setAuthTab(tab){
+  const masukTab = document.getElementById('tab-masuk');
+  const daftarTab = document.getElementById('tab-daftar');
+  const masukForm = document.getElementById('form-masuk');
+  const daftarForm = document.getElementById('form-daftar');
+  const heading = document.getElementById('auth-heading');
+  const subtext = document.getElementById('auth-subtext');
+  if(tab === 'masuk'){
+    masukTab.style.background = 'var(--navy-900)'; masukTab.style.color = '#fff';
+    daftarTab.style.background = '#fff'; daftarTab.style.color = 'var(--slate-600)';
+    masukForm.classList.remove('hidden'); daftarForm.classList.add('hidden');
+    heading.textContent = 'Masuk ke akun Anda';
+    subtext.textContent = 'Akun diperlukan untuk mengirim pemesanan, memantau status konfirmasi, dan melihat riwayat penggunaan ruangan di Kawasan Pendidikan dan Pelatihan BI Kemang.';
+  } else {
+    daftarTab.style.background = 'var(--navy-900)'; daftarTab.style.color = '#fff';
+    masukTab.style.background = '#fff'; masukTab.style.color = 'var(--slate-600)';
+    daftarForm.classList.remove('hidden'); masukForm.classList.add('hidden');
+    heading.textContent = 'Buat akun baru';
+    subtext.textContent = 'Daftarkan diri Anda untuk mulai mengajukan pemesanan ruang dan fasilitas di Kawasan Pendidikan dan Pelatihan BI Kemang.';
+  }
+}
+
+/* ===================== MOBILE MENU ===================== */
+function toggleMobileMenu(open){
+  document.getElementById('mobile-menu').classList.toggle('open', open);
+  document.getElementById('mobile-overlay').classList.toggle('hidden', !open);
+}
+
+/* ===================== ROUTER ===================== */
+function go(page, roomId){
+  if(page === 'admin' && !isAdmin()){
+    toast('Silakan masuk sebagai admin untuk mengakses dashboard.', 'error');
+    page = 'admin-login';
+  }
+  closeBookingModal();
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('page-' + page).classList.add('fade-in');
+
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const navMap = {home:'home', rooms:'rooms', detail:'rooms', contact:'contact', history:'history', booking:'rooms', success:'rooms', login:null, 'admin-login':null, admin:null};
+  const target = document.querySelector(`.nav-link[data-nav="${navMap[page]}"]`);
+  if(target) target.classList.add('active');
+
+  if(page === 'login') initGoogleSignIn();
+  if(page === 'detail' && roomId) { renderDetail(roomId); refreshBookings().then(renderCalendar); }
+  if(page === 'history') { document.getElementById('history-list').innerHTML = historySkeletonHTML(); refreshBookings().then(renderHistory); }
+  if(page === 'admin') { refreshBookings().then(renderAdmin); }
+  window.scrollTo({top:0, behavior:'smooth'});
+  lucide.createIcons();
+}
+function historySkeletonHTML(){
+  return Array.from({length:3}).map(() => `<div class="skeleton h-24 rounded-xl"></div>`).join('');
+}
+
+/* ===================== HELPERS ===================== */
+function priceFmt(n){ return 'Rp ' + n.toLocaleString('id-ID'); }
+function pad(n){ return n.toString().padStart(2,'0'); }
+function dateKey(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
+function formatDateLong(dateStr){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dayNames = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+  const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const dt = new Date(y, m-1, d);
+  return `${dayNames[dt.getDay()]}, ${d} ${monthNames[m-1]} ${y}`;
+}
+
+/* ===================== ROOM CARDS ===================== */
+function roomCard(room){
+  return `
+  <div class="group cursor-pointer bg-white rounded-xl overflow-hidden card-shadow border border-slate-100 transition" onclick="go('detail','${room.id}')">
+    <div class="overflow-hidden h-56 bg-slate-100">
+      <img src="${room.img}" alt="${room.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+    </div>
+    <div class="p-5">
+      <p class="text-xs font-semibold text-[var(--blue-accent)] uppercase tracking-wide mb-1">${room.category}</p>
+      <h3 class="font-display text-lg font-bold navy-text mb-2">${room.name}</h3>
+      <div class="flex items-center gap-4 text-xs text-slate-500 mb-3">
+        <span class="flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>${room.capacity} orang</span>
+        <span class="flex items-center gap-1"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${room.area} m²</span>
+      </div>
+      <p class="font-display text-base font-bold navy-text">${priceFmt(room.priceHour)} <span class="text-xs font-sans font-normal text-slate-500">/ jam</span></p>
+    </div>
+  </div>`;
+}
+function renderFeatured(){
+  document.getElementById('featured-grid').innerHTML = ROOMS.filter(r => FEATURED_IDS.includes(r.id)).map(roomCard).join('');
+  lucide.createIcons();
+}
+function renderRoomsGrid(){
+  const q = (document.getElementById('search-input').value || '').toLowerCase();
+  const cat = document.getElementById('filter-category').value;
+  const cap = document.getElementById('filter-capacity').value;
+  let list = ROOMS.filter(r => {
+    const matchQ = !q || r.name.toLowerCase().includes(q) || r.facilities.join(' ').toLowerCase().includes(q);
+    const matchCat = !cat || r.category === cat;
+    const matchCap = !cap || r.capacity <= parseInt(cap);
+    return matchQ && matchCat && matchCap;
+  });
+  const grid = document.getElementById('rooms-grid');
+  grid.innerHTML = list.length ? list.map(roomCard).join('') :
+    `<div class="col-span-3 text-center py-16 text-slate-400">Tidak ada ruangan yang cocok dengan pencarian.</div>`;
+  lucide.createIcons();
+}
+
+/* ===================== CALENDAR (DETAIL PAGE) ===================== */
+function realBookedDays(roomId, y, m){
+  const bookings = getBookings().filter(b => b.roomId === roomId && b.status !== 'cancelled' && b.status !== 'rejected');
+  const booked = new Set();
+  bookings.forEach(b => {
+    const [by,bm,bd] = b.date.split('-').map(Number);
+    if(by === y && (bm-1) === m) booked.add(bd);
+  });
+  return booked;
+}
+
+let calState = { room: null, year: 2026, month: 7, selectedDay: null };
+
+function renderCalendar(){
+  const { room, year, month } = calState;
+  const booked = realBookedDays(room.id, year, month);
+  const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const firstDay = new Date(year, month, 1).getDay();
+  const offset = firstDay === 0 ? 6 : firstDay - 1;
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let cells = '';
+  for(let i=0;i<offset;i++) cells += `<div class="cal-day cal-empty"></div>`;
+  for(let d=1; d<=daysInMonth; d++){
+    const thisDate = new Date(year, month, d);
+    const isPast = thisDate < today;
+    const isBooked = booked.has(d);
+    let cls = 'cal-day ';
+    let attr = '';
+    if(isPast){ cls += 'cal-past'; }
+    else if(isBooked){ cls += 'cal-booked'; }
+    else { cls += 'cal-available'; attr = `onclick="selectDay(${d})"`; }
+    if(calState.selectedDay === d) cls += ' cal-selected';
+    cells += `<div class="${cls}" ${attr} id="cal-cell-${d}">${d}</div>`;
+  }
+
+  document.getElementById('cal-month-label').textContent = `${monthNames[month]} ${year}`;
+  document.getElementById('cal-grid').innerHTML = cells;
+  updateBookingCta();
+  lucide.createIcons();
+}
+function shiftMonth(delta){
+  calState.month += delta;
+  if(calState.month > 11){ calState.month = 0; calState.year++; }
+  if(calState.month < 0){ calState.month = 11; calState.year--; }
+  calState.selectedDay = null;
+  renderCalendar();
+}
+function selectDay(d){
+  calState.selectedDay = d;
+  renderCalendar();
+}
+function updateBookingCta(){
+  const btn = document.getElementById('detail-booking-btn');
+  const hint = document.getElementById('detail-booking-hint');
+  if(!btn) return;
+  if(calState.selectedDay){
+    btn.disabled = false;
+    hint.textContent = `Tanggal dipilih: ${formatDateLong(dateKey(calState.year, calState.month, calState.selectedDay))}`;
+  } else {
+    btn.disabled = true;
+    hint.textContent = 'Pilih tanggal pada kalender untuk melanjutkan.';
+  }
+}
+
+/* ===================== DETAIL PAGE ===================== */
+function renderDetail(roomId){
+  const room = findRoom(roomId);
+  if(!room) return;
+  const today = new Date();
+  calState = { room, year: today.getFullYear(), month: today.getMonth(), selectedDay: null };
+
+  const gallery = room.gallery && room.gallery.length ? room.gallery : [room.img];
+
+  document.getElementById('detail-content').innerHTML = `
+    <div class="lg:col-span-2 fade-in">
+      <div class="rounded-xl overflow-hidden h-96 mb-4 bg-slate-100">
+        <img src="${room.img}" class="w-full h-full object-cover" alt="${room.name}">
+      </div>
+      <div class="flex gap-3 mb-8">
+        ${gallery.map(g => `<div class="w-24 h-16 rounded-md overflow-hidden border border-slate-200"><img src="${g}" class="w-full h-full object-cover"></div>`).join('')}
+      </div>
+
+      <p class="text-xs font-semibold text-[var(--blue-accent)] uppercase tracking-wide mb-2">${room.category}</p>
+      <h1 class="font-display text-3xl font-bold navy-text mb-3">${room.name}</h1>
+      <p class="text-sm leading-relaxed mb-8">${room.desc}</p>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-6 border-y border-slate-200 py-6 mb-10">
+        <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Kapasitas</p><p class="font-semibold navy-text">${room.capacity} orang</p></div>
+        <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Luas</p><p class="font-semibold navy-text">${room.area} m²</p></div>
+        <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Lokasi</p><p class="font-semibold navy-text">${room.floor}</p></div>
+        <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Tarif Harian</p><p class="font-semibold navy-text">${priceFmt(room.priceDay)}</p></div>
+      </div>
+
+      <h3 class="font-display text-xl font-bold navy-text mb-4">Fasilitas</h3>
+      <div class="grid md:grid-cols-2 gap-x-8 gap-y-3">
+        ${room.facilities.map(f => `<div class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4" style="color:var(--blue-accent)"></i>${f}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="fade-in">
+      <div class="border border-slate-200 rounded-xl p-6 sticky top-24 card-shadow">
+        <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Mulai dari</p>
+        <p class="font-display text-3xl font-bold navy-text mb-6">${priceFmt(room.priceHour)} <span class="text-sm font-sans font-normal text-slate-500">/ jam</span></p>
+
+        <div class="flex items-center justify-between mb-3">
+          <button onclick="shiftMonth(-1)" class="w-8 h-8 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+          <span id="cal-month-label" class="font-semibold text-sm navy-text"></span>
+          <button onclick="shiftMonth(1)" class="w-8 h-8 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+        </div>
+        <div class="grid grid-cols-7 gap-1 text-center text-[11px] text-slate-400 mb-1">
+          <span>SEN</span><span>SEL</span><span>RAB</span><span>KAM</span><span>JUM</span><span>SAB</span><span>MIN</span>
+        </div>
+        <div id="cal-grid" class="grid grid-cols-7 gap-1 mb-4"></div>
+
+        <div class="flex items-center gap-4 text-xs mb-5">
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#eef2f7"></span>Tersedia</span>
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block bg-[#fbe3e6]"></span>Terpesan</span>
+        </div>
+        <p class="flex items-center gap-2 text-sm mb-4"><i data-lucide="users" class="w-4 h-4" style="color:var(--navy-900)"></i>Maksimal ${room.capacity} peserta</p>
+        <p id="detail-booking-hint" class="text-xs text-slate-400 mb-3"></p>
+        <button id="detail-booking-btn" onclick="handleDetailBookingClick()" disabled class="btn-primary w-full py-3 rounded-md font-semibold text-sm">Lanjut ke Pemesanan</button>
+      </div>
+    </div>
+  `;
+  renderCalendar();
+  lucide.createIcons();
+}
+function handleDetailBookingClick(){
+  if(!calState.selectedDay) return;
+  const dk = dateKey(calState.year, calState.month, calState.selectedDay);
+  requireAuth('booking', { roomId: calState.room.id, date: dk });
+}
+
+/* ===================== BOOKING FORM ===================== */
+let bookingCtx = { roomId: null, date: null };
+let bookingPaymentMethod = 'transfer';
+
+function timeToMinutes(t){ const [h,m] = (t||'0:0').split(':').map(Number); return h*60+m; }
+
+function openBookingForm(roomId, date){
+  const room = findRoom(roomId);
+  if(!room) return;
+  bookingCtx = { roomId, date };
+  bookingPaymentMethod = 'transfer';
+
+  document.getElementById('booking-back-btn').onclick = () => go('detail', roomId);
+  document.getElementById('booking-room-title').textContent = 'Formulir Pemesanan';
+  document.getElementById('booking-room-subtitle').textContent = `${room.name} · ${room.floor}`;
+  document.getElementById('booking-room-image').innerHTML = `<img src="${room.img}" class="w-full h-full object-cover" alt="${room.name}">`;
+  document.getElementById('booking-room-loc').textContent = `${room.category} · Maks ${room.capacity} orang`;
+
+  document.getElementById('bk-date').value = date;
+  document.getElementById('bk-tariff').value = 'jam';
+  document.getElementById('bk-start').value = '09:00';
+  document.getElementById('bk-end').value = '11:00';
+
+  document.querySelectorAll('.pay-option').forEach(el => el.classList.toggle('selected', el.dataset.method === bookingPaymentMethod));
+
+  const user = getUser();
+  document.getElementById('bk-name').value = user ? user.name : '';
+  document.getElementById('bk-org').value = user && user.org ? user.org : '';
+  document.getElementById('bk-email').value = user ? user.email : '';
+  document.getElementById('bk-phone').value = '';
+  document.getElementById('bk-participants').value = '';
+  document.getElementById('bk-purpose').value = '';
+  document.getElementById('bk-notes').value = '';
+  document.getElementById('bk-consent').checked = false;
+  document.getElementById('conflict-warning').classList.add('hidden');
+  ['bk-date','bk-name','bk-org','bk-email','bk-phone','bk-participants','bk-purpose'].forEach(id => setFieldError(id, null));
+
+  updateBookingSummaryPanel();
+  go('booking');
+}
+
+function selectPaymentMethod(method){
+  bookingPaymentMethod = method;
+  document.querySelectorAll('.pay-option').forEach(el => el.classList.toggle('selected', el.dataset.method === method));
+}
+
+function onBookingFieldChange(){
+  updateBookingSummaryPanel();
+}
+
+function updateBookingSummaryPanel(){
+  const room = findRoom(bookingCtx.roomId);
+  if(!room) return;
+  const date = document.getElementById('bk-date').value || bookingCtx.date;
+  const tariff = document.getElementById('bk-tariff').value;
+  const start = document.getElementById('bk-start').value;
+  const end = document.getElementById('bk-end').value;
+  const hours = Math.max(0, (timeToMinutes(end) - timeToMinutes(start)) / 60);
+  const total = tariff === 'hari' ? room.priceDay : hours * room.priceHour;
+  const durasiText = tariff === 'hari' ? '1 hari (paket harian)' : `${hours} jam`;
+
+  document.getElementById('booking-summary-panel').innerHTML = `
+    <div class="flex items-center justify-between"><span class="text-slate-500">Ruangan</span><span class="font-medium navy-text text-right">${room.name}</span></div>
+    <div class="flex items-center justify-between"><span class="text-slate-500">Tanggal</span><span class="font-medium navy-text">${date ? formatDateLong(date) : '—'}</span></div>
+    <div class="flex items-center justify-between"><span class="text-slate-500">Durasi</span><span class="font-medium navy-text">${durasiText}</span></div>
+    <div class="border-t border-slate-100 pt-3 mt-1 flex items-center justify-between">
+      <span class="font-semibold navy-text">Total</span>
+      <span class="font-display text-lg font-bold navy-text">${priceFmt(total)}</span>
+    </div>`;
+
+  const badge = document.getElementById('availability-badge');
+  if(date && start && end && hours > 0){
+    const conflict = hasConflict(bookingCtx.roomId, date, start, end, null, tariff);
+    badge.innerHTML = conflict
+      ? `<i data-lucide="alert-circle" class="w-3.5 h-3.5" style="color:var(--danger)"></i><span style="color:var(--danger)">Ruangan telah terpesan pada jadwal ini</span>`
+      : `<i data-lucide="check-circle-2" class="w-3.5 h-3.5" style="color:var(--ok)"></i><span style="color:var(--ok)">Ruangan tersedia pada jadwal ini</span>`;
+  } else if(hours <= 0){
+    badge.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5" style="color:var(--danger)"></i><span style="color:var(--danger)">Jam selesai harus setelah jam mulai</span>`;
+  } else {
+    badge.innerHTML = '';
+  }
+  lucide.createIcons();
+}
+
+/* ===================== BOOKING DETAIL MODAL ===================== */
+function closeBookingModal(){
+  document.getElementById('booking-modal-root').innerHTML = '';
+}
+function openBookingModal(id, adminMode){
+  const b = getBookings().find(x => x.id === id);
+  if(!b) return;
+  const room = findRoom(b.roomId);
+  const canAct = adminMode && (b.status === 'pending' || b.status === 'confirmed');
+  const root = document.getElementById('booking-modal-root');
+  root.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this) closeBookingModal()">
+      <div class="modal-box">
+        <div class="p-6 border-b border-slate-100 flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Nomor Referensi</p>
+            <p class="font-display text-xl font-bold navy-text">${b.ref}</p>
+          </div>
+          <button onclick="closeBookingModal()" class="icon-btn-sm flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="p-6 space-y-5">
+          <div class="flex items-center gap-4">
+            <img src="${room ? room.img : ''}" class="w-20 h-16 rounded-md object-cover flex-shrink-0" alt="">
+            <div>
+              <p class="font-display font-bold navy-text">${b.roomName}</p>
+              <p class="text-xs text-slate-500">${formatDateLong(b.date)} · ${b.startTime}–${b.endTime}</p>
+              <div class="mt-1">${statusBadge(b.status)}</div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-y-4 gap-x-4 text-sm border-t border-slate-100 pt-5">
+            <div><p class="text-xs text-slate-400 mb-0.5">Penanggung Jawab</p><p class="font-medium navy-text">${b.name}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Instansi / Unit Kerja</p><p class="font-medium navy-text">${b.org}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Email</p><p class="font-medium navy-text break-all">${b.email}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Telepon</p><p class="font-medium navy-text">${b.phone}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Jumlah Peserta</p><p class="font-medium navy-text">${b.participants} orang</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Estimasi Biaya</p><p class="font-medium navy-text">${priceFmt(b.amount || 0)} <span class="text-xs text-slate-400 font-normal">(${b.tariffType === 'hari' ? 'per hari' : 'per jam'})</span></p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Metode Pembayaran</p><p class="font-medium navy-text">${({transfer:'Transfer Bank',kartu:'Kartu Kredit',ewallet:'E-Wallet'})[b.paymentMethod] || '—'}</p></div>
+            <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Keperluan Acara</p><p class="font-medium navy-text">${b.purpose}</p></div>
+            ${b.notes ? `<div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Catatan Tambahan</p><p class="font-medium navy-text">${b.notes}</p></div>` : ''}
+            <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Diajukan pada</p><p class="font-medium navy-text">${new Date(b.createdAt).toLocaleString('id-ID')}</p></div>
+          </div>
+          ${b.adminNote ? `<div class="bg-[var(--paper)] border border-slate-200 rounded-md p-4 text-sm"><p class="text-xs font-semibold navy-text mb-1">Catatan Pengelola</p><p class="text-slate-600">${b.adminNote}</p></div>` : ''}
+          ${canAct ? `
+          <div class="border-t border-slate-100 pt-5">
+            <label class="block text-xs font-semibold navy-text mb-1.5">Catatan admin (wajib diisi bila menolak / membatalkan)</label>
+            <textarea id="modal-admin-note" rows="2" placeholder="Contoh: Ruangan sedang dalam perawatan pada tanggal tersebut." class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"></textarea>
+            <div class="flex flex-wrap gap-2">
+              ${b.status === 'pending' ? `
+                <button onclick="adminSetStatus('${b.id}','confirmed')" class="btn-primary text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4"></i>Konfirmasi Pemesanan</button>
+                <button onclick="adminSetStatus('${b.id}','rejected')" class="text-sm font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="x" class="w-4 h-4"></i>Tolak Pemesanan</button>` : ''}
+              ${b.status === 'confirmed' ? `
+                <button onclick="adminSetStatus('${b.id}','cancelled')" class="text-sm font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="ban" class="w-4 h-4"></i>Batalkan Pemesanan</button>` : ''}
+            </div>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  lucide.createIcons();
+}
+
+function effectiveRange(startTime, endTime, tariffType){
+  // Pemesanan "per hari" mengunci seluruh jam operasional hari itu,
+  // bukan cuma rentang jam yang diisi di form.
+  return tariffType === 'hari' ? ['00:00','23:59'] : [startTime, endTime];
+}
+
+function hasConflict(roomId, date, start, end, excludeId, tariffType){
+  const bookings = getBookings().filter(b => b.roomId === roomId && b.date === date && b.status !== 'cancelled' && b.status !== 'rejected' && b.id !== excludeId);
+  const [effStart, effEnd] = effectiveRange(start, end, tariffType);
+  return bookings.some(b => {
+    const [bStart, bEnd] = effectiveRange(b.startTime, b.endTime, b.tariffType);
+    return effStart < bEnd && effEnd > bStart;
+  });
+}
+
+let bookingSubmitInFlight = false;
+
+async function submitBooking(e){
+  e.preventDefault();
+  if(bookingSubmitInFlight) return; // proteksi double-submit
+
+  const room = findRoom(bookingCtx.roomId);
+  const date = document.getElementById('bk-date').value;
+  const tariff = document.getElementById('bk-tariff').value;
+  const start = document.getElementById('bk-start').value;
+  const end = document.getElementById('bk-end').value;
+  const name = document.getElementById('bk-name').value.trim();
+  const org = document.getElementById('bk-org').value.trim();
+  const email = document.getElementById('bk-email').value.trim();
+  const phone = document.getElementById('bk-phone').value.trim();
+  const participants = parseInt(document.getElementById('bk-participants').value);
+  const purpose = document.getElementById('bk-purpose').value.trim();
+  const notes = document.getElementById('bk-notes').value.trim();
+  const hours = (timeToMinutes(end) - timeToMinutes(start)) / 60;
+  const consent = document.getElementById('bk-consent');
+
+  let ok = true;
+  if(!date){ setFieldError('bk-date','Tanggal pemakaian wajib diisi.'); ok = false; } else setFieldError('bk-date', null);
+  if(hours <= 0){ toast('Jam selesai harus setelah jam mulai.', 'error'); ok = false; }
+  if(!name){ setFieldError('bk-name','Nama penanggung jawab wajib diisi.'); ok = false; } else setFieldError('bk-name', null);
+  if(!org){ setFieldError('bk-org','Instansi/perusahaan wajib diisi.'); ok = false; } else setFieldError('bk-org', null);
+  if(!email || !email.includes('@')){ setFieldError('bk-email','Masukkan email yang valid.'); ok = false; } else setFieldError('bk-email', null);
+  if(!phone || phone.length < 8){ setFieldError('bk-phone','Masukkan nomor telepon yang valid.'); ok = false; } else setFieldError('bk-phone', null);
+  if(!participants || participants < 1){ setFieldError('bk-participants','Jumlah peserta wajib diisi.'); ok = false; }
+  else if(participants > room.capacity){ setFieldError('bk-participants',`Melebihi kapasitas maksimal (${room.capacity} orang).`); ok = false; }
+  else setFieldError('bk-participants', null);
+  if(!purpose){ setFieldError('bk-purpose','Keperluan acara wajib diisi.'); ok = false; } else setFieldError('bk-purpose', null);
+  if(consent && !consent.checked){ toast('Anda perlu menyetujui persyaratan penggunaan data sebelum mengirim.', 'error'); ok = false; }
+
+  document.getElementById('conflict-warning').classList.add('hidden');
+  if(!ok){ toast('Periksa kembali data yang belum lengkap.', 'error'); return; }
+
+  const user = getUser();
+  const amount = tariff === 'hari' ? room.priceDay : hours * room.priceHour;
+  const paymentLabels = { transfer: 'Transfer Bank', kartu: 'Kartu Kredit', ewallet: 'E-Wallet' };
+  const payload = {
+    roomId: room.id, roomName: room.name, date, startTime: start, endTime: end,
+    tariffType: tariff, name, org, email, phone, participants, purpose, notes,
+    amount, paymentMethod: bookingPaymentMethod,
+    userEmail: user ? user.email : email,
+    userToken: (user && user.isInternal) ? getUserToken() : undefined
+  };
+
+  const submitBtn = document.getElementById('booking-submit-btn');
+  bookingSubmitInFlight = true;
+  if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Mengirim...'; }
+
+  try{
+    const data = await apiPost('createBooking', payload);
+    if(!data.ok){
+      if(data.conflict){
+        const warn = document.getElementById('conflict-warning');
+        document.getElementById('conflict-warning-text').textContent = `Ruangan ini sudah terpesan pada jam ${start}–${end} di tanggal tersebut. Silakan pilih jam lain atau tanggal berbeda.`;
+        warn.classList.remove('hidden');
+        lucide.createIcons();
+        toast('Terjadi bentrok jadwal pada jam yang dipilih.', 'error');
+      } else {
+        toast(data.error || 'Gagal mengirim pemesanan. Silakan coba lagi.', 'error');
+      }
+      return;
+    }
+
+    document.getElementById('success-summary').innerHTML = `
+      <div class="flex items-center gap-4 pb-4 mb-4 border-b border-slate-100">
+        <img src="${room.img}" class="w-20 h-16 rounded-md object-cover flex-shrink-0" alt="">
+        <div>
+          <p class="font-display font-bold navy-text">${room.name}</p>
+          <p class="text-xs text-slate-500">${formatDateLong(date)} · ${start}–${end}</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-y-3 text-sm">
+        <div><p class="text-xs text-slate-400">Nomor Referensi</p><p class="font-display font-bold navy-text">${data.ref}</p></div>
+        <div><p class="text-xs text-slate-400">Estimasi Biaya</p><p class="font-semibold navy-text">${priceFmt(amount)}</p></div>
+        <div><p class="text-xs text-slate-400">Penanggung Jawab</p><p class="font-medium navy-text">${name}</p></div>
+        <div><p class="text-xs text-slate-400">Instansi</p><p class="font-medium navy-text">${org}</p></div>
+        <div><p class="text-xs text-slate-400">Jumlah Peserta</p><p class="font-medium navy-text">${participants} orang</p></div>
+        <div><p class="text-xs text-slate-400">Metode Pembayaran</p><p class="font-medium navy-text">${paymentLabels[bookingPaymentMethod]}</p></div>
+        <div class="col-span-2"><p class="text-xs text-slate-400">Status</p><p>${statusBadge('pending')}</p></div>
+      </div>`;
+    toast('Pemesanan berhasil dikirim dan menunggu konfirmasi. Email konfirmasi telah dikirim ke ' + email + '.');
+    go('success');
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda dan coba lagi.', 'error');
+  }finally{
+    bookingSubmitInFlight = false;
+    if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = 'Kirim Pemesanan'; }
+  }
+}
+
+/* ===================== HISTORY PAGE ===================== */
+function statusBadge(status){
+  if(status === 'confirmed') return `<span class="badge badge-confirmed"><i data-lucide="check-circle-2" class="w-3 h-3"></i>Terkonfirmasi</span>`;
+  if(status === 'rejected') return `<span class="badge badge-cancelled"><i data-lucide="x-circle" class="w-3 h-3"></i>Ditolak</span>`;
+  if(status === 'cancelled') return `<span class="badge badge-cancelled"><i data-lucide="x-circle" class="w-3 h-3"></i>Dibatalkan</span>`;
+  return `<span class="badge badge-pending"><i data-lucide="clock" class="w-3 h-3"></i>Menunggu Konfirmasi</span>`;
+}
+
+let historyFilterStatus = '';
+function setHistoryFilter(status){
+  historyFilterStatus = status;
+  renderHistory();
+}
+function renderHistoryFilterBar(all){
+  const counts = { '': all.length, pending: 0, confirmed: 0, rejected: 0, cancelled: 0 };
+  all.forEach(b => { if(counts[b.status] !== undefined) counts[b.status]++; });
+  const tabs = [
+    { key: '', label: 'Semua' },
+    { key: 'pending', label: 'Menunggu' },
+    { key: 'confirmed', label: 'Terkonfirmasi' },
+    { key: 'rejected', label: 'Ditolak' },
+    { key: 'cancelled', label: 'Dibatalkan' }
+  ];
+  document.getElementById('history-filter').innerHTML = tabs.map(t =>
+    `<button onclick="setHistoryFilter('${t.key}')" class="admin-tab ${historyFilterStatus === t.key ? 'active' : ''}" style="border:1px solid #e2e8f0;">${t.label} <span class="opacity-70">(${counts[t.key]})</span></button>`
+  ).join('');
+}
+
+function renderHistory(){
+  const user = getUser();
+  const list = document.getElementById('history-list');
+  const filterBar = document.getElementById('history-filter');
+  if(!user){ list.innerHTML = ''; filterBar.innerHTML = ''; return; }
+
+  const allBookings = getBookings().filter(b => b.userEmail === user.email);
+  renderHistoryFilterBar(allBookings);
+  const bookings = historyFilterStatus ? allBookings.filter(b => b.status === historyFilterStatus) : allBookings;
+
+  if(!allBookings.length){
+    list.innerHTML = `
+      <div class="text-center py-20 border border-dashed border-slate-200 rounded-xl">
+        <i data-lucide="calendar-x" class="w-10 h-10 mx-auto text-slate-300 mb-3"></i>
+        <p class="text-slate-400 text-sm mb-4">Belum ada pemesanan yang diajukan.</p>
+        <button onclick="go('rooms')" class="btn-primary px-5 py-2.5 rounded-md text-sm font-semibold">Cari Ruangan</button>
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
+  if(!bookings.length){
+    list.innerHTML = `<div class="text-center py-16 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Tidak ada pemesanan dengan status ini.</div>`;
+    lucide.createIcons();
+    return;
+  }
+
+  list.innerHTML = bookings.map(b => {
+    const room = findRoom(b.roomId);
+    return `
+    <div class="border border-slate-200 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 card-shadow cursor-pointer" onclick="openBookingModal('${b.id}', false)">
+      <img src="${room ? room.img : ''}" class="w-full md:w-28 h-28 md:h-20 rounded-md object-cover flex-shrink-0" alt="">
+      <div class="flex-1">
+        <div class="flex items-center gap-2 flex-wrap mb-1">
+          <p class="font-display font-bold navy-text">${b.roomName}</p>
+          ${statusBadge(b.status)}
+        </div>
+        <p class="text-xs text-slate-500">${formatDateLong(b.date)} · ${b.startTime}–${b.endTime} · ${b.participants} peserta</p>
+        <p class="text-xs text-slate-400 mt-1">Ref: ${b.ref}</p>
+      </div>
+      <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+        <button onclick="openBookingModal('${b.id}', false)" class="text-xs font-semibold text-slate-500 border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-md">Lihat Detail</button>
+        ${b.status === 'pending' ? `<button onclick="cancelBooking('${b.id}')" class="text-xs font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-3 py-2 rounded-md">Batalkan</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function cancelBooking(id){
+  const bookings = getBookings();
+  const idx = bookings.findIndex(b => b.id === id);
+  if(idx === -1) return;
+  bookings[idx].status = 'cancelled';
+  bookings[idx].adminNote = 'Dibatalkan oleh pemesan.';
+  bookings[idx].updatedAt = new Date().toISOString();
+  saveBookings(bookings);
+  toast('Pemesanan dibatalkan.');
+  renderHistory();
+}
+
+/* ===================== ADMIN DASHBOARD ===================== */
+async function adminSetStatus(id, status){
+  const bookings = getBookings();
+  const target = bookings.find(b => b.id === id);
+  if(!target) return;
+  const noteInput = document.getElementById('modal-admin-note');
+  const note = noteInput ? noteInput.value.trim() : '';
+  if((status === 'rejected' || status === 'cancelled') && !note){
+    toast('Catatan admin wajib diisi untuk penolakan/pembatalan.', 'error');
+    if(noteInput) noteInput.classList.add('input-error');
+    return;
+  }
+  const finalNote = note || (status === 'confirmed' ? 'Dikonfirmasi oleh pengelola.' : target.adminNote);
+  try{
+    const data = await apiPost('updateBookingStatus', { token: getAdminToken(), id, status, adminNote: finalNote });
+    if(!data.ok){
+      if(data.error && data.error.indexOf('Sesi admin') !== -1){
+        toast(data.error, 'error'); logout(); go('admin-login'); return;
+      }
+      toast(data.error || 'Gagal memperbarui status.', 'error');
+      return;
+    }
+    const labels = { confirmed: 'dikonfirmasi', rejected: 'ditolak', cancelled: 'dibatalkan' };
+    toast(`Pemesanan ${target.ref} berhasil ${labels[status] || 'diperbarui'}.`);
+    closeBookingModal();
+    await refreshBookings();
+    renderAdmin();
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }
+}
+
+let adminActiveTab = 'ringkasan';
+function setAdminTab(tab){
+  adminActiveTab = tab;
+  document.getElementById('admin-tab-ringkasan').classList.toggle('active', tab === 'ringkasan');
+  document.getElementById('admin-tab-pemesanan').classList.toggle('active', tab === 'pemesanan');
+  document.getElementById('admin-panel-ringkasan').classList.toggle('hidden', tab !== 'ringkasan');
+  document.getElementById('admin-panel-pemesanan').classList.toggle('hidden', tab !== 'pemesanan');
+  if(tab === 'pemesanan') renderAdminTable();
+}
+
+function renderAdmin(){
+  if(!isAdmin()) return;
+  setAdminTab(adminActiveTab);
+  renderAdminKpis();
+  renderAdminPendingList();
+  renderAdminRoomStats();
+  const roomSelect = document.getElementById('admin-filter-room');
+  if(roomSelect.options.length <= 1){
+    roomSelect.innerHTML += ROOMS.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+  }
+  renderAdminTable();
+  lucide.createIcons();
+}
+
+function renderAdminKpis(){
+  const all = getBookings();
+  const now = new Date();
+  const pending = all.filter(b => b.status === 'pending').length;
+  const confirmedThisMonth = all.filter(b => {
+    if(b.status !== 'confirmed') return false;
+    const [y,m] = b.date.split('-').map(Number);
+    return y === now.getFullYear() && (m-1) === now.getMonth();
+  }).length;
+  const rejectedCancelled = all.filter(b => b.status === 'rejected' || b.status === 'cancelled').length;
+  const revenue = all.filter(b => b.status === 'confirmed').reduce((sum,b) => sum + (b.amount || 0), 0);
+
+  const cards = [
+    { label: 'Menunggu Konfirmasi', value: pending, icon: 'clock', color: 'var(--warn)' },
+    { label: 'Terkonfirmasi Bulan Ini', value: confirmedThisMonth, icon: 'check-circle-2', color: 'var(--ok)' },
+    { label: 'Ditolak / Dibatalkan', value: rejectedCancelled, icon: 'x-circle', color: 'var(--danger)' },
+    { label: 'Estimasi Pendapatan Terkonfirmasi', value: priceFmt(revenue), icon: 'wallet', color: 'var(--navy-900)' }
+  ];
+  document.getElementById('admin-kpi-grid').innerHTML = cards.map(c => `
+    <div class="kpi-card">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-xs font-medium text-slate-500">${c.label}</p>
+        <i data-lucide="${c.icon}" class="w-4 h-4" style="color:${c.color}"></i>
+      </div>
+      <p class="font-display text-2xl font-bold navy-text">${c.value}</p>
+    </div>`).join('');
+}
+
+function renderAdminPendingList(){
+  const pending = getBookings().filter(b => b.status === 'pending').slice(0, 5);
+  const el = document.getElementById('admin-pending-list');
+  if(!pending.length){
+    el.innerHTML = `<div class="text-center py-10 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Tidak ada pemesanan yang menunggu konfirmasi.</div>`;
+    return;
+  }
+  el.innerHTML = pending.map(b => `
+    <div class="border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50" onclick="openBookingModal('${b.id}', true)">
+      <div class="min-w-0">
+        <p class="font-semibold navy-text text-sm truncate">${b.roomName}</p>
+        <p class="text-xs text-slate-500 truncate">${b.name} · ${formatDateLong(b.date)} · ${b.startTime}–${b.endTime}</p>
+      </div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 flex-shrink-0"></i>
+    </div>`).join('');
+}
+
+function renderAdminRoomStats(){
+  const all = getBookings().filter(b => b.status !== 'cancelled' && b.status !== 'rejected');
+  const max = Math.max(1, ...ROOMS.map(r => all.filter(b => b.roomId === r.id).length));
+  document.getElementById('admin-room-stats').innerHTML = ROOMS.map(r => {
+    const count = all.filter(b => b.roomId === r.id).length;
+    const pct = Math.round((count / max) * 100);
+    return `
+    <div>
+      <div class="flex items-center justify-between text-xs mb-1">
+        <span class="font-medium navy-text">${r.name}</span>
+        <span class="text-slate-400">${count} pemesanan</span>
+      </div>
+      <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+        <div class="h-full rounded-full" style="width:${pct}%;background:var(--blue-accent);"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getAdminFilteredBookings(){
+  const q = (document.getElementById('admin-search').value || '').toLowerCase();
+  const status = document.getElementById('admin-filter-status').value;
+  const roomId = document.getElementById('admin-filter-room').value;
+  const date = document.getElementById('admin-filter-date').value;
+  return getBookings().filter(b => {
+    const matchQ = !q || [b.ref, b.name, b.org, b.email].join(' ').toLowerCase().includes(q);
+    const matchStatus = !status || b.status === status;
+    const matchRoom = !roomId || b.roomId === roomId;
+    const matchDate = !date || b.date === date;
+    return matchQ && matchStatus && matchRoom && matchDate;
+  });
+}
+
+let adminFilteredCache = [];
+function renderAdminTable(){
+  const list = getAdminFilteredBookings();
+  adminFilteredCache = list;
+  document.getElementById('admin-result-count').textContent = `${list.length} pemesanan ditemukan`;
+  const body = document.getElementById('admin-table-body');
+  if(!list.length){
+    body.innerHTML = `<tr><td colspan="8" class="text-center py-14 text-slate-400">Tidak ada pemesanan yang cocok dengan filter.</td></tr>`;
+    return;
+  }
+  body.innerHTML = list.map(b => `
+    <tr onclick="openBookingModal('${b.id}', true)">
+      <td class="font-semibold navy-text">${b.ref}</td>
+      <td>${b.roomName}</td>
+      <td>${formatDateLong(b.date)}<br><span class="text-slate-400">${b.startTime}–${b.endTime}</span></td>
+      <td>${b.name}</td>
+      <td>${b.org}</td>
+      <td>${b.participants}</td>
+      <td>${statusBadge(b.status)}</td>
+      <td onclick="event.stopPropagation()">
+        ${b.status === 'pending' ? `
+          <div class="flex gap-1.5">
+            <button onclick="quickAdminAction('${b.id}','confirmed')" class="icon-btn-sm" title="Konfirmasi"><i data-lucide="check" class="w-4 h-4" style="color:var(--ok)"></i></button>
+            <button onclick="openBookingModal('${b.id}', true)" class="icon-btn-sm" title="Tolak / Detail"><i data-lucide="x" class="w-4 h-4" style="color:var(--danger)"></i></button>
+          </div>` : `<button onclick="openBookingModal('${b.id}', true)" class="text-xs font-semibold text-[var(--blue-accent)] hover:underline">Detail</button>`}
+      </td>
+    </tr>`).join('');
+}
+
+async function quickAdminAction(id, status){
+  const bookings = getBookings();
+  const target = bookings.find(b => b.id === id);
+  if(!target) return;
+  try{
+    const data = await apiPost('updateBookingStatus', { token: getAdminToken(), id, status, adminNote: 'Dikonfirmasi oleh pengelola.' });
+    if(!data.ok){ toast(data.error || 'Gagal memperbarui status.', 'error'); return; }
+    toast(`Pemesanan ${target.ref} berhasil dikonfirmasi.`);
+    await refreshBookings();
+    renderAdmin();
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }
+}
+
+function resetAdminFilters(){
+  document.getElementById('admin-search').value = '';
+  document.getElementById('admin-filter-status').value = '';
+  document.getElementById('admin-filter-room').value = '';
+  document.getElementById('admin-filter-date').value = '';
+  renderAdminTable();
+}
+
+function exportAdminCSV(){
+  const list = adminFilteredCache.length ? adminFilteredCache : getAdminFilteredBookings();
+  if(!list.length){ toast('Tidak ada data untuk diunduh.', 'error'); return; }
+  const headers = ['Referensi','Ruangan','Tanggal','Jam Mulai','Jam Selesai','Jenis Tarif','Nama','Instansi','Email','Telepon','Peserta','Estimasi Biaya','Metode Pembayaran','Status','Catatan Tambahan','Diajukan'];
+  const rows = list.map(b => [
+    b.ref, b.roomName, b.date, b.startTime, b.endTime, b.tariffType === 'hari' ? 'Per Hari' : 'Per Jam',
+    b.name, b.org, b.email, b.phone, b.participants, b.amount || 0,
+    ({transfer:'Transfer Bank',kartu:'Kartu Kredit',ewallet:'E-Wallet'})[b.paymentMethod] || '-',
+    b.status, b.notes || '', b.createdAt
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `pemesanan-kpp-bi-kemang-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Data pemesanan berhasil diunduh.');
+}
+
+/* ===================== INIT ===================== */
+renderFeatured();
+renderRoomsGrid();
+renderAuthArea();
+setAuthTab('masuk');
+lucide.createIcons();
+window.addEventListener('load', initGoogleSignIn); // jaga-jaga bila skrip GIS baru siap belakangan
+
+if(API_URL.indexOf('PASTE_URL') !== -1){
+  console.warn('API_URL belum dikonfigurasi. Tempel URL Web App Apps Script pada konstanta API_URL di bagian atas <script>. Lihat SETUP.md.');
+  toast('Backend belum terhubung (API_URL kosong). Lihat SETUP.md untuk menyambungkannya.', 'error');
+}
+</script>
+</body>
+</html>
