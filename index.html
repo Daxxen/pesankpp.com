@@ -1024,6 +1024,15 @@ function historySkeletonHTML(){
 
 /* ===================== HELPERS ===================== */
 function priceFmt(n){ return 'Rp ' + n.toLocaleString('id-ID'); }
+function escapeHtml(str){
+  // Mencegah XSS: data dari formulir pemesanan (nama, instansi, keperluan,
+  // catatan) bisa diisi bebas oleh siapa saja tanpa login, lalu ditampilkan
+  // lagi di dashboard admin. Tanpa escape ini, isian berisi tag HTML/script
+  // bisa dieksekusi di browser admin.
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 function pad(n){ return n.toString().padStart(2,'0'); }
 function dateKey(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
 function formatDateLong(dateStr){
@@ -1322,15 +1331,15 @@ function openBookingModal(id, adminMode){
             </div>
           </div>
           <div class="grid grid-cols-2 gap-y-4 gap-x-4 text-sm border-t border-slate-100 pt-5">
-            <div><p class="text-xs text-slate-400 mb-0.5">Penanggung Jawab</p><p class="font-medium navy-text">${b.name}</p></div>
-            <div><p class="text-xs text-slate-400 mb-0.5">Instansi / Unit Kerja</p><p class="font-medium navy-text">${b.org}</p></div>
-            <div><p class="text-xs text-slate-400 mb-0.5">Email</p><p class="font-medium navy-text break-all">${b.email}</p></div>
-            <div><p class="text-xs text-slate-400 mb-0.5">Telepon</p><p class="font-medium navy-text">${b.phone}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Penanggung Jawab</p><p class="font-medium navy-text">${escapeHtml(b.name)}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Instansi / Unit Kerja</p><p class="font-medium navy-text">${escapeHtml(b.org)}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Email</p><p class="font-medium navy-text break-all">${escapeHtml(b.email)}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Telepon</p><p class="font-medium navy-text">${escapeHtml(b.phone)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Jumlah Peserta</p><p class="font-medium navy-text">${b.participants} orang</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Estimasi Biaya</p><p class="font-medium navy-text">${priceFmt(b.amount || 0)} <span class="text-xs text-slate-400 font-normal">(${b.tariffType === 'hari' ? 'per hari' : 'per jam'})</span></p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Metode Pembayaran</p><p class="font-medium navy-text">${({transfer:'Transfer Bank',kartu:'Kartu Kredit',ewallet:'E-Wallet'})[b.paymentMethod] || '—'}</p></div>
-            <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Keperluan Acara</p><p class="font-medium navy-text">${b.purpose}</p></div>
-            ${b.notes ? `<div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Catatan Tambahan</p><p class="font-medium navy-text">${b.notes}</p></div>` : ''}
+            <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Keperluan Acara</p><p class="font-medium navy-text">${escapeHtml(b.purpose)}</p></div>
+            ${b.notes ? `<div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Catatan Tambahan</p><p class="font-medium navy-text">${escapeHtml(b.notes)}</p></div>` : ''}
             <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Diajukan pada</p><p class="font-medium navy-text">${new Date(b.createdAt).toLocaleString('id-ID')}</p></div>
           </div>
           ${b.adminNote ? `<div class="bg-[var(--paper)] border border-slate-200 rounded-md p-4 text-sm"><p class="text-xs font-semibold navy-text mb-1">Catatan Pengelola</p><p class="text-slate-600">${b.adminNote}</p></div>` : ''}
@@ -1644,7 +1653,7 @@ function renderAdminPendingList(){
     <div class="border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50" onclick="openBookingModal('${b.id}', true)">
       <div class="min-w-0">
         <p class="font-semibold navy-text text-sm truncate">${b.roomName}</p>
-        <p class="text-xs text-slate-500 truncate">${b.name} · ${formatDateLong(b.date)} · ${b.startTime}–${b.endTime}</p>
+        <p class="text-xs text-slate-500 truncate">${escapeHtml(b.name)} · ${formatDateLong(b.date)} · ${b.startTime}–${b.endTime}</p>
       </div>
       <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 flex-shrink-0"></i>
     </div>`).join('');
@@ -1698,8 +1707,8 @@ function renderAdminTable(){
       <td class="font-semibold navy-text">${b.ref}</td>
       <td>${b.roomName}</td>
       <td>${formatDateLong(b.date)}<br><span class="text-slate-400">${b.startTime}–${b.endTime}</span></td>
-      <td>${b.name}</td>
-      <td>${b.org}</td>
+      <td>${escapeHtml(b.name)}</td>
+      <td>${escapeHtml(b.org)}</td>
       <td>${b.participants}</td>
       <td>${statusBadge(b.status)}</td>
       <td onclick="event.stopPropagation()">
