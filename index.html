@@ -90,20 +90,33 @@
   .pay-option:hover{border-color:#cbd5e1;}
   .pay-option.selected{border-color:var(--blue-accent);background:#eef4fc;}
   .pay-option-icon{width:34px;height:34px;border-radius:8px;background:#eef2f7;display:flex;align-items:center;justify-content:center;margin-bottom:8px;}
-  #print-area{display:none;}
+
+  /* ===== Mode Cetak (Bukti Pemesanan) ===== */
+  .print-letterhead{display:none;}
   @media print{
-    body *{ visibility:hidden; }
-    #print-area, #print-area *{ visibility:visible; }
-    #print-area{ display:block !important; position:absolute; top:0; left:0; width:100%; margin:0; padding:0; }
-    @page{ margin:16mm; }
+    body *{visibility:hidden;}
+    .print-area, .print-area *{visibility:visible;}
+    .print-area{position:absolute;left:0;top:0;width:100%;padding:0;margin:0;border:none !important;box-shadow:none !important;}
+    .no-print{display:none !important;}
+    .print-letterhead{display:block;text-align:center;border-bottom:2px solid #1e293b;padding-bottom:14px;margin-bottom:18px;}
+    .print-footer-note{display:block;margin-top:24px;padding-top:14px;border-top:1px dashed #94a3b8;font-size:11px;color:#64748b;}
   }
 </style>
+<script>
+function printBookingProof(){
+  // Isi catatan waktu cetak setiap kali tombol "Cetak Bukti" ditekan,
+  // supaya dokumen mencantumkan kapan persis bukti ini dicetak.
+  document.querySelectorAll('.print-timestamp').forEach(el=>{
+    el.textContent = 'Dicetak pada: ' + new Date().toLocaleString('id-ID', { dateStyle:'full', timeStyle:'short' });
+  });
+  window.print();
+}
+</script>
 </head>
 <body class="bg-white">
 
 <div id="toast-container"></div>
 <div id="booking-modal-root"></div>
-<div id="print-area"></div>
 
 <!-- ===== TOP BAR ===== -->
 <div class="navy-950 text-white text-xs">
@@ -380,15 +393,22 @@
 <!-- ================= BOOKING SUCCESS PAGE ================= -->
 <main id="page-success" class="page">
   <div class="max-w-2xl mx-auto px-6 py-20 text-center fade-in">
-    <div class="w-16 h-16 rounded-full bg-[#e5f4ec] flex items-center justify-center mx-auto mb-6">
-      <i data-lucide="check" class="w-8 h-8" style="color:var(--ok)"></i>
+    <div class="print-area">
+      <div class="print-letterhead">
+        <p class="font-display font-bold text-lg">Kawasan Pendidikan dan Pelatihan — Bank Indonesia</p>
+        <p class="text-xs">Bukti Pengajuan Pemesanan Ruangan</p>
+      </div>
+      <div class="w-16 h-16 rounded-full bg-[#e5f4ec] flex items-center justify-center mx-auto mb-6 no-print">
+        <i data-lucide="check" class="w-8 h-8" style="color:var(--ok)"></i>
+      </div>
+      <h1 class="font-display text-3xl font-bold navy-text mb-3">Pemesanan berhasil dikirim</h1>
+      <p class="text-sm text-slate-500 mb-8">Permohonan Anda menunggu konfirmasi dari pengelola. Notifikasi status akan tersedia pada halaman Riwayat Pemesanan. Simpan nomor referensi berikut untuk keperluan pelacakan.</p>
+      <div id="success-summary" class="text-left border border-slate-200 rounded-xl p-6 mb-8 card-shadow"></div>
+      <p class="print-footer-note">Dokumen ini adalah bukti PENGAJUAN pemesanan, bukan bukti pembayaran atau konfirmasi final. Status dapat berubah setelah diverifikasi pengelola. <span class="print-timestamp"></span></p>
     </div>
-    <h1 class="font-display text-3xl font-bold navy-text mb-3">Pemesanan berhasil dikirim</h1>
-    <p class="text-sm text-slate-500 mb-8">Permohonan Anda menunggu konfirmasi dari pengelola. Notifikasi status akan tersedia pada halaman Riwayat Pemesanan. Simpan nomor referensi berikut untuk keperluan pelacakan.</p>
-    <div id="success-summary" class="text-left border border-slate-200 rounded-xl p-6 mb-8 card-shadow"></div>
-    <div class="flex items-center justify-center gap-3 flex-wrap">
+    <div class="flex items-center justify-center gap-3 flex-wrap no-print">
       <button onclick="requireAuth('history')" class="btn-primary px-6 py-3 rounded-md font-semibold text-sm">Lihat Riwayat Pemesanan</button>
-      <button onclick="printBookingProof(lastCreatedBookingId)" class="btn-outline px-6 py-3 rounded-md font-semibold text-sm flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i>Cetak Bukti</button>
+      <button onclick="printBookingProof()" class="btn-outline px-6 py-3 rounded-md font-semibold text-sm flex items-center gap-2"><i data-lucide="printer" class="w-4 h-4"></i>Cetak Bukti</button>
       <button onclick="go('home')" class="text-sm font-semibold text-slate-500 hover:text-navy-900 px-4 py-3">Kembali ke Beranda</button>
     </div>
   </div>
@@ -658,12 +678,12 @@
 /* ===================== BACKEND CONFIG ===================== */
 // Tempel URL Web App hasil deploy Google Apps Script (lihat SETUP.md).
 // Contoh: https://script.google.com/macros/s/AKfycb.../exec
-const API_URL = 'PASTE_URL_WEB_APP_APPS_SCRIPT_DI_SINI';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxQWbno_AH6Koy5cNsDgm5AX4ssF00CHhHwsTkpixxsGp1hTJtCXSqbMUOWitFgvI6aSA/exec';
 
 // Sama persis dengan GOOGLE_CLIENT_ID di Code.gs. Buat lewat Google Cloud
 // Console > Credentials > OAuth client ID > Web application. Tambahkan
 // domain hosting situs ini ke "Authorized JavaScript origins".
-const GOOGLE_CLIENT_ID = 'PASTE_GOOGLE_OAUTH_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '282735792630-rome5sucmf7qcl00jokf0sa9ng59dfj2.apps.googleusercontent.com';
 
 async function apiGet(action, params){
   const qs = new URLSearchParams(Object.assign({ action }, params || {})).toString();
@@ -783,7 +803,8 @@ let pendingAction = null; // {type:'history'} or {type:'booking', roomId, date}
 function requireAuth(destination, payload){
   const user = getUser();
   if(user){
-    if(destination === 'history') go('history');
+    if(destination === 'history'){ go('history'); return; }
+    if(destination === 'booking'){ openBookingForm(payload.roomId, payload.date); return; }
     return;
   }
   pendingAction = { type: destination, ...payload };
@@ -803,15 +824,14 @@ function renderAuthArea(){
     mobile.innerHTML = `<button onclick="go('admin')" class="w-full btn-primary py-2.5 rounded-md font-semibold text-sm mb-2">Dashboard Admin</button><button onclick="logout()" class="text-sm font-medium text-[var(--danger)]">Keluar</button>`;
     lucide.createIcons();
   } else if(user){
-    const safeName = escapeHtml(user.name || 'U');
     const html = `
       <div class="flex items-center gap-2 text-sm font-medium navy-text">
-        <div class="w-7 h-7 rounded-full navy-bg text-white flex items-center justify-center text-xs font-bold">${safeName.charAt(0).toUpperCase()}</div>
-        <span class="max-w-[110px] truncate">${safeName}</span>
+        <div class="w-7 h-7 rounded-full navy-bg text-white flex items-center justify-center text-xs font-bold">${(user.name||'U').charAt(0).toUpperCase()}</div>
+        <span class="max-w-[110px] truncate">${user.name}</span>
       </div>
       <button onclick="logout()" class="text-xs font-medium text-slate-400 hover:text-[var(--danger)]">Keluar</button>`;
     desktop.innerHTML = html;
-    mobile.innerHTML = `<div class="flex items-center gap-2 text-sm font-semibold navy-text mb-3"><div class="w-8 h-8 rounded-full navy-bg text-white flex items-center justify-center text-xs font-bold">${safeName.charAt(0).toUpperCase()}</div>${safeName}</div><button onclick="logout()" class="text-sm font-medium text-[var(--danger)]">Keluar</button>`;
+    mobile.innerHTML = `<div class="flex items-center gap-2 text-sm font-semibold navy-text mb-3"><div class="w-8 h-8 rounded-full navy-bg text-white flex items-center justify-center text-xs font-bold">${(user.name||'U').charAt(0).toUpperCase()}</div>${user.name}</div><button onclick="logout()" class="text-sm font-medium text-[var(--danger)]">Keluar</button>`;
   } else {
     desktop.innerHTML = `<button onclick="go('login')" class="text-sm font-medium text-slate-600 hover:text-navy-900">Masuk</button>`;
     mobile.innerHTML = `<button onclick="go('login');toggleMobileMenu(false);" class="w-full btn-primary py-2.5 rounded-md font-semibold text-sm">Masuk / Daftar</button>`;
@@ -1032,20 +1052,14 @@ function historySkeletonHTML(){
 
 /* ===================== HELPERS ===================== */
 function priceFmt(n){ return 'Rp ' + n.toLocaleString('id-ID'); }
-
-// Wajib dipakai untuk SETIAP data yang berasal dari input pengguna (nama,
-// instansi, email, telepon, keperluan acara, catatan) sebelum disisipkan ke
-// innerHTML. Tanpa ini, tamu eksternal yang mengisi form pemesanan bisa
-// menyuntikkan HTML/skrip yang akan berjalan di sesi browser ADMIN saat
-// admin membuka detail pemesanan untuk approve/reject (stored XSS).
 function escapeHtml(str){
-  if(str === null || str === undefined) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+  // Mencegah XSS: data dari formulir pemesanan (nama, instansi, keperluan,
+  // catatan) bisa diisi bebas oleh siapa saja tanpa login, lalu ditampilkan
+  // lagi di dashboard admin. Tanpa escape ini, isian berisi tag HTML/script
+  // bisa dieksekusi di browser admin.
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function pad(n){ return n.toString().padStart(2,'0'); }
 function dateKey(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
@@ -1234,7 +1248,6 @@ function handleDetailBookingClick(){
 /* ===================== BOOKING FORM ===================== */
 let bookingCtx = { roomId: null, date: null };
 let bookingPaymentMethod = 'transfer';
-let lastCreatedBookingId = null;
 
 function timeToMinutes(t){ const [h,m] = (t||'0:0').split(':').map(Number); return h*60+m; }
 
@@ -1320,69 +1333,6 @@ function updateBookingSummaryPanel(){
 function closeBookingModal(){
   document.getElementById('booking-modal-root').innerHTML = '';
 }
-
-/* ===================== CETAK BUKTI PEMESANAN ===================== */
-const PAYMENT_LABELS = { transfer: 'Transfer Bank', kartu: 'Kartu Kredit', ewallet: 'E-Wallet' };
-const STATUS_LABELS_PRINT = { pending: 'MENUNGGU KONFIRMASI', confirmed: 'TERKONFIRMASI', rejected: 'DITOLAK', cancelled: 'DIBATALKAN' };
-
-function printBookingProof(id){
-  const b = getBookings().find(x => x.id === id);
-  if(!b){ toast('Data pemesanan tidak ditemukan untuk dicetak.', 'error'); return; }
-  const room = findRoom(b.roomId);
-  const docNo = `DOC/${b.ref}`;
-  const printedAt = new Date().toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' });
-  const qrPayload = encodeURIComponent(`KPP BI Kemang | Ref:${b.ref} | Ruangan:${b.roomName} | Tanggal:${b.date} | Status:${b.status}`);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=110x110&margin=0&data=${qrPayload}`;
-
-  const row = (label, value) => `
-    <tr>
-      <td style="padding:7px 12px;font-size:11.5px;color:#64748b;white-space:nowrap;vertical-align:top;width:38%;">${escapeHtml(label)}</td>
-      <td style="padding:7px 12px;font-size:12.5px;color:#0f2a4a;font-weight:600;">${value}</td>
-    </tr>`;
-
-  document.getElementById('print-area').innerHTML = `
-    <div style="font-family:Georgia,'Times New Roman',serif;color:#0f2a4a;max-width:760px;margin:0 auto;">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;border-bottom:3px solid #0f2a4a;padding-bottom:14px;margin-bottom:22px;">
-        <div>
-          <p style="font-size:15px;font-weight:bold;margin:0;letter-spacing:.02em;">KAWASAN PENDIDIKAN DAN PELATIHAN</p>
-          <p style="font-size:15px;font-weight:bold;margin:0;letter-spacing:.02em;">BANK INDONESIA — KEMANG</p>
-          <p style="font-size:10.5px;margin:5px 0 0;color:#475569;">Jl. Kemang Raya, Jakarta Selatan · (021) 7195474 · venue@kppbi-kemang.id</p>
-        </div>
-        <div style="text-align:right;">
-          <p style="font-size:12.5px;font-weight:bold;margin:0;">BUKTI PEMESANAN RUANGAN</p>
-          <p style="font-size:10.5px;margin:5px 0 0;color:#475569;">No. Dokumen: ${escapeHtml(docNo)}</p>
-          <p style="font-size:10.5px;margin:2px 0 0;color:#475569;">Status: ${STATUS_LABELS_PRINT[b.status] || b.status}</p>
-        </div>
-      </div>
-
-      <table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;">
-        ${row('Nomor Referensi', escapeHtml(b.ref))}
-        ${row('Ruangan', escapeHtml(b.roomName) + (room ? ' · ' + escapeHtml(room.floor) : ''))}
-        ${row('Tanggal Pemakaian', formatDateLong(b.date))}
-        ${row('Jam', `${b.startTime}–${b.endTime} (${b.tariffType === 'hari' ? 'paket harian' : 'per jam'})`)}
-        ${row('Penanggung Jawab', escapeHtml(b.name))}
-        ${row('Instansi / Perusahaan', escapeHtml(b.org))}
-        ${row('Email', escapeHtml(b.email))}
-        ${row('Telepon', escapeHtml(b.phone))}
-        ${row('Jumlah Peserta', `${b.participants} orang`)}
-        ${row('Keperluan Acara', escapeHtml(b.purpose))}
-        ${b.notes ? row('Catatan Tambahan', escapeHtml(b.notes)) : ''}
-        ${row('Estimasi Biaya', priceFmt(b.amount || 0))}
-        ${row('Metode Pembayaran', PAYMENT_LABELS[b.paymentMethod] || '—')}
-        ${b.adminNote ? row('Catatan Pengelola', escapeHtml(b.adminNote)) : ''}
-      </table>
-
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:26px;padding-top:14px;border-top:1px solid #cbd5e1;">
-        <p style="font-size:9.5px;color:#64748b;max-width:420px;line-height:1.6;margin:0;">
-          Dokumen ini diterbitkan secara elektronik oleh sistem pemesanan Kawasan Pendidikan dan Pelatihan BI Kemang dan sah tanpa tanda tangan basah. Pindai kode QR di samping untuk memverifikasi keaslian data pada dokumen ini. Dicetak pada ${printedAt}.
-        </p>
-        <img src="${qrUrl}" alt="QR verifikasi" style="width:90px;height:90px;flex-shrink:0;margin-left:16px;">
-      </div>
-    </div>`;
-
-  window.print();
-}
-
 function openBookingModal(id, adminMode){
   const b = getBookings().find(x => x.id === id);
   if(!b) return;
@@ -1397,14 +1347,15 @@ function openBookingModal(id, adminMode){
             <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Nomor Referensi</p>
             <p class="font-display text-xl font-bold navy-text">${b.ref}</p>
           </div>
-          <div class="flex items-center gap-2 flex-shrink-0">
-            <button onclick="printBookingProof('${b.id}')" class="icon-btn-sm" title="Cetak bukti"><i data-lucide="printer" class="w-4 h-4"></i></button>
-            <button onclick="closeBookingModal()" class="icon-btn-sm" title="Tutup"><i data-lucide="x" class="w-4 h-4"></i></button>
-          </div>
+          <button onclick="closeBookingModal()" class="icon-btn-sm flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
-        <div class="p-6 space-y-5">
+        <div class="p-6 space-y-5 print-area">
+          <div class="print-letterhead">
+            <p class="font-display font-bold text-lg">Kawasan Pendidikan dan Pelatihan — Bank Indonesia</p>
+            <p class="text-xs">Bukti Pemesanan Ruangan</p>
+          </div>
           <div class="flex items-center gap-4">
-            <img src="${room ? room.img : ''}" class="w-20 h-16 rounded-md object-cover flex-shrink-0" alt="">
+            <img src="${room ? room.img : ''}" class="w-20 h-16 rounded-md object-cover flex-shrink-0 no-print" alt="">
             <div>
               <p class="font-display font-bold navy-text">${b.roomName}</p>
               <p class="text-xs text-slate-500">${formatDateLong(b.date)} · ${b.startTime}–${b.endTime}</p>
@@ -1424,6 +1375,8 @@ function openBookingModal(id, adminMode){
             <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Diajukan pada</p><p class="font-medium navy-text">${new Date(b.createdAt).toLocaleString('id-ID')}</p></div>
           </div>
           ${b.adminNote ? `<div class="bg-[var(--paper)] border border-slate-200 rounded-md p-4 text-sm"><p class="text-xs font-semibold navy-text mb-1">Catatan Pengelola</p><p class="text-slate-600">${escapeHtml(b.adminNote)}</p></div>` : ''}
+          <p class="print-footer-note">Dokumen ini adalah bukti pemesanan ruangan. Status pada dokumen ini adalah status terkini saat dicetak dan dapat berubah. <span class="print-timestamp"></span></p>
+          ${!adminMode ? `<div class="no-print"><button onclick="printBookingProof()" class="btn-outline text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="printer" class="w-4 h-4"></i>Cetak Bukti</button></div>` : ''}
           ${canAct ? `
           <div class="border-t border-slate-100 pt-5">
             <label class="block text-xs font-semibold navy-text mb-1.5">Catatan admin (wajib diisi bila menolak / membatalkan)</label>
@@ -1524,9 +1477,6 @@ async function submitBooking(e){
       return;
     }
 
-    lastCreatedBookingId = data.id;
-    await refreshBookings(); // supaya printBookingProof punya data lengkap di cache
-
     document.getElementById('success-summary').innerHTML = `
       <div class="flex items-center gap-4 pb-4 mb-4 border-b border-slate-100">
         <img src="${room.img}" class="w-20 h-16 rounded-md object-cover flex-shrink-0" alt="">
@@ -1588,10 +1538,11 @@ function renderHistory(){
   const filterBar = document.getElementById('history-filter');
   if(!user){ list.innerHTML = ''; filterBar.innerHTML = ''; return; }
 
-  // Catatan: TIDAK perlu filter ulang by email di sini — server (refreshBookings)
-  // sudah mengembalikan hanya booking milik user ini, dengan pencocokan email
-  // yang sudah disamakan huruf besar/kecilnya. Filter tambahan yang case-sensitive
-  // di sini pernah menyebabkan riwayat tampak kosong padahal datanya ada.
+  // Server sudah menyaring data ini sesuai akun yang login (lewat userToken
+  // untuk staf internal, atau email untuk tamu) dan sudah menyamakan huruf
+  // besar/kecil di sisi server. Filter tambahan case-sensitive di sisi
+  // client SENGAJA dihapus karena sebelumnya bisa membuat riwayat terlihat
+  // kosong akibat perbedaan huruf besar/kecil pada email.
   const allBookings = getBookings();
   renderHistoryFilterBar(allBookings);
   const bookings = historyFilterStatus ? allBookings.filter(b => b.status === historyFilterStatus) : allBookings;
@@ -1627,7 +1578,6 @@ function renderHistory(){
       </div>
       <div class="flex items-center gap-2" onclick="event.stopPropagation()">
         <button onclick="openBookingModal('${b.id}', false)" class="text-xs font-semibold text-slate-500 border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-md">Lihat Detail</button>
-        <button onclick="printBookingProof('${b.id}')" class="text-xs font-semibold text-slate-500 border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-md flex items-center gap-1.5"><i data-lucide="printer" class="w-3.5 h-3.5"></i>Cetak</button>
         ${b.status === 'pending' ? `<button onclick="cancelBooking('${b.id}')" class="text-xs font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-3 py-2 rounded-md">Batalkan</button>` : ''}
       </div>
     </div>`;
@@ -1636,30 +1586,22 @@ function renderHistory(){
 }
 
 async function cancelBooking(id){
-  const user = getUser();
-  if(!user){ toast('Sesi Anda berakhir. Silakan masuk kembali.', 'error'); go('login'); return; }
-
-  const btns = document.querySelectorAll(`button[onclick="cancelBooking('${id}')"]`);
-  btns.forEach(b => { b.disabled = true; b.textContent = 'Membatalkan...'; });
-
+  if(!confirm('Batalkan pemesanan ini? Tindakan ini tidak dapat diurungkan.')) return;
   try{
-    const data = await apiPost('cancelBooking', {
-      id,
-      userEmail: user.email,
-      userToken: (user.isInternal) ? getUserToken() : undefined
-    });
+    const u = getUser();
+    const payload = { id };
+    if(u && u.isInternal && getUserToken()) payload.userToken = getUserToken();
+    else if(u && u.email) payload.email = u.email;
+    const data = await apiPost('cancelOwnBooking', payload);
     if(!data.ok){
       toast(data.error || 'Gagal membatalkan pemesanan.', 'error');
-      btns.forEach(b => { b.disabled = false; b.textContent = 'Batalkan'; });
       return;
     }
-    toast('Pemesanan dibatalkan.');
-    closeBookingModal();
+    toast('Pemesanan berhasil dibatalkan.');
     await refreshBookings();
     renderHistory();
   }catch(err){
     toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
-    btns.forEach(b => { b.disabled = false; b.textContent = 'Batalkan'; });
   }
 }
 
@@ -1812,8 +1754,8 @@ function renderAdminTable(){
       <td class="font-semibold navy-text">${b.ref}</td>
       <td>${b.roomName}</td>
       <td>${formatDateLong(b.date)}<br><span class="text-slate-400">${b.startTime}–${b.endTime}</span></td>
-      <td>${b.name ? escapeHtml(b.name) : ''}</td>
-      <td>${b.org ? escapeHtml(b.org) : ''}</td>
+      <td>${escapeHtml(b.name)}</td>
+      <td>${escapeHtml(b.org)}</td>
       <td>${b.participants}</td>
       <td>${statusBadge(b.status)}</td>
       <td onclick="event.stopPropagation()">
