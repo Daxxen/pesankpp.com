@@ -791,15 +791,15 @@ const ROOMS = [
   { id: "catalyst", isExternal: false, name: "Catalyst Room", category: "Ruang Pelatihan", capacity: 30, area: 55, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 500000, priceDay: 3200000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
-    img: "images/catalyst-frontier-momentum.jpg" },
+    img: "images/illustration-catalyst.svg", placeholderImg: true },
   { id: "frontier", isExternal: false, name: "Frontier Room", category: "Ruang Pelatihan", capacity: 30, area: 55, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 500000, priceDay: 3200000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
-    img: "images/catalyst-frontier-momentum.jpg" },
+    img: "images/illustration-frontier.svg", placeholderImg: true },
   { id: "momentum", isExternal: false, name: "Momentum Room", category: "Ruang Pelatihan", capacity: 30, area: 55, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 500000, priceDay: 3200000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
-    img: "images/catalyst-frontier-momentum.jpg" },
+    img: "images/illustration-momentum.svg", placeholderImg: true },
   { id: "sync-pods", isExternal: false, name: "Sync Pods", category: "Ruang Diskusi", capacity: 6, area: 15, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 200000, priceDay: 1200000,
     desc: "Ruang diskusi kecil untuk rapat tim atau sesi mentoring singkat, dilengkapi layar TV untuk presentasi.",
     facilities: ["Meja rapat kecil", "TV presentasi", "Kursi ergonomis", "AC"],
@@ -817,20 +817,8 @@ const ROOMS = [
     facilities: ["Meja rapat panjang (16 kursi)", "2 unit TV besar", "Sistem video konferensi", "Karpet & akustik premium"],
     img: "images/steering-committee.jpg" },
   { id: "ignite", isExternal: false, name: "Ignite Room", category: "Ruang Pelatihan", capacity: 40, area: 90, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 600000, priceDay: 3800000,
-    desc: "Ruang pelatihan besar dengan kursi meja lipat yang fleksibel disusun ulang, sekat partisi ke ruang sebelah, dan TV presentasi.",
-    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Partisi ruang fleksibel", "Pencahayaan alami"],
-    img: "images/ignite-spark-muse-genesis.jpg" },
-  { id: "spark", isExternal: false, name: "Spark Room", category: "Ruang Pelatihan", capacity: 40, area: 90, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 600000, priceDay: 3800000,
-    desc: "Ruang pelatihan besar dengan kursi meja lipat yang fleksibel disusun ulang, sekat partisi ke ruang sebelah, dan TV presentasi.",
-    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Partisi ruang fleksibel", "Pencahayaan alami"],
-    img: "images/ignite-spark-muse-genesis.jpg" },
-  { id: "muse", isExternal: false, name: "Muse Room", category: "Ruang Pelatihan", capacity: 40, area: 90, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 600000, priceDay: 3800000,
-    desc: "Ruang pelatihan besar dengan kursi meja lipat yang fleksibel disusun ulang, sekat partisi ke ruang sebelah, dan TV presentasi.",
-    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Partisi ruang fleksibel", "Pencahayaan alami"],
-    img: "images/ignite-spark-muse-genesis.jpg" },
-  { id: "genesis", isExternal: false, name: "Genesis Room", category: "Ruang Pelatihan", capacity: 40, area: 90, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 600000, priceDay: 3800000,
-    desc: "Ruang pelatihan besar dengan kursi meja lipat yang fleksibel disusun ulang, sekat partisi ke ruang sebelah, dan TV presentasi.",
-    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Partisi ruang fleksibel", "Pencahayaan alami"],
+    desc: "Ruang pelatihan besar dengan kursi meja lipat yang fleksibel disusun ulang dan TV presentasi.",
+    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Pencahayaan alami"],
     img: "images/ignite-spark-muse-genesis.jpg" },
   { id: "recharge-zone", isExternal: false, name: "Game Room \"Recharge Zone\"", category: "Area Santai & Fasilitas", capacity: 10, area: 35, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 250000, priceDay: 1500000,
     desc: "Ruang santai dengan bean bag dan TV besar — cocok untuk istirahat sejenak di sela-sela pelatihan atau sesi santai tim.",
@@ -848,8 +836,14 @@ const ROOMS = [
   //     untuk Wisma; asumsi umum m²/orang untuk Aula & R. Makan/Lounge).
   //   - facilities & desc: masih generik berdasarkan jenis ruangan (Wisma/
   //     Aula/R. Makan), BUKAN dari observasi langsung.
-  //   - img: masih memakai foto stok sementara (belum ada foto asli ruangan
-  //     ini) — ganti ke foto asli begitu tersedia.
+  //   - img: Ketujuh unit Wisma (Anggrek Lt.1/2/3, Bougenville, Cempaka,
+  //     Dahlia, Edelweis) SUDAH pakai foto asli yang dikirim langsung
+  //     (bukan foto stok internet), jadi TIDAK ada `placeholderImg` lagi
+  //     pada ruangan-ruangan tsb. Aula (Pendidikan/Komersil) & R. Makan/
+  //     Lounge MASIH pakai ilustrasi SVG buatan sendiri ("illustration-*.svg"
+  //     di folder images/) dan tetap ditandai `placeholderImg: true` sampai
+  //     ada foto asli — ganti ke foto asli begitu tersedia (dan hapus
+  //     `placeholderImg`).
   //   - kondisi "unRF" pada tabel asli disimpan di field `kondisi` apa
   //     adanya karena maknanya belum dikonfirmasi ke Bapak Darren.
   // Ruangan "Aula (Keg. Komersil)" sengaja TIDAK punya priceWeek (di tabel
@@ -859,52 +853,52 @@ const ROOMS = [
     capacity: 14, area: 134.9, floor: "Gedung Wisma Anggrek, Lantai 1", priceDay: 170000, priceWeek: 940000,
     desc: "Unit wisma 7 kamar tidur dengan 7 kamar mandi di lantai 1 Gedung Anggrek — cocok untuk rombongan peserta diklat yang menginap.",
     facilities: ["7 kamar tidur", "7 kamar mandi dalam", "AC per kamar", "Area istirahat bersama"],
-    img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80" },
+    img: "images/wisma-anggrek-lt1.jpg" },
   { id: "wisma-anggrek-lt2", isExternal: true, name: "Wisma Anggrek — Lantai 2", category: "Wisma / Penginapan", roomCode: "W.A 7BR-7KM", kondisi: "unRF",
     capacity: 14, area: 134.9, floor: "Gedung Wisma Anggrek, Lantai 2", priceDay: 170000, priceWeek: 940000,
     desc: "Unit wisma 7 kamar tidur dengan 7 kamar mandi di lantai 2 Gedung Anggrek — cocok untuk rombongan peserta diklat yang menginap.",
     facilities: ["7 kamar tidur", "7 kamar mandi dalam", "AC per kamar", "Area istirahat bersama"],
-    img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80" },
+    img: "images/wisma-anggrek-lt2.jpg" },
   { id: "wisma-anggrek-lt3", isExternal: true, name: "Wisma Anggrek — Lantai 3", category: "Wisma / Penginapan", roomCode: "W.A 7BR-7KM", kondisi: "unRF",
     capacity: 14, area: 134.9, floor: "Gedung Wisma Anggrek, Lantai 3", priceDay: 170000, priceWeek: 940000,
     desc: "Unit wisma 7 kamar tidur dengan 7 kamar mandi di lantai 3 Gedung Anggrek — cocok untuk rombongan peserta diklat yang menginap.",
     facilities: ["7 kamar tidur", "7 kamar mandi dalam", "AC per kamar", "Area istirahat bersama"],
-    img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80" },
+    img: "images/wisma-anggrek-lt3.jpg" },
   { id: "wisma-bougenville", isExternal: true, name: "Wisma Bougenville", category: "Wisma / Penginapan", roomCode: "W.B 8BR-4KM", kondisi: "unRF",
     capacity: 16, area: 196.8, floor: "Gedung Wisma Bougenville, Lantai 1–2", priceDay: 130000, priceWeek: 690000,
     desc: "Unit wisma 8 kamar tidur dengan 4 kamar mandi mencakup lantai 1 dan 2 Gedung Bougenville — cocok untuk rombongan peserta diklat yang menginap.",
     facilities: ["8 kamar tidur", "4 kamar mandi", "AC per kamar", "Area istirahat bersama"],
-    img: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80" },
+    img: "images/wisma-bougenville.jpg" },
   { id: "wisma-cempaka", isExternal: true, name: "Wisma Cempaka", category: "Wisma / Penginapan", roomCode: "W.C 6BR-2KM", kondisi: "unRF",
     capacity: 12, area: 102.1, floor: "Gedung Wisma Cempaka, Lantai 2", priceDay: 70000, priceWeek: 360000,
     desc: "Unit wisma 6 kamar tidur dengan 2 kamar mandi di lantai 2 Gedung Cempaka — cocok untuk rombongan peserta diklat yang menginap.",
     facilities: ["6 kamar tidur", "2 kamar mandi", "AC per kamar", "Area istirahat bersama"],
-    img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80" },
+    img: "images/wisma-cempaka.jpg" },
   { id: "wisma-dahlia", isExternal: true, name: "Wisma Dahlia", category: "Wisma / Penginapan", roomCode: "W.D 8BR-4KM", kondisi: "unRF",
     capacity: 16, area: 196.8, floor: "Gedung Wisma Dahlia, Lantai 1–2", priceDay: 130000, priceWeek: 690000,
     desc: "Unit wisma 8 kamar tidur dengan 4 kamar mandi mencakup lantai 1 dan 2 Gedung Dahlia — cocok untuk rombongan peserta diklat yang menginap.",
     facilities: ["8 kamar tidur", "4 kamar mandi", "AC per kamar", "Area istirahat bersama"],
-    img: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80" },
+    img: "images/wisma-dahlia.jpg" },
   { id: "wisma-edelweis", isExternal: true, name: "Wisma Edelweis", category: "Wisma / Penginapan", roomCode: "W.E 1BR-1KM", kondisi: "unRF",
     capacity: 2, area: 29.2, floor: "Gedung Wisma Edelweis, Lantai 1", priceDay: 20000, priceWeek: 110000,
     desc: "Unit wisma studio 1 kamar tidur dengan 1 kamar mandi di lantai 1 Gedung Edelweis — cocok untuk tamu perorangan atau pasangan.",
     facilities: ["1 kamar tidur", "1 kamar mandi dalam", "AC", "Area istirahat"],
-    img: "https://images.unsplash.com/photo-1595576508898-0ad5c879a061?auto=format&fit=crop&w=1200&q=80" },
+    img: "images/wisma-edelweis.jpg" },
   { id: "aula-pendidikan", isExternal: true, name: "Aula Serbaguna — Kegiatan Pendidikan", category: "Aula Serbaguna", roomCode: "Aula (Keg. Pendidikan)", kondisi: "unRF",
     capacity: 250, area: 594, floor: "Gedung Serbaguna, Lantai 1", priceDay: 980000, priceWeek: 5490000,
     desc: "Aula serbaguna berkapasitas besar untuk kegiatan pendidikan/pelatihan — seminar, wisuda, atau acara pendidikan skala besar lainnya.",
     facilities: ["Kapasitas besar", "Sistem tata suara", "Pencahayaan panggung", "Area parkir luas"],
-    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1200&q=80" },
+    img: "images/illustration-aula-pendidikan.svg", placeholderImg: true },
   { id: "aula-komersil", isExternal: true, name: "Aula Serbaguna — Kegiatan Komersil", category: "Aula Serbaguna", roomCode: "Aula (Keg. Komersil)", kondisi: "unRF",
     capacity: 250, area: 594, floor: "Gedung Serbaguna, Lantai 1", priceDay: 4890000,
     desc: "Aula serbaguna yang sama dengan tarif khusus untuk kegiatan komersil (mis. resepsi/acara berbayar pihak ketiga). Tarif mingguan tidak tersedia untuk kategori ini.",
     facilities: ["Kapasitas besar", "Sistem tata suara", "Pencahayaan panggung", "Area parkir luas"],
-    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1200&q=80" },
+    img: "images/illustration-aula-komersil.svg", placeholderImg: true },
   { id: "r-makan-lounge", isExternal: true, name: "R. Makan / Lounge", category: "Ruang Makan / Lounge", roomCode: "R. Makan/ Lounge", kondisi: "unRF",
     capacity: 150, area: 250, floor: "Gedung Cempaka, Lantai 1", priceDay: 190000, priceWeek: 1040000,
     desc: "Ruang makan sekaligus lounge untuk kebutuhan konsumsi rombongan peserta atau acara santai — dilengkapi area duduk komunal.",
     facilities: ["Area makan komunal", "Pantry", "AC", "Area lounge"],
-    img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80" }
+    img: "images/illustration-r-makan-lounge.svg", placeholderImg: true }
 ];
 const FEATURED_IDS = ["vision-hall", "steering-committee", "sync-pods"];
 function findRoom(id){ return ROOMS.find(r => r.id === id); }
@@ -1187,8 +1181,9 @@ function formatDateLong(dateStr){
 function roomCard(room){
   return `
   <div class="group cursor-pointer bg-white rounded-xl overflow-hidden card-shadow border border-slate-100 transition" onclick="go('detail','${room.id}')">
-    <div class="overflow-hidden h-56 bg-slate-100">
+    <div class="overflow-hidden h-56 bg-slate-100 relative">
       <img src="${room.img}" alt="${room.name}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+      ${room.placeholderImg ? `<span class="absolute top-2 right-2 text-[10px] font-semibold bg-white/90 text-slate-600 px-2 py-1 rounded-full shadow-sm">Foto Sementara</span>` : ''}
     </div>
     <div class="p-5">
       <p class="text-xs font-semibold text-[var(--blue-accent)] uppercase tracking-wide mb-1">${room.category}</p>
@@ -1301,8 +1296,9 @@ function renderDetail(roomId){
 
   document.getElementById('detail-content').innerHTML = `
     <div class="lg:col-span-2 fade-in">
-      <div class="rounded-xl overflow-hidden h-96 mb-4 bg-slate-100">
+      <div class="rounded-xl overflow-hidden h-96 mb-4 bg-slate-100 relative">
         <img src="${room.img}" class="w-full h-full object-cover" alt="${room.name}">
+        ${room.placeholderImg ? `<span class="absolute top-3 right-3 text-xs font-semibold bg-white/90 text-slate-600 px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5"><i data-lucide="info" class="w-3.5 h-3.5"></i>Foto Sementara — Menunggu Foto Asli</span>` : ''}
       </div>
       <div class="flex gap-3 mb-8">
         ${gallery.map(g => `<div class="w-24 h-16 rounded-md overflow-hidden border border-slate-200"><img src="${g}" class="w-full h-full object-cover"></div>`).join('')}
