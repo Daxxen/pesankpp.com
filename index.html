@@ -232,9 +232,10 @@ function printBookingProof(){
       <select id="filter-category" onchange="renderRoomsGrid()" class="border border-slate-300 rounded-md px-4 py-2.5 text-sm bg-white">
         <option value="">Semua kategori</option>
         <option>Auditorium</option>
-        <option>Ballroom</option>
         <option>Ruang Rapat</option>
         <option>Ruang Diskusi</option>
+        <option>Ruang Pelatihan</option>
+        <option>Area Santai & Fasilitas</option>
       </select>
       <select id="filter-capacity" onchange="renderRoomsGrid()" class="border border-slate-300 rounded-md px-4 py-2.5 text-sm bg-white">
         <option value="">Semua kapasitas</option>
@@ -270,7 +271,7 @@ function printBookingProof(){
         <form id="booking-form" onsubmit="submitBooking(event)" class="space-y-6">
           <div class="grid md:grid-cols-2 gap-5">
             <div>
-              <label class="block text-sm font-semibold navy-text mb-1.5">Tanggal pemakaian</label>
+              <label id="bk-date-label" class="block text-sm font-semibold navy-text mb-1.5">Tanggal pemakaian</label>
               <input id="bk-date" type="date" onchange="onBookingFieldChange()" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
               <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
             </div>
@@ -283,7 +284,7 @@ function printBookingProof(){
             </div>
           </div>
 
-          <div class="grid md:grid-cols-2 gap-5">
+          <div id="time-fields" class="grid md:grid-cols-2 gap-5">
             <div>
               <label class="block text-sm font-semibold navy-text mb-1.5">Jam mulai</label>
               <input id="bk-start" type="time" step="900" onchange="onBookingFieldChange()" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
@@ -343,7 +344,7 @@ function printBookingProof(){
             <span id="conflict-warning-text"></span>
           </div>
 
-          <div>
+          <div id="payment-section">
             <p class="text-sm font-semibold navy-text mb-3">Metode Pembayaran</p>
             <div class="grid sm:grid-cols-3 gap-3" id="payment-methods">
               <div class="pay-option" data-method="transfer" onclick="selectPaymentMethod('transfer')">
@@ -363,6 +364,10 @@ function printBookingProof(){
               </div>
             </div>
             <p class="text-xs text-slate-400 mt-3 leading-relaxed">Instruksi pembayaran beserta nomor tagihan dikirimkan melalui email setelah pemesanan tercatat, dan status pembayaran akan diverifikasi oleh admin pengelola.</p>
+          </div>
+          <div id="internal-note" class="hidden bg-[#eef4ff] border border-[#c7d9f5] text-sm rounded-md p-4 flex items-start gap-2" style="color:var(--navy-900)">
+            <i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+            <span>Ruangan ini adalah fasilitas internal Bank Indonesia — tidak ada biaya sewa maupun langkah pembayaran. Pengajuan Anda akan menunggu konfirmasi ketersediaan dari pengelola.</span>
           </div>
 
           <label class="flex items-start gap-2.5 text-xs text-slate-500 leading-relaxed">
@@ -641,7 +646,7 @@ function printBookingProof(){
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Referensi</th><th>Ruangan</th><th>Tanggal &amp; Jam</th><th>Pemesan</th><th>Instansi</th><th>Peserta</th><th>Status</th><th>Aksi Cepat</th>
+              <th>Referensi</th><th>Ruangan</th><th>Tipe</th><th>Tanggal &amp; Jam</th><th>Pemesan</th><th>Instansi</th><th>Peserta</th><th>Status</th><th>Aksi Cepat</th>
             </tr>
           </thead>
           <tbody id="admin-table-body"></tbody>
@@ -767,34 +772,141 @@ function toast(message, type){
 }
 
 /* ===================== DATA: ROOMS ===================== */
+// =====================================================================
+// CATATAN PENTING: Field capacity di bawah diperkirakan dari jumlah kursi
+// yang terlihat di foto. Field area (m²), floor (lokasi persis), priceHour,
+// dan priceDay TIDAK BISA saya ketahui dari foto — nilainya masih PERKIRAAN
+// SEMENTARA (placeholder) yang WAJIB dikoreksi sebelum situs dipakai
+// sungguhan, supaya tarif yang tampil ke calon pemesan akurat.
+// =====================================================================
 const ROOMS = [
-  { id: "sudirman", name: "Ruang Diskusi Sudirman", category: "Ruang Diskusi", capacity: 12, area: 40, floor: "Lantai 2, Gedung Diklat", priceHour: 350000, priceDay: 2200000,
-    desc: "Ruang diskusi kelompok dengan sofa modular dan panel akustik, ideal untuk focus group discussion dan sesi mentoring.",
-    facilities: ["Sofa modular", "Panel akustik dinding", "Layar presentasi", "Wi-Fi berkecepatan tinggi"],
-    img: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1000&q=80" },
-  { id: "eksekutif-kemang", name: "Ruang Rapat Eksekutif Kemang", category: "Ruang Rapat", capacity: 8, area: 32, floor: "Lantai 3, Gedung Diklat", priceHour: 400000, priceDay: 2600000,
-    desc: "Ruang rapat tertutup dengan aksen dinding biru, cocok untuk pertemuan pimpinan dan diskusi terbatas.",
-    facilities: ["Meja rapat kayu solid", "TV konferensi 65\"", "Sistem konferensi video", "Kedap suara"],
-    img: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1000&q=80" },
-  { id: "diponegoro", name: "Ruang Rapat Diponegoro", category: "Ruang Rapat", capacity: 30, area: 80, floor: "Lantai 3, Gedung Diklat", priceHour: 750000, priceDay: 4800000,
-    desc: "Ruang rapat besar dengan konfigurasi meja U, dilengkapi jendela panorama kota untuk rapat kerja formal.",
-    facilities: ["Meja konfigurasi U", "Proyektor & layar 100\"", "Sistem tata suara", "Coffee break area"],
-    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1000&q=80" },
-  { id: "auditorium-kemang", name: "Auditorium Kemang", category: "Auditorium", capacity: 250, area: 420, floor: "Lantai 1, Gedung Konvensi", priceHour: 3500000, priceDay: 22000000,
-    desc: "Auditorium bertingkat dengan panggung, layar lebar, dan tata suara profesional untuk seminar nasional, workshop kebanksentralan, dan konferensi.",
-    facilities: ["Panggung + podium", "LED screen 6m", "Tata suara profesional", "Live streaming ready", "Ruang tunggu pembicara", "Lobi registrasi"],
-    img: "https://images.unsplash.com/photo-1478147427282-58a87a120781?auto=format&fit=crop&w=1000&q=80",
-    gallery: ["https://images.unsplash.com/photo-1478147427282-58a87a120781?auto=format&fit=crop&w=1000&q=80","https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=1000&q=80"] },
-  { id: "ballroom-nusantara", name: "Ballroom Nusantara", category: "Ballroom", capacity: 400, area: 600, floor: "Lantai 1, Gedung Konvensi", priceHour: 4500000, priceDay: 28000000,
-    desc: "Ballroom elegan untuk gala dinner, pelantikan, dan resepsi kelembagaan. Tersedia paket katering dan penataan meja sesuai kebutuhan acara.",
-    facilities: ["Panggung modular", "Tata cahaya event", "Sistem tata suara", "Ruang persiapan VIP", "Area foto backdrop", "Lobi pre-function"],
-    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1000&q=80" },
-  { id: "anggrek", name: "Ruang Kelas Anggrek", category: "Ruang Rapat", capacity: 40, area: 65, floor: "Lantai 2, Gedung Diklat", priceHour: 550000, priceDay: 3600000,
-    desc: "Ruang kelas fleksibel dengan konfigurasi kelas atau theatre, digunakan untuk pelatihan internal dan diklat fungsional.",
-    facilities: ["Konfigurasi fleksibel", "Whiteboard interaktif", "Proyektor HD", "Sound system"],
-    img: "https://images.unsplash.com/photo-1503389152951-9f343605f61e?auto=format&fit=crop&w=1000&q=80" }
+  { id: "vision-hall", isExternal: false, name: "Vision Hall", category: "Auditorium", capacity: 80, area: 150, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 1500000, priceDay: 9000000,
+    desc: "Ruang auditorium bertingkat dengan meja lengkung mengikuti kontur ruangan, cocok untuk seminar, kuliah umum, dan pelatihan skala besar.",
+    facilities: ["Kursi bertingkat", "Proyektor & layar besar", "Sistem tata suara", "Pencahayaan panggung"],
+    img: "images/vision-hall.jpg" },
+  { id: "transit-lounge", isExternal: false, name: "Transit Lounge", category: "Area Santai & Fasilitas", capacity: 15, area: 45, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 300000, priceDay: 1800000,
+    desc: "Area lounge santai dengan sofa, meja diskusi kecil, dan pantry mini — cocok untuk pertemuan informal atau area transit peserta diklat.",
+    facilities: ["Sofa & armchair", "Meja diskusi santai", "Pantry mini (kulkas, dispenser)", "AC"],
+    img: "images/transit-lounge.jpg" },
+  { id: "catalyst", isExternal: false, name: "Catalyst Room", category: "Ruang Pelatihan", capacity: 30, area: 55, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 500000, priceDay: 3200000,
+    desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
+    facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
+    img: "images/catalyst-frontier-momentum.jpg" },
+  { id: "frontier", isExternal: false, name: "Frontier Room", category: "Ruang Pelatihan", capacity: 30, area: 55, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 500000, priceDay: 3200000,
+    desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
+    facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
+    img: "images/catalyst-frontier-momentum.jpg" },
+  { id: "momentum", isExternal: false, name: "Momentum Room", category: "Ruang Pelatihan", capacity: 30, area: 55, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 500000, priceDay: 3200000,
+    desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
+    facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
+    img: "images/catalyst-frontier-momentum.jpg" },
+  { id: "sync-pods", isExternal: false, name: "Sync Pods", category: "Ruang Diskusi", capacity: 6, area: 15, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 200000, priceDay: 1200000,
+    desc: "Ruang diskusi kecil untuk rapat tim atau sesi mentoring singkat, dilengkapi layar TV untuk presentasi.",
+    facilities: ["Meja rapat kecil", "TV presentasi", "Kursi ergonomis", "AC"],
+    img: "images/sync-pods.jpg" },
+  { id: "coffee-shop", isExternal: false, name: "Coffee Shop", category: "Area Santai & Fasilitas", capacity: 20, area: 60, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 400000, priceDay: 2500000,
+    desc: "Area kafe dengan meja bar dan meja komunal — cocok sebagai area coffee break atau pertemuan kasual.",
+    facilities: ["Meja bar & meja komunal", "Pantry/counter kopi", "Kursi bar", "AC"],
+    img: "images/coffee-shop.jpg" },
+  { id: "creative-hub", isExternal: false, name: "Creative Hub", category: "Area Santai & Fasilitas", capacity: 20, area: 70, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 400000, priceDay: 2500000,
+    desc: "Ruang kreatif dan santai dengan ayunan gantung, meja bar tinggi, dan meja foosball — cocok untuk sesi brainstorming non-formal atau ice breaking.",
+    facilities: ["Ayunan gantung (hammock)", "Meja bar tinggi", "Meja foosball", "TV"],
+    img: "images/creative-hub.jpg" },
+  { id: "steering-committee", isExternal: false, name: "Steering Committee Room", category: "Ruang Rapat", capacity: 16, area: 60, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 800000, priceDay: 5000000,
+    desc: "Ruang rapat pimpinan dengan meja panjang, dua layar TV besar, dan lemari built-in — cocok untuk rapat komite atau rapat strategis.",
+    facilities: ["Meja rapat panjang (16 kursi)", "2 unit TV besar", "Sistem video konferensi", "Karpet & akustik premium"],
+    img: "images/steering-committee.jpg" },
+  { id: "ignite", isExternal: false, name: "Ignite Room", category: "Ruang Pelatihan", capacity: 40, area: 90, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 600000, priceDay: 3800000,
+    desc: "Ruang pelatihan besar dengan kursi meja lipat yang fleksibel disusun ulang, sekat partisi ke ruang sebelah, dan TV presentasi.",
+    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Partisi ruang fleksibel", "Pencahayaan alami"],
+    img: "images/ignite-spark-muse-genesis.jpg" },
+  { id: "spark", isExternal: false, name: "Spark Room", category: "Ruang Pelatihan", capacity: 40, area: 90, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 600000, priceDay: 3800000,
+    desc: "Ruang pelatihan besar dengan kursi meja lipat yang fleksibel disusun ulang, sekat partisi ke ruang sebelah, dan TV presentasi.",
+    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Partisi ruang fleksibel", "Pencahayaan alami"],
+    img: "images/ignite-spark-muse-genesis.jpg" },
+  { id: "muse", isExternal: false, name: "Muse Room", category: "Ruang Pelatihan", capacity: 40, area: 90, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 600000, priceDay: 3800000,
+    desc: "Ruang pelatihan besar dengan kursi meja lipat yang fleksibel disusun ulang, sekat partisi ke ruang sebelah, dan TV presentasi.",
+    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Partisi ruang fleksibel", "Pencahayaan alami"],
+    img: "images/ignite-spark-muse-genesis.jpg" },
+  { id: "genesis", isExternal: false, name: "Genesis Room", category: "Ruang Pelatihan", capacity: 40, area: 90, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 600000, priceDay: 3800000,
+    desc: "Ruang pelatihan besar dengan kursi meja lipat yang fleksibel disusun ulang, sekat partisi ke ruang sebelah, dan TV presentasi.",
+    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Partisi ruang fleksibel", "Pencahayaan alami"],
+    img: "images/ignite-spark-muse-genesis.jpg" },
+  { id: "recharge-zone", isExternal: false, name: "Game Room \"Recharge Zone\"", category: "Area Santai & Fasilitas", capacity: 10, area: 35, floor: "KPP BI Kemang (konfirmasi lantai)", priceHour: 250000, priceDay: 1500000,
+    desc: "Ruang santai dengan bean bag dan TV besar — cocok untuk istirahat sejenak di sela-sela pelatihan atau sesi santai tim.",
+    facilities: ["Bean bag", "TV besar (screen mirroring)", "AC", "Pencahayaan ambient"],
+    img: "images/recharge-zone.jpg" },
+
+  // =====================================================================
+  // RUANGAN EKSTERNAL (Wisma & Aula) — sumber: tabel resmi "Tarif Sewa
+  // Ruang Penggunaan Waktu Tertentu — KPP BI Kemang" (10 baris: A. Wisma +
+  // B. Ruangan Lain). Tarif (priceDay/priceWeek), luas (area), dan kode
+  // ruang (roomCode) diambil PERSIS dari tabel tsb — TIDAK diperkirakan.
+  // YANG MASIH PERKIRAAN/PLACEHOLDER dan WAJIB dikonfirmasi sebelum situs
+  // dipakai sungguhan:
+  //   - capacity: dihitung kasar dari jumlah kamar tidur (asumsi 2 orang/kamar
+  //     untuk Wisma; asumsi umum m²/orang untuk Aula & R. Makan/Lounge).
+  //   - facilities & desc: masih generik berdasarkan jenis ruangan (Wisma/
+  //     Aula/R. Makan), BUKAN dari observasi langsung.
+  //   - img: masih memakai foto stok sementara (belum ada foto asli ruangan
+  //     ini) — ganti ke foto asli begitu tersedia.
+  //   - kondisi "unRF" pada tabel asli disimpan di field `kondisi` apa
+  //     adanya karena maknanya belum dikonfirmasi ke Bapak Darren.
+  // Ruangan "Aula (Keg. Komersil)" sengaja TIDAK punya priceWeek (di tabel
+  // asli kolom Mingguan-nya kosong/"-").
+  // =====================================================================
+  { id: "wisma-anggrek-lt1", isExternal: true, name: "Wisma Anggrek — Lantai 1", category: "Wisma / Penginapan", roomCode: "W.A 7BR-7KM", kondisi: "unRF",
+    capacity: 14, area: 134.9, floor: "Gedung Wisma Anggrek, Lantai 1", priceDay: 170000, priceWeek: 940000,
+    desc: "Unit wisma 7 kamar tidur dengan 7 kamar mandi di lantai 1 Gedung Anggrek — cocok untuk rombongan peserta diklat yang menginap.",
+    facilities: ["7 kamar tidur", "7 kamar mandi dalam", "AC per kamar", "Area istirahat bersama"],
+    img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80" },
+  { id: "wisma-anggrek-lt2", isExternal: true, name: "Wisma Anggrek — Lantai 2", category: "Wisma / Penginapan", roomCode: "W.A 7BR-7KM", kondisi: "unRF",
+    capacity: 14, area: 134.9, floor: "Gedung Wisma Anggrek, Lantai 2", priceDay: 170000, priceWeek: 940000,
+    desc: "Unit wisma 7 kamar tidur dengan 7 kamar mandi di lantai 2 Gedung Anggrek — cocok untuk rombongan peserta diklat yang menginap.",
+    facilities: ["7 kamar tidur", "7 kamar mandi dalam", "AC per kamar", "Area istirahat bersama"],
+    img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80" },
+  { id: "wisma-anggrek-lt3", isExternal: true, name: "Wisma Anggrek — Lantai 3", category: "Wisma / Penginapan", roomCode: "W.A 7BR-7KM", kondisi: "unRF",
+    capacity: 14, area: 134.9, floor: "Gedung Wisma Anggrek, Lantai 3", priceDay: 170000, priceWeek: 940000,
+    desc: "Unit wisma 7 kamar tidur dengan 7 kamar mandi di lantai 3 Gedung Anggrek — cocok untuk rombongan peserta diklat yang menginap.",
+    facilities: ["7 kamar tidur", "7 kamar mandi dalam", "AC per kamar", "Area istirahat bersama"],
+    img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80" },
+  { id: "wisma-bougenville", isExternal: true, name: "Wisma Bougenville", category: "Wisma / Penginapan", roomCode: "W.B 8BR-4KM", kondisi: "unRF",
+    capacity: 16, area: 196.8, floor: "Gedung Wisma Bougenville, Lantai 1–2", priceDay: 130000, priceWeek: 690000,
+    desc: "Unit wisma 8 kamar tidur dengan 4 kamar mandi mencakup lantai 1 dan 2 Gedung Bougenville — cocok untuk rombongan peserta diklat yang menginap.",
+    facilities: ["8 kamar tidur", "4 kamar mandi", "AC per kamar", "Area istirahat bersama"],
+    img: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80" },
+  { id: "wisma-cempaka", isExternal: true, name: "Wisma Cempaka", category: "Wisma / Penginapan", roomCode: "W.C 6BR-2KM", kondisi: "unRF",
+    capacity: 12, area: 102.1, floor: "Gedung Wisma Cempaka, Lantai 2", priceDay: 70000, priceWeek: 360000,
+    desc: "Unit wisma 6 kamar tidur dengan 2 kamar mandi di lantai 2 Gedung Cempaka — cocok untuk rombongan peserta diklat yang menginap.",
+    facilities: ["6 kamar tidur", "2 kamar mandi", "AC per kamar", "Area istirahat bersama"],
+    img: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80" },
+  { id: "wisma-dahlia", isExternal: true, name: "Wisma Dahlia", category: "Wisma / Penginapan", roomCode: "W.D 8BR-4KM", kondisi: "unRF",
+    capacity: 16, area: 196.8, floor: "Gedung Wisma Dahlia, Lantai 1–2", priceDay: 130000, priceWeek: 690000,
+    desc: "Unit wisma 8 kamar tidur dengan 4 kamar mandi mencakup lantai 1 dan 2 Gedung Dahlia — cocok untuk rombongan peserta diklat yang menginap.",
+    facilities: ["8 kamar tidur", "4 kamar mandi", "AC per kamar", "Area istirahat bersama"],
+    img: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80" },
+  { id: "wisma-edelweis", isExternal: true, name: "Wisma Edelweis", category: "Wisma / Penginapan", roomCode: "W.E 1BR-1KM", kondisi: "unRF",
+    capacity: 2, area: 29.2, floor: "Gedung Wisma Edelweis, Lantai 1", priceDay: 20000, priceWeek: 110000,
+    desc: "Unit wisma studio 1 kamar tidur dengan 1 kamar mandi di lantai 1 Gedung Edelweis — cocok untuk tamu perorangan atau pasangan.",
+    facilities: ["1 kamar tidur", "1 kamar mandi dalam", "AC", "Area istirahat"],
+    img: "https://images.unsplash.com/photo-1595576508898-0ad5c879a061?auto=format&fit=crop&w=1200&q=80" },
+  { id: "aula-pendidikan", isExternal: true, name: "Aula Serbaguna — Kegiatan Pendidikan", category: "Aula Serbaguna", roomCode: "Aula (Keg. Pendidikan)", kondisi: "unRF",
+    capacity: 250, area: 594, floor: "Gedung Serbaguna, Lantai 1", priceDay: 980000, priceWeek: 5490000,
+    desc: "Aula serbaguna berkapasitas besar untuk kegiatan pendidikan/pelatihan — seminar, wisuda, atau acara pendidikan skala besar lainnya.",
+    facilities: ["Kapasitas besar", "Sistem tata suara", "Pencahayaan panggung", "Area parkir luas"],
+    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1200&q=80" },
+  { id: "aula-komersil", isExternal: true, name: "Aula Serbaguna — Kegiatan Komersil", category: "Aula Serbaguna", roomCode: "Aula (Keg. Komersil)", kondisi: "unRF",
+    capacity: 250, area: 594, floor: "Gedung Serbaguna, Lantai 1", priceDay: 4890000,
+    desc: "Aula serbaguna yang sama dengan tarif khusus untuk kegiatan komersil (mis. resepsi/acara berbayar pihak ketiga). Tarif mingguan tidak tersedia untuk kategori ini.",
+    facilities: ["Kapasitas besar", "Sistem tata suara", "Pencahayaan panggung", "Area parkir luas"],
+    img: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1200&q=80" },
+  { id: "r-makan-lounge", isExternal: true, name: "R. Makan / Lounge", category: "Ruang Makan / Lounge", roomCode: "R. Makan/ Lounge", kondisi: "unRF",
+    capacity: 150, area: 250, floor: "Gedung Cempaka, Lantai 1", priceDay: 190000, priceWeek: 1040000,
+    desc: "Ruang makan sekaligus lounge untuk kebutuhan konsumsi rombongan peserta atau acara santai — dilengkapi area duduk komunal.",
+    facilities: ["Area makan komunal", "Pantry", "AC", "Area lounge"],
+    img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80" }
 ];
-const FEATURED_IDS = ["sudirman", "eksekutif-kemang", "diponegoro"];
+const FEATURED_IDS = ["vision-hall", "steering-committee", "sync-pods"];
 function findRoom(id){ return ROOMS.find(r => r.id === id); }
 
 /* ===================== AUTH (DEMO) ===================== */
@@ -1085,7 +1197,9 @@ function roomCard(room){
         <span class="flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>${room.capacity} orang</span>
         <span class="flex items-center gap-1"><i data-lucide="ruler" class="w-3.5 h-3.5"></i>${room.area} m²</span>
       </div>
-      <p class="font-display text-base font-bold navy-text">${priceFmt(room.priceHour)} <span class="text-xs font-sans font-normal text-slate-500">/ jam</span></p>
+      ${room.isExternal
+        ? `<p class="font-display text-base font-bold navy-text">${priceFmt(room.priceDay)} <span class="text-xs font-sans font-normal text-slate-500">/ hari</span></p>`
+        : `<span class="inline-flex items-center gap-1 text-xs font-semibold text-[var(--navy-900)] bg-[#eef4ff] px-2.5 py-1 rounded-full"><i data-lucide="building-2" class="w-3 h-3"></i>Fasilitas Internal BI</span>`}
     </div>
   </div>`;
 }
@@ -1202,9 +1316,8 @@ function renderDetail(roomId){
         <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Kapasitas</p><p class="font-semibold navy-text">${room.capacity} orang</p></div>
         <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Luas</p><p class="font-semibold navy-text">${room.area} m²</p></div>
         <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Lokasi</p><p class="font-semibold navy-text">${room.floor}</p></div>
-        <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Tarif Harian</p><p class="font-semibold navy-text">${priceFmt(room.priceDay)}</p></div>
+        <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">${room.isExternal ? 'Tarif Harian' : 'Status'}</p><p class="font-semibold navy-text">${room.isExternal ? priceFmt(room.priceDay) : 'Fasilitas Internal (gratis)'}</p></div>
       </div>
-
       <h3 class="font-display text-xl font-bold navy-text mb-4">Fasilitas</h3>
       <div class="grid md:grid-cols-2 gap-x-8 gap-y-3">
         ${room.facilities.map(f => `<div class="flex items-center gap-2 text-sm"><i data-lucide="check" class="w-4 h-4" style="color:var(--blue-accent)"></i>${f}</div>`).join('')}
@@ -1213,8 +1326,11 @@ function renderDetail(roomId){
 
     <div class="fade-in">
       <div class="border border-slate-200 rounded-xl p-6 sticky top-24 card-shadow">
+        ${room.isExternal ? `
         <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Mulai dari</p>
-        <p class="font-display text-3xl font-bold navy-text mb-6">${priceFmt(room.priceHour)} <span class="text-sm font-sans font-normal text-slate-500">/ jam</span></p>
+        <p class="font-display text-3xl font-bold navy-text mb-6">${priceFmt(room.priceDay)} <span class="text-sm font-sans font-normal text-slate-500">/ hari</span></p>` : `
+        <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Status</p>
+        <p class="font-display text-2xl font-bold navy-text mb-6">Fasilitas Internal <span class="text-sm font-sans font-normal text-slate-500">(tanpa biaya)</span></p>`}
 
         <div class="flex items-center justify-between mb-3">
           <button onclick="shiftMonth(-1)" class="w-8 h-8 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
@@ -1255,7 +1371,7 @@ function openBookingForm(roomId, date){
   const room = findRoom(roomId);
   if(!room) return;
   bookingCtx = { roomId, date };
-  bookingPaymentMethod = 'transfer';
+  bookingPaymentMethod = room.isExternal ? 'transfer' : '';
 
   document.getElementById('booking-back-btn').onclick = () => go('detail', roomId);
   document.getElementById('booking-room-title').textContent = 'Formulir Pemesanan';
@@ -1263,8 +1379,18 @@ function openBookingForm(roomId, date){
   document.getElementById('booking-room-image').innerHTML = `<img src="${room.img}" class="w-full h-full object-cover" alt="${room.name}">`;
   document.getElementById('booking-room-loc').textContent = `${room.category} · Maks ${room.capacity} orang`;
 
+  // Ruangan internal: tidak ada langkah biaya/pembayaran sama sekali.
+  // Ruangan eksternal: tampilkan Ringkasan Biaya + Metode Pembayaran seperti biasa.
+  document.getElementById('payment-section').classList.toggle('hidden', !room.isExternal);
+  document.getElementById('internal-note').classList.toggle('hidden', !!room.isExternal);
+  document.getElementById('time-fields').classList.toggle('hidden', !!room.isExternal);
+  const submitBtn = document.getElementById('booking-submit-btn');
+  if(submitBtn) submitBtn.textContent = room.isExternal ? 'Kirim Pemesanan' : 'Ajukan Pemesanan';
+  const dateLabel = document.getElementById('bk-date-label');
+  if(dateLabel) dateLabel.textContent = room.isExternal ? 'Tanggal check-in' : 'Tanggal pemakaian';
+
+  populateTariffOptions(room);
   document.getElementById('bk-date').value = date;
-  document.getElementById('bk-tariff').value = 'jam';
   document.getElementById('bk-start').value = '09:00';
   document.getElementById('bk-end').value = '11:00';
 
@@ -1286,6 +1412,38 @@ function openBookingForm(roomId, date){
   go('booking');
 }
 
+// Jenis tarif tergantung apakah ruangan internal (Per jam / Per hari) atau
+// eksternal (Harian / Mingguan — Mingguan disembunyikan bila room.priceWeek
+// tidak ada, mis. Aula Kegiatan Komersil).
+function populateTariffOptions(room){
+  const sel = document.getElementById('bk-tariff');
+  if(room.isExternal){
+    let opts = `<option value="harian">Harian</option>`;
+    if(room.priceWeek) opts += `<option value="mingguan">Mingguan</option>`;
+    sel.innerHTML = opts;
+  } else {
+    sel.innerHTML = `<option value="jam">Per jam</option><option value="hari">Per hari (paket harian)</option>`;
+  }
+  sel.value = sel.options[0] ? sel.options[0].value : '';
+}
+
+function addDays(dateStr, n){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  dt.setDate(dt.getDate() + n);
+  return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+}
+
+// Menghitung tanggal selesai pakai dan estimasi biaya berdasarkan jenis
+// tarif yang dipilih. Untuk 'mingguan', rentang dihitung 7 hari (termasuk
+// tanggal mulai) dari tanggal check-in.
+function computeStay(room, tariff, date){
+  if(tariff === 'mingguan') return { endDate: addDays(date, 6), amount: room.priceWeek || 0, text: '7 hari (1 minggu)' };
+  if(tariff === 'harian') return { endDate: date, amount: room.priceDay || 0, text: '1 hari' };
+  if(tariff === 'hari') return { endDate: date, amount: room.priceDay || 0, text: '1 hari (paket harian)' };
+  return null; // 'jam' ditangani terpisah pakai jam mulai/selesai
+}
+
 function selectPaymentMethod(method){
   bookingPaymentMethod = method;
   document.querySelectorAll('.pay-option').forEach(el => el.classList.toggle('selected', el.dataset.method === method));
@@ -1302,27 +1460,51 @@ function updateBookingSummaryPanel(){
   const tariff = document.getElementById('bk-tariff').value;
   const start = document.getElementById('bk-start').value;
   const end = document.getElementById('bk-end').value;
-  const hours = Math.max(0, (timeToMinutes(end) - timeToMinutes(start)) / 60);
-  const total = tariff === 'hari' ? room.priceDay : hours * room.priceHour;
-  const durasiText = tariff === 'hari' ? '1 hari (paket harian)' : `${hours} jam`;
+
+  let total, durasiText, endDate, hours = 0;
+  if(tariff === 'jam'){
+    hours = Math.max(0, (timeToMinutes(end) - timeToMinutes(start)) / 60);
+    total = hours * room.priceHour;
+    durasiText = `${hours} jam`;
+    endDate = date;
+  } else {
+    const stay = computeStay(room, tariff, date) || { endDate: date, amount: 0, text: '—' };
+    total = stay.amount;
+    durasiText = stay.text;
+    endDate = stay.endDate;
+  }
 
   document.getElementById('booking-summary-panel').innerHTML = `
     <div class="flex items-center justify-between"><span class="text-slate-500">Ruangan</span><span class="font-medium navy-text text-right">${room.name}</span></div>
-    <div class="flex items-center justify-between"><span class="text-slate-500">Tanggal</span><span class="font-medium navy-text">${date ? formatDateLong(date) : '—'}</span></div>
+    <div class="flex items-center justify-between"><span class="text-slate-500">${room.isExternal ? 'Check-in' : 'Tanggal'}</span><span class="font-medium navy-text">${date ? formatDateLong(date) : '—'}</span></div>
+    ${room.isExternal && endDate !== date ? `<div class="flex items-center justify-between"><span class="text-slate-500">Check-out</span><span class="font-medium navy-text">${formatDateLong(endDate)}</span></div>` : ''}
     <div class="flex items-center justify-between"><span class="text-slate-500">Durasi</span><span class="font-medium navy-text">${durasiText}</span></div>
+    ${room.isExternal ? `
     <div class="border-t border-slate-100 pt-3 mt-1 flex items-center justify-between">
       <span class="font-semibold navy-text">Total</span>
       <span class="font-display text-lg font-bold navy-text">${priceFmt(total)}</span>
-    </div>`;
+    </div>` : `
+    <div class="border-t border-slate-100 pt-3 mt-1">
+      <span class="text-xs text-slate-400">Fasilitas internal Bank Indonesia — tidak ada biaya sewa.</span>
+    </div>`}`;
 
   const badge = document.getElementById('availability-badge');
-  if(date && start && end && hours > 0){
-    const conflict = hasConflict(bookingCtx.roomId, date, start, end, null, tariff);
+  if(tariff === 'jam'){
+    if(date && start && end && hours > 0){
+      const conflict = hasConflict(bookingCtx.roomId, date, endDate, start, end, null, tariff);
+      badge.innerHTML = conflict
+        ? `<i data-lucide="alert-circle" class="w-3.5 h-3.5" style="color:var(--danger)"></i><span style="color:var(--danger)">Ruangan telah terpesan pada jadwal ini</span>`
+        : `<i data-lucide="check-circle-2" class="w-3.5 h-3.5" style="color:var(--ok)"></i><span style="color:var(--ok)">Ruangan tersedia pada jadwal ini</span>`;
+    } else if(hours <= 0){
+      badge.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5" style="color:var(--danger)"></i><span style="color:var(--danger)">Jam selesai harus setelah jam mulai</span>`;
+    } else {
+      badge.innerHTML = '';
+    }
+  } else if(date){
+    const conflict = hasConflict(bookingCtx.roomId, date, endDate, '00:00', '23:59', null, tariff);
     badge.innerHTML = conflict
-      ? `<i data-lucide="alert-circle" class="w-3.5 h-3.5" style="color:var(--danger)"></i><span style="color:var(--danger)">Ruangan telah terpesan pada jadwal ini</span>`
-      : `<i data-lucide="check-circle-2" class="w-3.5 h-3.5" style="color:var(--ok)"></i><span style="color:var(--ok)">Ruangan tersedia pada jadwal ini</span>`;
-  } else if(hours <= 0){
-    badge.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5" style="color:var(--danger)"></i><span style="color:var(--danger)">Jam selesai harus setelah jam mulai</span>`;
+      ? `<i data-lucide="alert-circle" class="w-3.5 h-3.5" style="color:var(--danger)"></i><span style="color:var(--danger)">Ruangan telah terpesan pada periode ini</span>`
+      : `<i data-lucide="check-circle-2" class="w-3.5 h-3.5" style="color:var(--ok)"></i><span style="color:var(--ok)">Ruangan tersedia pada periode ini</span>`;
   } else {
     badge.innerHTML = '';
   }
@@ -1358,7 +1540,7 @@ function openBookingModal(id, adminMode){
             <img src="${room ? room.img : ''}" class="w-20 h-16 rounded-md object-cover flex-shrink-0 no-print" alt="">
             <div>
               <p class="font-display font-bold navy-text">${b.roomName}</p>
-              <p class="text-xs text-slate-500">${formatDateLong(b.date)} · ${b.startTime}–${b.endTime}</p>
+              <p class="text-xs text-slate-500">${bookingPeriodText(b)}</p>
               <div class="mt-1">${statusBadge(b.status)}</div>
             </div>
           </div>
@@ -1368,8 +1550,10 @@ function openBookingModal(id, adminMode){
             <div><p class="text-xs text-slate-400 mb-0.5">Email</p><p class="font-medium navy-text break-all">${escapeHtml(b.email)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Telepon</p><p class="font-medium navy-text">${escapeHtml(b.phone)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Jumlah Peserta</p><p class="font-medium navy-text">${b.participants} orang</p></div>
-            <div><p class="text-xs text-slate-400 mb-0.5">Estimasi Biaya</p><p class="font-medium navy-text">${priceFmt(b.amount || 0)} <span class="text-xs text-slate-400 font-normal">(${b.tariffType === 'hari' ? 'per hari' : 'per jam'})</span></p></div>
-            <div><p class="text-xs text-slate-400 mb-0.5">Metode Pembayaran</p><p class="font-medium navy-text">${({transfer:'Transfer Bank',kartu:'Kartu Kredit',ewallet:'E-Wallet'})[b.paymentMethod] || '—'}</p></div>
+            ${(room ? room.isExternal : !!b.paymentMethod) ? `
+            <div><p class="text-xs text-slate-400 mb-0.5">Estimasi Biaya</p><p class="font-medium navy-text">${priceFmt(b.amount || 0)} <span class="text-xs text-slate-400 font-normal">(${tariffLabel(b.tariffType)})</span></p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Metode Pembayaran</p><p class="font-medium navy-text">${({transfer:'Transfer Bank',kartu:'Kartu Kredit',ewallet:'E-Wallet'})[b.paymentMethod] || '—'}</p></div>` : `
+            <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Biaya</p><p class="font-medium navy-text">Gratis (fasilitas internal)</p></div>`}
             <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Keperluan Acara</p><p class="font-medium navy-text">${escapeHtml(b.purpose)}</p></div>
             ${b.notes ? `<div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Catatan Tambahan</p><p class="font-medium navy-text">${escapeHtml(b.notes)}</p></div>` : ''}
             <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Diajukan pada</p><p class="font-medium navy-text">${new Date(b.createdAt).toLocaleString('id-ID')}</p></div>
@@ -1395,19 +1579,32 @@ function openBookingModal(id, adminMode){
   lucide.createIcons();
 }
 
-function effectiveRange(startTime, endTime, tariffType){
-  // Pemesanan "per hari" mengunci seluruh jam operasional hari itu,
-  // bukan cuma rentang jam yang diisi di form.
-  return tariffType === 'hari' ? ['00:00','23:59'] : [startTime, endTime];
+// Sebuah booking dianggap "per jam" (hanya mengunci rentang jam pada SATU
+// tanggal) hanya bila tariffType === 'jam'. Selain itu ('hari' untuk
+// internal, 'harian'/'mingguan' untuk eksternal) dianggap mengunci PENUH
+// dari date s.d. endDate (00:00–23:59 setiap harinya).
+function isHourlyBooking(b){
+  return b.tariffType === 'jam';
 }
 
-function hasConflict(roomId, date, start, end, excludeId, tariffType){
-  const bookings = getBookings().filter(b => b.roomId === roomId && b.date === date && b.status !== 'cancelled' && b.status !== 'rejected' && b.id !== excludeId);
-  const [effStart, effEnd] = effectiveRange(start, end, tariffType);
-  return bookings.some(b => {
-    const [bStart, bEnd] = effectiveRange(b.startTime, b.endTime, b.tariffType);
-    return effStart < bEnd && effEnd > bStart;
-  });
+function dateRangesOverlap(aStart, aEnd, bStart, bEnd){
+  return aStart <= bEnd && aEnd >= bStart; // format YYYY-MM-DD, aman dibandingkan sebagai string
+}
+
+function bookingsConflict(a, b){
+  const aEnd = a.endDate || a.date;
+  const bEnd = b.endDate || b.date;
+  if(!dateRangesOverlap(a.date, aEnd, b.date, bEnd)) return false;
+  if(isHourlyBooking(a) && isHourlyBooking(b) && a.date === b.date){
+    return a.startTime < b.endTime && a.endTime > b.startTime;
+  }
+  return true; // salah satu/keduanya booking penuh-hari yang tanggalnya beririsan
+}
+
+function hasConflict(roomId, date, endDate, start, end, excludeId, tariffType){
+  const bookings = getBookings().filter(b => b.roomId === roomId && b.status !== 'cancelled' && b.status !== 'rejected' && b.id !== excludeId);
+  const candidate = { date, endDate, startTime: start, endTime: end, tariffType };
+  return bookings.some(b => bookingsConflict(candidate, b));
 }
 
 let bookingSubmitInFlight = false;
@@ -1419,8 +1616,8 @@ async function submitBooking(e){
   const room = findRoom(bookingCtx.roomId);
   const date = document.getElementById('bk-date').value;
   const tariff = document.getElementById('bk-tariff').value;
-  const start = document.getElementById('bk-start').value;
-  const end = document.getElementById('bk-end').value;
+  const start = tariff === 'jam' ? document.getElementById('bk-start').value : '00:00';
+  const end = tariff === 'jam' ? document.getElementById('bk-end').value : '23:59';
   const name = document.getElementById('bk-name').value.trim();
   const org = document.getElementById('bk-org').value.trim();
   const email = document.getElementById('bk-email').value.trim();
@@ -1428,12 +1625,14 @@ async function submitBooking(e){
   const participants = parseInt(document.getElementById('bk-participants').value);
   const purpose = document.getElementById('bk-purpose').value.trim();
   const notes = document.getElementById('bk-notes').value.trim();
-  const hours = (timeToMinutes(end) - timeToMinutes(start)) / 60;
+  const hours = tariff === 'jam' ? (timeToMinutes(end) - timeToMinutes(start)) / 60 : 1;
+  const stay = tariff !== 'jam' ? computeStay(room, tariff, date) : null;
+  const endDate = stay ? stay.endDate : date;
   const consent = document.getElementById('bk-consent');
 
   let ok = true;
   if(!date){ setFieldError('bk-date','Tanggal pemakaian wajib diisi.'); ok = false; } else setFieldError('bk-date', null);
-  if(hours <= 0){ toast('Jam selesai harus setelah jam mulai.', 'error'); ok = false; }
+  if(tariff === 'jam' && hours <= 0){ toast('Jam selesai harus setelah jam mulai.', 'error'); ok = false; }
   if(!name){ setFieldError('bk-name','Nama penanggung jawab wajib diisi.'); ok = false; } else setFieldError('bk-name', null);
   if(!org){ setFieldError('bk-org','Instansi/perusahaan wajib diisi.'); ok = false; } else setFieldError('bk-org', null);
   if(!email || !email.includes('@')){ setFieldError('bk-email','Masukkan email yang valid.'); ok = false; } else setFieldError('bk-email', null);
@@ -1448,12 +1647,12 @@ async function submitBooking(e){
   if(!ok){ toast('Periksa kembali data yang belum lengkap.', 'error'); return; }
 
   const user = getUser();
-  const amount = tariff === 'hari' ? room.priceDay : hours * room.priceHour;
+  const amount = room.isExternal ? (stay ? stay.amount : 0) : 0;
   const paymentLabels = { transfer: 'Transfer Bank', kartu: 'Kartu Kredit', ewallet: 'E-Wallet' };
   const payload = {
-    roomId: room.id, roomName: room.name, date, startTime: start, endTime: end,
+    roomId: room.id, roomName: room.name, date, endDate, startTime: start, endTime: end,
     tariffType: tariff, name, org, email, phone, participants, purpose, notes,
-    amount, paymentMethod: bookingPaymentMethod,
+    amount, paymentMethod: room.isExternal ? bookingPaymentMethod : '',
     userEmail: user ? user.email : email,
     userToken: (user && user.isInternal) ? getUserToken() : undefined
   };
@@ -1467,10 +1666,12 @@ async function submitBooking(e){
     if(!data.ok){
       if(data.conflict){
         const warn = document.getElementById('conflict-warning');
-        document.getElementById('conflict-warning-text').textContent = `Ruangan ini sudah terpesan pada jam ${start}–${end} di tanggal tersebut. Silakan pilih jam lain atau tanggal berbeda.`;
+        document.getElementById('conflict-warning-text').textContent = tariff === 'jam'
+          ? `Ruangan ini sudah terpesan pada jam ${start}–${end} di tanggal tersebut. Silakan pilih jam lain atau tanggal berbeda.`
+          : `Ruangan ini sudah terpesan pada periode ${formatDateLong(date)}${endDate !== date ? ' – ' + formatDateLong(endDate) : ''}. Silakan pilih tanggal lain.`;
         warn.classList.remove('hidden');
         lucide.createIcons();
-        toast('Terjadi bentrok jadwal pada jam yang dipilih.', 'error');
+        toast('Terjadi bentrok jadwal pada periode yang dipilih.', 'error');
       } else {
         toast(data.error || 'Gagal mengirim pemesanan. Silakan coba lagi.', 'error');
       }
@@ -1482,16 +1683,16 @@ async function submitBooking(e){
         <img src="${room.img}" class="w-20 h-16 rounded-md object-cover flex-shrink-0" alt="">
         <div>
           <p class="font-display font-bold navy-text">${room.name}</p>
-          <p class="text-xs text-slate-500">${formatDateLong(date)} · ${start}–${end}</p>
+          <p class="text-xs text-slate-500">${tariff === 'jam' ? `${formatDateLong(date)} · ${start}–${end}` : `${formatDateLong(date)}${endDate !== date ? ' – ' + formatDateLong(endDate) : ''}`}</p>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-y-3 text-sm">
         <div><p class="text-xs text-slate-400">Nomor Referensi</p><p class="font-display font-bold navy-text">${data.ref}</p></div>
-        <div><p class="text-xs text-slate-400">Estimasi Biaya</p><p class="font-semibold navy-text">${priceFmt(amount)}</p></div>
+        ${room.isExternal ? `<div><p class="text-xs text-slate-400">Estimasi Biaya</p><p class="font-semibold navy-text">${priceFmt(amount)}</p></div>` : `<div><p class="text-xs text-slate-400">Biaya</p><p class="font-semibold navy-text">Gratis (fasilitas internal)</p></div>`}
         <div><p class="text-xs text-slate-400">Penanggung Jawab</p><p class="font-medium navy-text">${escapeHtml(name)}</p></div>
         <div><p class="text-xs text-slate-400">Instansi</p><p class="font-medium navy-text">${escapeHtml(org)}</p></div>
         <div><p class="text-xs text-slate-400">Jumlah Peserta</p><p class="font-medium navy-text">${participants} orang</p></div>
-        <div><p class="text-xs text-slate-400">Metode Pembayaran</p><p class="font-medium navy-text">${paymentLabels[bookingPaymentMethod]}</p></div>
+        ${room.isExternal ? `<div><p class="text-xs text-slate-400">Metode Pembayaran</p><p class="font-medium navy-text">${paymentLabels[bookingPaymentMethod]}</p></div>` : ''}
         <div class="col-span-2"><p class="text-xs text-slate-400">Status</p><p>${statusBadge('pending')}</p></div>
       </div>`;
     toast('Pemesanan berhasil dikirim dan menunggu konfirmasi. Email konfirmasi telah dikirim ke ' + email + '.');
@@ -1505,6 +1706,16 @@ async function submitBooking(e){
 }
 
 /* ===================== HISTORY PAGE ===================== */
+function tariffLabel(tariffType){
+  return { jam: 'Per Jam', hari: 'Per Hari (Internal)', harian: 'Harian', mingguan: 'Mingguan' }[tariffType] || tariffType;
+}
+// Teks ringkas tanggal/jam sebuah booking untuk ditampilkan di daftar &
+// modal — mengikuti jenis tarifnya (jam vs rentang tanggal harian/mingguan).
+function bookingPeriodText(b){
+  if(b.tariffType === 'jam') return `${formatDateLong(b.date)} · ${b.startTime}–${b.endTime}`;
+  if(b.endDate && b.endDate !== b.date) return `${formatDateLong(b.date)} – ${formatDateLong(b.endDate)}`;
+  return formatDateLong(b.date);
+}
 function statusBadge(status){
   if(status === 'confirmed') return `<span class="badge badge-confirmed"><i data-lucide="check-circle-2" class="w-3 h-3"></i>Terkonfirmasi</span>`;
   if(status === 'rejected') return `<span class="badge badge-cancelled"><i data-lucide="x-circle" class="w-3 h-3"></i>Ditolak</span>`;
@@ -1573,7 +1784,7 @@ function renderHistory(){
           <p class="font-display font-bold navy-text">${b.roomName}</p>
           ${statusBadge(b.status)}
         </div>
-        <p class="text-xs text-slate-500">${formatDateLong(b.date)} · ${b.startTime}–${b.endTime} · ${b.participants} peserta</p>
+        <p class="text-xs text-slate-500">${bookingPeriodText(b)} · ${b.participants} peserta</p>
         <p class="text-xs text-slate-400 mt-1">Ref: ${b.ref}</p>
       </div>
       <div class="flex items-center gap-2" onclick="event.stopPropagation()">
@@ -1700,7 +1911,7 @@ function renderAdminPendingList(){
     <div class="border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50" onclick="openBookingModal('${b.id}', true)">
       <div class="min-w-0">
         <p class="font-semibold navy-text text-sm truncate">${b.roomName}</p>
-        <p class="text-xs text-slate-500 truncate">${escapeHtml(b.name)} · ${formatDateLong(b.date)} · ${b.startTime}–${b.endTime}</p>
+        <p class="text-xs text-slate-500 truncate">${escapeHtml(b.name)} · ${bookingPeriodText(b)}</p>
       </div>
       <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 flex-shrink-0"></i>
     </div>`).join('');
@@ -1746,14 +1957,18 @@ function renderAdminTable(){
   document.getElementById('admin-result-count').textContent = `${list.length} pemesanan ditemukan`;
   const body = document.getElementById('admin-table-body');
   if(!list.length){
-    body.innerHTML = `<tr><td colspan="8" class="text-center py-14 text-slate-400">Tidak ada pemesanan yang cocok dengan filter.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="9" class="text-center py-14 text-slate-400">Tidak ada pemesanan yang cocok dengan filter.</td></tr>`;
     return;
   }
-  body.innerHTML = list.map(b => `
+  body.innerHTML = list.map(b => {
+    const room = findRoom(b.roomId);
+    const isExt = room ? room.isExternal : !!b.paymentMethod;
+    return `
     <tr onclick="openBookingModal('${b.id}', true)">
       <td class="font-semibold navy-text">${b.ref}</td>
       <td>${b.roomName}</td>
-      <td>${formatDateLong(b.date)}<br><span class="text-slate-400">${b.startTime}–${b.endTime}</span></td>
+      <td>${isExt ? `<span class="badge" style="background:#fdf1e0;color:#8a5a12">Eksternal</span>` : `<span class="badge" style="background:#eef4ff;color:var(--navy-900)">Internal</span>`}</td>
+      <td>${bookingPeriodText(b)}</td>
       <td>${escapeHtml(b.name)}</td>
       <td>${escapeHtml(b.org)}</td>
       <td>${b.participants}</td>
@@ -1765,7 +1980,8 @@ function renderAdminTable(){
             <button onclick="openBookingModal('${b.id}', true)" class="icon-btn-sm" title="Tolak / Detail"><i data-lucide="x" class="w-4 h-4" style="color:var(--danger)"></i></button>
           </div>` : `<button onclick="openBookingModal('${b.id}', true)" class="text-xs font-semibold text-[var(--blue-accent)] hover:underline">Detail</button>`}
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 async function quickAdminAction(id, status){
@@ -1794,13 +2010,16 @@ function resetAdminFilters(){
 function exportAdminCSV(){
   const list = adminFilteredCache.length ? adminFilteredCache : getAdminFilteredBookings();
   if(!list.length){ toast('Tidak ada data untuk diunduh.', 'error'); return; }
-  const headers = ['Referensi','Ruangan','Tanggal','Jam Mulai','Jam Selesai','Jenis Tarif','Nama','Instansi','Email','Telepon','Peserta','Estimasi Biaya','Metode Pembayaran','Status','Catatan Tambahan','Diajukan'];
-  const rows = list.map(b => [
-    b.ref, b.roomName, b.date, b.startTime, b.endTime, b.tariffType === 'hari' ? 'Per Hari' : 'Per Jam',
+  const headers = ['Referensi','Ruangan','Tipe','Tanggal Mulai','Tanggal Selesai','Jam Mulai','Jam Selesai','Jenis Tarif','Nama','Instansi','Email','Telepon','Peserta','Estimasi Biaya','Metode Pembayaran','Status','Catatan Tambahan','Diajukan'];
+  const rows = list.map(b => {
+    const room = findRoom(b.roomId);
+    return [
+    b.ref, b.roomName, (room ? room.isExternal : !!b.paymentMethod) ? 'Eksternal' : 'Internal',
+    b.date, b.endDate || b.date, b.startTime, b.endTime, tariffLabel(b.tariffType),
     b.name, b.org, b.email, b.phone, b.participants, b.amount || 0,
     ({transfer:'Transfer Bank',kartu:'Kartu Kredit',ewallet:'E-Wallet'})[b.paymentMethod] || '-',
     b.status, b.notes || '', b.createdAt
-  ]);
+  ];});
   const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
