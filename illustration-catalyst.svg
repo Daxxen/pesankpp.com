@@ -1,0 +1,83 @@
+<svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustrasi ruangan">
+  <rect width="800" height="500" fill="#0c1a2e"/>
+  <rect x="120" y="0" width="560" height="330" fill="#1e4a82"/>
+  <polygon points="0,0 120,0 120,330 0,500" fill="#173763"/>
+  <polygon points="680,0 800,0 800,500 680,330" fill="#173763"/>
+  <polygon points="0,500 800,500 680,330 120,330" fill="#0f2340"/>
+  <line x1="0" y1="500" x2="120" y2="330" stroke="#0c1a2e" stroke-width="2" stroke-opacity="0.5"/>
+  <line x1="800" y1="500" x2="680" y2="330" stroke="#0c1a2e" stroke-width="2" stroke-opacity="0.5"/>
+  
+  <g transform="translate(560,90)">
+    <rect x="-60" y="-45" width="120" height="90" rx="4" fill="#2a4a75" stroke="#4d6fa0" stroke-width="4"/>
+    <rect x="-50" y="-35" width="100" height="70" fill="#8fb3e8" fill-opacity="0.85"/>
+    <line x1="0" y1="-35" x2="0" y2="35" stroke="#2a4a75" stroke-width="4"/>
+    <line x1="-50" y1="0" x2="50" y2="0" stroke="#2a4a75" stroke-width="4"/>
+  </g>
+  <polygon points="20,330 95,330 90,470 25,485" fill="#0c1a2e" fill-opacity="0.6"/>
+  <circle cx="82" cy="410" r="4" fill="#c7d4e6"/>
+  
+  <line x1="220" y1="0" x2="220" y2="30" stroke="#4d6fa0" stroke-width="3"/>
+  <ellipse cx="220" cy="40" rx="24" ry="9" fill="#f2e6c9" fill-opacity="0.85"/>
+  <g transform="translate(400,110)">
+    <rect x="-100" y="-55" width="200" height="115" rx="4" fill="#0c1a2e" stroke="#5a8ce8" stroke-width="5"/>
+    <rect x="-85" y="-42" width="170" height="90" fill="#5a8ce8" fill-opacity="0.5"/>
+    <rect x="-16" y="60" width="32" height="8" rx="3" fill="#5a8ce8"/>
+  </g><rect x="330" y="345" width="140" height="46" rx="4" fill="#173763" stroke="#5a8ce8" stroke-width="3"/>
+    <g transform="translate(250,430)">
+      <rect x="-15" y="-4" width="30" height="8" rx="3" fill="#c7d4e6" fill-opacity="0.85"/>
+      <rect x="-15" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+      <rect x="9" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+    </g>
+    <g transform="translate(320,430)">
+      <rect x="-15" y="-4" width="30" height="8" rx="3" fill="#c7d4e6" fill-opacity="0.85"/>
+      <rect x="-15" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+      <rect x="9" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+    </g>
+    <g transform="translate(390,430)">
+      <rect x="-15" y="-4" width="30" height="8" rx="3" fill="#c7d4e6" fill-opacity="0.85"/>
+      <rect x="-15" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+      <rect x="9" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+    </g>
+    <g transform="translate(460,430)">
+      <rect x="-15" y="-4" width="30" height="8" rx="3" fill="#c7d4e6" fill-opacity="0.85"/>
+      <rect x="-15" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+      <rect x="9" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+    </g>
+    <g transform="translate(530,430)">
+      <rect x="-15" y="-4" width="30" height="8" rx="3" fill="#c7d4e6" fill-opacity="0.85"/>
+      <rect x="-15" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+      <rect x="9" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+    </g>
+    <g transform="translate(250,470)">
+      <rect x="-15" y="-4" width="30" height="8" rx="3" fill="#c7d4e6" fill-opacity="0.85"/>
+      <rect x="-15" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+      <rect x="9" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+    </g>
+    <g transform="translate(320,470)">
+      <rect x="-15" y="-4" width="30" height="8" rx="3" fill="#c7d4e6" fill-opacity="0.85"/>
+      <rect x="-15" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+      <rect x="9" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+    </g>
+    <g transform="translate(390,470)">
+      <rect x="-15" y="-4" width="30" height="8" rx="3" fill="#c7d4e6" fill-opacity="0.85"/>
+      <rect x="-15" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+      <rect x="9" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+    </g>
+    <g transform="translate(460,470)">
+      <rect x="-15" y="-4" width="30" height="8" rx="3" fill="#c7d4e6" fill-opacity="0.85"/>
+      <rect x="-15" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+      <rect x="9" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+    </g>
+    <g transform="translate(530,470)">
+      <rect x="-15" y="-4" width="30" height="8" rx="3" fill="#c7d4e6" fill-opacity="0.85"/>
+      <rect x="-15" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+      <rect x="9" y="-22" width="6" height="20" rx="2" fill="#9db3d1" fill-opacity="0.85"/>
+    </g>
+  <g transform="translate(32,28)">
+    <rect width="129" height="32" rx="16" fill="#0c1a2e" fill-opacity="0.55" stroke="#ffffff" stroke-opacity="0.25"/>
+    <text x="65" y="21" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.2">Catalyst Room</text>
+  </g>
+  <g transform="translate(622,28)">
+    <rect width="146" height="32" rx="16" fill="#0c1a2e" fill-opacity="0.55" stroke="#ffffff" stroke-opacity="0.25"/>
+    <text x="73" y="21" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700" fill="#ffffff" letter-spacing="0.2">Ruang Pelatihan</text>
+  </g></svg>
