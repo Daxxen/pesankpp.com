@@ -336,6 +336,17 @@ function printBookingProof(){
             <textarea id="bk-notes" rows="2" placeholder="Contoh: Membutuhkan pengaturan meja berbentuk U" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm"></textarea>
           </div>
 
+          <div>
+            <label class="block text-sm font-semibold navy-text mb-1.5">Dokumen Persuratan <span class="font-normal text-slate-400">(opsional — surat pengantar, disposisi, dll., bisa lebih dari 1 file)</span></label>
+            <label for="bk-attachments" class="flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 rounded-md px-4 py-6 text-sm text-slate-500 cursor-pointer hover:border-[var(--blue-accent)] hover:text-[var(--blue-accent)] transition">
+              <i data-lucide="upload" class="w-4 h-4"></i>Klik untuk pilih file, atau seret file ke sini
+            </label>
+            <input id="bk-attachments" type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" onchange="onAttachmentsSelected(event)" class="hidden">
+            <p class="text-xs text-slate-400 mt-1.5">Format PDF/Word/gambar, maksimal 5 file, masing-masing maksimal 5 MB.</p>
+            <div id="attachment-list" class="mt-3 space-y-2"></div>
+            <p id="attachment-error" class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+          </div>
+
           <div id="conflict-warning" class="hidden bg-red-50 border border-red-200 text-sm rounded-md p-4 flex items-start gap-2" style="color:var(--danger)">
             <i data-lucide="alert-triangle" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
             <span id="conflict-warning-text"></span>
@@ -358,6 +369,7 @@ function printBookingProof(){
 
           <button type="submit" id="booking-submit-btn" class="btn-primary w-full py-3.5 rounded-md font-semibold text-sm">Kirim Pemesanan</button>
         </form>
+
       </div>
 
       <!-- Sidebar -->
@@ -1649,6 +1661,7 @@ function renderBookingPage(){
     document.getElementById('bk-consent').checked = false;
     document.getElementById('bk-priority-tier').value = 'eksternal_lppi';
     onPriorityTierChange();
+    resetAttachments();
     document.getElementById('conflict-warning').classList.add('hidden');
     ['bk-name','bk-org','bk-email','bk-phone','bk-participants','bk-purpose'].forEach(id => setFieldError(id, null));
     groupFieldsInitialized = true;
@@ -1659,6 +1672,7 @@ function renderBookingPage(){
 function resetBookingCart(){
   bookingCart = [];
   groupFieldsInitialized = false;
+  resetAttachments();
 }
 
 /* ===================== BOOKING DETAIL MODAL ===================== */
@@ -1723,6 +1737,15 @@ function openBookingModal(groupId, adminMode){
             ${b.notes ? `<div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Catatan Tambahan</p><p class="font-medium navy-text">${escapeHtml(b.notes)}</p></div>` : ''}
             <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Diajukan pada</p><p class="font-medium navy-text">${new Date(b.createdAt).toLocaleString('id-ID')}</p></div>
           </div>
+          ${b.attachmentUrls ? `
+          <div class="border-t border-slate-100 pt-4 no-print">
+            <p class="text-xs font-semibold navy-text mb-2 flex items-center gap-1.5"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i>Dokumen Persuratan</p>
+            <div class="space-y-1.5">
+              ${String(b.attachmentUrls).split(',').filter(Boolean).map((url, i) => `
+                <a href="${url.trim()}" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-[var(--blue-accent)] hover:underline"><i data-lucide="file-text" class="w-4 h-4 flex-shrink-0"></i>Dokumen ${i+1}</a>
+              `).join('')}
+            </div>
+          </div>` : ''}
           ${b.adminNote ? `<div class="bg-[var(--paper)] border border-slate-200 rounded-md p-4 text-sm"><p class="text-xs font-semibold navy-text mb-1">Catatan Pengelola</p><p class="text-slate-600">${escapeHtml(b.adminNote)}</p></div>` : ''}
           <p class="print-footer-note">Dokumen ini adalah bukti pemesanan ruangan. Status pada dokumen ini adalah status terkini saat dicetak dan dapat berubah.</p>
           ${!adminMode ? `<div class="no-print"><button onclick="printBookingProof()" class="btn-outline text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="printer" class="w-4 h-4"></i>Cetak Bukti</button></div>` : ''}
@@ -1764,6 +1787,85 @@ function bookingsConflict(a, b){
     return a.startTime < b.endTime && a.endTime > b.startTime;
   }
   return true; // salah satu/keduanya booking penuh-hari yang tanggalnya beririsan
+}
+
+/* ===================== DOKUMEN PERSURATAN (Poin 7 — multi-file) ===================== */
+// File dipilih user disimpan di memori (bukan langsung diunggah) sampai
+// submitBooking() mengirim semuanya sebagai base64 dalam 1 payload
+// createBooking. Server (Code.gs) yang benar-benar menyimpannya ke Google
+// Drive dan menyimpan link-nya — lihat handleCreateBooking/saveAttachments_.
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_MB = 5;
+const ALLOWED_ATTACHMENT_EXT = ['pdf','doc','docx','jpg','jpeg','png'];
+let pendingAttachments = []; // [{file, name, sizeLabel}]
+
+function fileExt(name){ return (name.split('.').pop() || '').toLowerCase(); }
+function fileSizeLabel(bytes){
+  if(bytes < 1024*1024) return Math.max(1, Math.round(bytes/1024)) + ' KB';
+  return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+
+function onAttachmentsSelected(e){
+  const errEl = document.getElementById('attachment-error');
+  errEl.textContent = '';
+  const incoming = Array.from(e.target.files || []);
+  e.target.value = ''; // reset input supaya bisa pilih file yang sama lagi kalau dihapus lalu ditambah ulang
+
+  for(const file of incoming){
+    if(pendingAttachments.length >= MAX_ATTACHMENTS){
+      errEl.textContent = `Maksimal ${MAX_ATTACHMENTS} file.`;
+      break;
+    }
+    if(!ALLOWED_ATTACHMENT_EXT.includes(fileExt(file.name))){
+      errEl.textContent = `Format "${file.name}" tidak didukung. Gunakan PDF/Word/gambar.`;
+      continue;
+    }
+    if(file.size > MAX_ATTACHMENT_MB * 1024 * 1024){
+      errEl.textContent = `File "${file.name}" melebihi ${MAX_ATTACHMENT_MB} MB.`;
+      continue;
+    }
+    pendingAttachments.push({ file, name: file.name, sizeLabel: fileSizeLabel(file.size) });
+  }
+  renderAttachmentList();
+}
+
+function removeAttachment(idx){
+  pendingAttachments.splice(idx, 1);
+  document.getElementById('attachment-error').textContent = '';
+  renderAttachmentList();
+}
+
+function renderAttachmentList(){
+  const wrap = document.getElementById('attachment-list');
+  wrap.innerHTML = pendingAttachments.map((a, idx) => `
+    <div class="flex items-center justify-between gap-2 border border-slate-200 rounded-md px-3 py-2 text-sm">
+      <span class="flex items-center gap-2 min-w-0"><i data-lucide="file-text" class="w-4 h-4 text-slate-400 flex-shrink-0"></i><span class="truncate">${escapeHtml(a.name)}</span><span class="text-xs text-slate-400 flex-shrink-0">(${a.sizeLabel})</span></span>
+      <button type="button" onclick="removeAttachment(${idx})" class="icon-btn-sm flex-shrink-0" title="Hapus"><i data-lucide="x" class="w-3.5 h-3.5" style="color:var(--danger)"></i></button>
+    </div>`).join('');
+  lucide.createIcons();
+}
+
+function resetAttachments(){
+  pendingAttachments = [];
+  document.getElementById('attachment-error').textContent = '';
+  renderAttachmentList();
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || ''); // buang prefix "data:...;base64,"
+    reader.onerror = () => reject(new Error('Gagal membaca file ' + file.name));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function buildAttachmentsPayload(){
+  return Promise.all(pendingAttachments.map(async a => ({
+    name: a.name,
+    mimeType: a.file.type || 'application/octet-stream',
+    base64: await fileToBase64(a.file)
+  })));
 }
 
 let bookingSubmitInFlight = false;
@@ -1819,15 +1921,28 @@ async function submitBooking(e){
     };
   });
   const totalAmount = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+
+  const submitBtn = document.getElementById('booking-submit-btn');
+  bookingSubmitInFlight = true;
+  if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Mengunggah dokumen...'; }
+
+  let attachments = [];
+  try{
+    attachments = await buildAttachmentsPayload();
+  }catch(err){
+    bookingSubmitInFlight = false;
+    if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = 'Kirim Pemesanan'; }
+    toast('Gagal membaca salah satu file lampiran. Coba pilih ulang filenya.', 'error');
+    return;
+  }
+
   const payload = {
-    name, org, email, phone, participants, purpose, notes, items, priorityTier,
+    name, org, email, phone, participants, purpose, notes, items, priorityTier, attachments,
     userEmail: user ? user.email : email,
     userToken: (user && user.isInternal) ? getUserToken() : undefined
   };
 
-  const submitBtn = document.getElementById('booking-submit-btn');
-  bookingSubmitInFlight = true;
-  if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Mengirim...'; }
+  if(submitBtn) submitBtn.textContent = 'Mengirim...';
 
   try{
     const data = await apiPost('createBooking', payload);
