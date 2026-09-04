@@ -123,7 +123,7 @@ function printBookingProof(){
   <div class="max-w-7xl mx-auto px-6 py-2 flex items-center justify-between flex-wrap gap-2">
     <div class="flex items-center gap-2">
       <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-      <span class="tracking-wide font-medium">KAWASAN PENDIDIKAN DAN PELATIHAN BI KEMANG</span>
+      <span class="tracking-wide font-medium">KAWASAN EDUKASI DAN DIGITAL KEMANG</span>
     </div>
     <div class="hidden sm:flex items-center gap-5">
       <a href="tel:+622171954740" class="flex items-center gap-1.5 hover:text-blue-300 transition"><i data-lucide="phone" class="w-3.5 h-3.5"></i>(021) 7195474</a>
@@ -260,7 +260,7 @@ function printBookingProof(){
 <!-- ================= BOOKING FORM PAGE ================= -->
 <main id="page-booking" class="page">
   <div class="max-w-6xl mx-auto px-6 py-10">
-    <button id="booking-back-btn" class="text-sm font-medium text-slate-500 hover:text-navy-900 flex items-center gap-1.5 mb-6"><i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali ke detail ruangan</button>
+    <button id="booking-back-btn" class="text-sm font-medium text-slate-500 hover:text-navy-900 flex items-center gap-1.5 mb-6"><i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali ke daftar ruangan</button>
 
     <div class="grid lg:grid-cols-3 gap-10">
       <!-- Form -->
@@ -269,32 +269,13 @@ function printBookingProof(){
         <p id="booking-room-subtitle" class="text-sm text-slate-500 mb-8"></p>
 
         <form id="booking-form" onsubmit="submitBooking(event)" class="space-y-6">
-          <div class="grid md:grid-cols-2 gap-5">
-            <div>
-              <label id="bk-date-label" class="block text-sm font-semibold navy-text mb-1.5">Tanggal pemakaian</label>
-              <input id="bk-date" type="date" onchange="onBookingFieldChange()" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
-              <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-sm font-semibold navy-text">Ruangan Dipesan</p>
+              <button type="button" onclick="go('rooms')" class="text-xs font-semibold text-[var(--blue-accent)] hover:underline flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i>Tambah Ruangan Lain</button>
             </div>
-            <div>
-              <label class="block text-sm font-semibold navy-text mb-1.5">Jenis tarif</label>
-              <select id="bk-tariff" onchange="onBookingFieldChange()" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm bg-white">
-                <option value="jam">Per jam</option>
-                <option value="hari">Per hari (paket harian)</option>
-              </select>
-            </div>
+            <div id="cart-items-list" class="space-y-4"></div>
           </div>
-
-          <div id="time-fields" class="grid md:grid-cols-2 gap-5">
-            <div>
-              <label class="block text-sm font-semibold navy-text mb-1.5">Jam mulai</label>
-              <input id="bk-start" type="time" step="900" onchange="onBookingFieldChange()" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
-            </div>
-            <div>
-              <label class="block text-sm font-semibold navy-text mb-1.5">Jam selesai</label>
-              <input id="bk-end" type="time" step="900" onchange="onBookingFieldChange()" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
-            </div>
-          </div>
-          <p id="availability-badge" class="text-xs -mt-3 flex items-center gap-1.5"></p>
 
           <div class="grid md:grid-cols-2 gap-5">
             <div>
@@ -344,30 +325,14 @@ function printBookingProof(){
             <span id="conflict-warning-text"></span>
           </div>
 
-          <div id="payment-section">
-            <p class="text-sm font-semibold navy-text mb-3">Metode Pembayaran</p>
-            <div class="grid sm:grid-cols-3 gap-3" id="payment-methods">
-              <div class="pay-option" data-method="transfer" onclick="selectPaymentMethod('transfer')">
-                <div class="pay-option-icon"><i data-lucide="landmark" class="w-4 h-4" style="color:var(--navy-900)"></i></div>
-                <p class="text-sm font-semibold navy-text">Transfer Bank</p>
-                <p class="text-xs text-slate-500 mt-0.5">Virtual account BCA / Mandiri / BNI</p>
-              </div>
-              <div class="pay-option" data-method="kartu" onclick="selectPaymentMethod('kartu')">
-                <div class="pay-option-icon"><i data-lucide="credit-card" class="w-4 h-4" style="color:var(--navy-900)"></i></div>
-                <p class="text-sm font-semibold navy-text">Kartu Kredit</p>
-                <p class="text-xs text-slate-500 mt-0.5">Visa, Mastercard, JCB</p>
-              </div>
-              <div class="pay-option" data-method="ewallet" onclick="selectPaymentMethod('ewallet')">
-                <div class="pay-option-icon"><i data-lucide="wallet" class="w-4 h-4" style="color:var(--navy-900)"></i></div>
-                <p class="text-sm font-semibold navy-text">E-Wallet</p>
-                <p class="text-xs text-slate-500 mt-0.5">GoPay, OVO, DANA, ShopeePay</p>
-              </div>
-            </div>
-            <p class="text-xs text-slate-400 mt-3 leading-relaxed">Instruksi pembayaran beserta nomor tagihan dikirimkan melalui email setelah pemesanan tercatat, dan status pembayaran akan diverifikasi oleh admin pengelola.</p>
+          <div class="bg-[#eef4ff] border border-[#c7d9f5] text-sm rounded-md p-4 flex items-start gap-2" style="color:var(--navy-900)">
+            <i data-lucide="landmark" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+            <span>Metode pembayaran: <strong>Transfer Bank</strong> (satu-satunya metode yang tersedia). Tagihan baru dikirimkan lewat email <strong>setelah pemakaian ruangan selesai</strong> — ruangan fasilitas internal tanpa biaya sewa tidak akan ditagih.</span>
           </div>
-          <div id="internal-note" class="hidden bg-[#eef4ff] border border-[#c7d9f5] text-sm rounded-md p-4 flex items-start gap-2" style="color:var(--navy-900)">
-            <i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <span>Ruangan ini adalah fasilitas internal — tidak ada biaya sewa maupun langkah pembayaran. Pengajuan Anda akan menunggu konfirmasi ketersediaan dari pengelola.</span>
+
+          <div id="approval-lock-warning" class="hidden bg-amber-50 border border-amber-200 text-sm rounded-md p-4 flex items-start gap-2" style="color:var(--warn)">
+            <i data-lucide="hourglass" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+            <span id="approval-lock-warning-text">Akun Anda sedang menunggu persetujuan pengelola. Anda belum bisa mengirim pemesanan sampai akun disetujui.</span>
           </div>
 
           <label class="flex items-start gap-2.5 text-xs text-slate-500 leading-relaxed">
@@ -382,9 +347,9 @@ function printBookingProof(){
       <!-- Sidebar -->
       <div>
         <div class="border border-slate-200 rounded-xl overflow-hidden card-shadow sticky top-24">
-          <div id="booking-room-image" class="h-44 bg-slate-100"></div>
+          <div id="booking-room-image" class="h-44 bg-slate-100 flex items-center justify-center"><i data-lucide="calendar-check" class="w-8 h-8 text-slate-300"></i></div>
           <div class="p-6">
-            <h3 class="font-display text-lg font-bold navy-text mb-1">Ringkasan Biaya</h3>
+            <h3 class="font-display text-lg font-bold navy-text mb-1">Ringkasan Pemesanan</h3>
             <p id="booking-room-loc" class="text-xs text-slate-400 mb-5"></p>
             <div id="booking-summary-panel" class="space-y-3 text-sm"></div>
             <p class="text-xs text-slate-400 mt-5 leading-relaxed">Tarif belum termasuk PPN dan paket konsumsi. <a href="#" onclick="go('contact');return false;" class="text-[var(--blue-accent)] hover:underline">Hubungi kami</a> untuk penawaran paket acara.</p>
@@ -602,6 +567,7 @@ function printBookingProof(){
     <div class="flex items-center gap-2 mb-8 border border-slate-200 rounded-lg p-1.5 w-fit bg-[var(--paper)] flex-wrap">
       <div id="admin-tab-ringkasan" class="admin-tab" onclick="setAdminTab('ringkasan')">Ringkasan</div>
       <div id="admin-tab-pemesanan" class="admin-tab" onclick="setAdminTab('pemesanan')">Semua Pemesanan</div>
+      <div id="admin-tab-pendaftar" class="admin-tab" onclick="setAdminTab('pendaftar')">Pendaftar Menunggu <span id="admin-pendaftar-count-badge"></span></div>
     </div>
 
     <div id="admin-panel-ringkasan">
@@ -629,10 +595,12 @@ function printBookingProof(){
         </div>
         <select id="admin-filter-status" onchange="renderAdminTable()" class="border border-slate-300 rounded-md px-3 py-2.5 text-sm bg-white">
           <option value="">Semua status</option>
-          <option value="pending">Menunggu Konfirmasi</option>
-          <option value="confirmed">Terkonfirmasi</option>
-          <option value="rejected">Ditolak</option>
-          <option value="cancelled">Dibatalkan</option>
+          <option value="belum_konfirmasi">Belum Konfirmasi</option>
+          <option value="konfirmasi">Konfirmasi</option>
+          <option value="menunggu_pembayaran">Menunggu Pembayaran</option>
+          <option value="pembayaran_selesai">Pembayaran Selesai</option>
+          <option value="ditolak">Ditolak</option>
+          <option value="dibatalkan">Dibatalkan</option>
         </select>
         <select id="admin-filter-room" onchange="renderAdminTable()" class="border border-slate-300 rounded-md px-3 py-2.5 text-sm bg-white">
           <option value="">Semua ruangan</option>
@@ -646,12 +614,17 @@ function printBookingProof(){
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Referensi</th><th>Ruangan</th><th>Tipe</th><th>Tanggal &amp; Jam</th><th>Pemesan</th><th>Instansi</th><th>Peserta</th><th>Status</th><th>Aksi Cepat</th>
+              <th>Referensi</th><th>Ruangan</th><th>Tanggal &amp; Jam</th><th>Pemesan</th><th>Instansi</th><th>Peserta</th><th>Estimasi Biaya</th><th>Status</th><th>Aksi Cepat</th>
             </tr>
           </thead>
           <tbody id="admin-table-body"></tbody>
         </table>
       </div>
+    </div>
+
+    <div id="admin-panel-pendaftar" class="hidden">
+      <p class="text-sm text-slate-500 mb-5">Akun baru (tamu eksternal maupun staf internal @bi.go.id) tidak bisa mengirim pemesanan sampai disetujui di sini.</p>
+      <div id="admin-pendaftar-list" class="space-y-3"></div>
     </div>
   </div>
 </main>
@@ -761,6 +734,39 @@ async function refreshBookings(scope){
 // Fungsi lama getBookings() dipertahankan sebagai alias sinkron ke cache
 // supaya kode render yang sudah ada tidak perlu ditulis ulang total.
 function getBookings(){ return bookingsCache; }
+
+/* ===================== STATUS (4 TAHAP + 2 STATUS AKHIR) ===================== */
+// Cermin persis dari STATUS_* / STATUS_LABELS_ di Code.gs & Notifications.gs —
+// bila salah satu diubah, ubah juga yang lain.
+const STATUS_ORDER = ['belum_konfirmasi','konfirmasi','menunggu_pembayaran','pembayaran_selesai','ditolak','dibatalkan'];
+const STATUS_LABELS_ = {
+  belum_konfirmasi: 'Belum Konfirmasi',
+  konfirmasi: 'Konfirmasi',
+  menunggu_pembayaran: 'Menunggu Pembayaran',
+  pembayaran_selesai: 'Pembayaran Selesai',
+  ditolak: 'Ditolak',
+  dibatalkan: 'Dibatalkan'
+};
+// Status yang TIDAK memblokir ruangan lagi (tidak dianggap "terpesan" untuk
+// kalender/cek bentrok) — cermin dari STATUS_TIDAK_MENGUNCI_RUANGAN_ di Code.gs.
+const STATUS_TIDAK_MENGUNCI_RUANGAN_ = ['ditolak','dibatalkan'];
+function statusLabel(status){ return STATUS_LABELS_[status] || status; }
+
+// Meratakan getBookings() menjadi daftar ITEM per-ruangan (dengan status
+// grupnya masing-masing) — dipakai untuk kalender ketersediaan & cek bentrok,
+// yang selalu bekerja per-ruangan-per-tanggal, terlepas dari bentuk data asli
+// (grup+items untuk admin/milik-sendiri, atau sudah rata untuk tampilan publik).
+function flattenBookingItems(list){
+  const out = [];
+  (list || []).forEach(g => {
+    if(Array.isArray(g.items)){
+      g.items.forEach(it => out.push(Object.assign({}, it, { status: g.status, groupId: g.groupId })));
+    } else if(g.roomId){
+      out.push(g); // sudah rata (tampilan publik dari server)
+    }
+  });
+  return out;
+}
 
 /* ===================== TOASTS ===================== */
 function toast(message, type){
@@ -1230,7 +1236,7 @@ function renderRoomsGrid(){
 
 /* ===================== CALENDAR (DETAIL PAGE) ===================== */
 function realBookedDays(roomId, y, m){
-  const bookings = getBookings().filter(b => b.roomId === roomId && b.status !== 'cancelled' && b.status !== 'rejected');
+  const bookings = flattenBookingItems(getBookings()).filter(b => b.roomId === roomId && STATUS_TIDAK_MENGUNCI_RUANGAN_.indexOf(b.status) === -1);
   const booked = new Set();
   bookings.forEach(b => {
     const [by,bm,bd] = b.date.split('-').map(Number);
@@ -1367,70 +1373,49 @@ function handleDetailBookingClick(){
   requireAuth('booking', { roomId: calState.room.id, date: dk });
 }
 
-/* ===================== BOOKING FORM ===================== */
-let bookingCtx = { roomId: null, date: null };
-let bookingPaymentMethod = 'transfer';
+/* ===================== BOOKING FORM (KERANJANG MULTI-RUANGAN) ===================== */
+// TAHAP 2: 1 pemesanan (BookingGroup) bisa berisi BEBERAPA ruangan
+// (BookingItem), masing-masing dengan tanggal/jam sendiri. bookingCart
+// menyimpan item-item itu di memori sampai dikirim lewat submitBooking().
+// Menambah ruangan baru (openBookingForm) MENAMBAHKAN ke keranjang yang
+// sudah ada, bukan mereset — supaya tombol "Tambah Ruangan Lain" ->
+// go('rooms') -> pilih ruangan lain -> kembali otomatis ke halaman
+// pemesanan dengan ruangan sebelumnya tetap ada.
+let bookingCart = [];
+let groupFieldsInitialized = false;
 
 function timeToMinutes(t){ const [h,m] = (t||'0:0').split(':').map(Number); return h*60+m; }
 
 function openBookingForm(roomId, date){
   const room = findRoom(roomId);
   if(!room) return;
-  bookingCtx = { roomId, date };
-  bookingPaymentMethod = room.isExternal ? 'transfer' : '';
-
-  document.getElementById('booking-back-btn').onclick = () => go('detail', roomId);
-  document.getElementById('booking-room-title').textContent = 'Formulir Pemesanan';
-  document.getElementById('booking-room-subtitle').textContent = `${room.name} · ${room.floor}`;
-  document.getElementById('booking-room-image').innerHTML = `<img src="${room.img}" class="w-full h-full object-cover" alt="${room.name}">`;
-  document.getElementById('booking-room-loc').textContent = `${room.category} · Maks ${room.capacity} orang`;
-
-  // Ruangan internal: tidak ada langkah biaya/pembayaran sama sekali.
-  // Ruangan eksternal: tampilkan Ringkasan Biaya + Metode Pembayaran seperti biasa.
-  document.getElementById('payment-section').classList.toggle('hidden', !room.isExternal);
-  document.getElementById('internal-note').classList.toggle('hidden', !!room.isExternal);
-  document.getElementById('time-fields').classList.toggle('hidden', !!room.isExternal);
-  const submitBtn = document.getElementById('booking-submit-btn');
-  if(submitBtn) submitBtn.textContent = room.isExternal ? 'Kirim Pemesanan' : 'Ajukan Pemesanan';
-  const dateLabel = document.getElementById('bk-date-label');
-  if(dateLabel) dateLabel.textContent = room.isExternal ? 'Tanggal check-in' : 'Tanggal pemakaian';
-
-  populateTariffOptions(room);
-  document.getElementById('bk-date').value = date;
-  document.getElementById('bk-start').value = '09:00';
-  document.getElementById('bk-end').value = '11:00';
-
-  document.querySelectorAll('.pay-option').forEach(el => el.classList.toggle('selected', el.dataset.method === bookingPaymentMethod));
-
-  const user = getUser();
-  document.getElementById('bk-name').value = user ? user.name : '';
-  document.getElementById('bk-org').value = user && user.org ? user.org : '';
-  document.getElementById('bk-email').value = user ? user.email : '';
-  document.getElementById('bk-phone').value = '';
-  document.getElementById('bk-participants').value = '';
-  document.getElementById('bk-purpose').value = '';
-  document.getElementById('bk-notes').value = '';
-  document.getElementById('bk-consent').checked = false;
-  document.getElementById('conflict-warning').classList.add('hidden');
-  ['bk-date','bk-name','bk-org','bk-email','bk-phone','bk-participants','bk-purpose'].forEach(id => setFieldError(id, null));
-
-  updateBookingSummaryPanel();
+  const item = {
+    cartId: 'c' + Date.now() + '_' + Math.floor(Math.random()*1000),
+    roomId,
+    date,
+    tariffType: room.isExternal ? 'harian' : 'jam',
+    startTime: '09:00',
+    endTime: '11:00'
+  };
+  recomputeCartItem(item);
+  bookingCart.push(item);
+  renderBookingPage();
   go('booking');
+  toast(`${room.name} ditambahkan ke pemesanan.`);
 }
 
 // Jenis tarif tergantung apakah ruangan internal (Per jam / Per hari) atau
 // eksternal (Harian / Mingguan — Mingguan disembunyikan bila room.priceWeek
 // tidak ada, mis. Aula Kegiatan Komersil).
-function populateTariffOptions(room){
-  const sel = document.getElementById('bk-tariff');
+function tariffOptionsHtml(room, selected){
+  let opts;
   if(room.isExternal){
-    let opts = `<option value="harian">Harian</option>`;
-    if(room.priceWeek) opts += `<option value="mingguan">Mingguan</option>`;
-    sel.innerHTML = opts;
+    opts = [['harian','Harian']];
+    if(room.priceWeek) opts.push(['mingguan','Mingguan']);
   } else {
-    sel.innerHTML = `<option value="jam">Per jam</option><option value="hari">Per hari (paket harian)</option>`;
+    opts = [['jam','Per jam'], ['hari','Per hari (paket harian)']];
   }
-  sel.value = sel.options[0] ? sel.options[0].value : '';
+  return opts.map(([v,label]) => `<option value="${v}" ${v === selected ? 'selected' : ''}>${label}</option>`).join('');
 }
 
 function addDays(dateStr, n){
@@ -1450,82 +1435,214 @@ function computeStay(room, tariff, date){
   return null; // 'jam' ditangani terpisah pakai jam mulai/selesai
 }
 
-function selectPaymentMethod(method){
-  bookingPaymentMethod = method;
-  document.querySelectorAll('.pay-option').forEach(el => el.classList.toggle('selected', el.dataset.method === method));
-}
-
-function onBookingFieldChange(){
-  updateBookingSummaryPanel();
-}
-
-function updateBookingSummaryPanel(){
-  const room = findRoom(bookingCtx.roomId);
+// Menghitung ulang endDate + amount sebuah item keranjang berdasarkan
+// ruangan & jenis tarifnya. Fasilitas internal (isExternal=false) SELALU
+// amount 0 (tidak ada biaya sewa), berapa pun tarif/jam yang dipilih.
+function recomputeCartItem(item){
+  const room = findRoom(item.roomId);
   if(!room) return;
-  const date = document.getElementById('bk-date').value || bookingCtx.date;
-  const tariff = document.getElementById('bk-tariff').value;
-  const start = document.getElementById('bk-start').value;
-  const end = document.getElementById('bk-end').value;
-
-  let total, durasiText, endDate, hours = 0;
-  if(tariff === 'jam'){
-    hours = Math.max(0, (timeToMinutes(end) - timeToMinutes(start)) / 60);
-    total = hours * room.priceHour;
-    durasiText = `${hours} jam`;
-    endDate = date;
+  if(item.tariffType === 'jam'){
+    item.endDate = item.date;
+    item.amount = 0;
   } else {
-    const stay = computeStay(room, tariff, date) || { endDate: date, amount: 0, text: '—' };
-    total = stay.amount;
-    durasiText = stay.text;
-    endDate = stay.endDate;
+    const stay = computeStay(room, item.tariffType, item.date) || { endDate: item.date, amount: 0 };
+    item.endDate = stay.endDate;
+    item.amount = room.isExternal ? stay.amount : 0;
   }
+}
 
-  document.getElementById('booking-summary-panel').innerHTML = `
-    <div class="flex items-center justify-between"><span class="text-slate-500">Ruangan</span><span class="font-medium navy-text text-right">${room.name}</span></div>
-    <div class="flex items-center justify-between"><span class="text-slate-500">${room.isExternal ? 'Check-in' : 'Tanggal'}</span><span class="font-medium navy-text">${date ? formatDateLong(date) : '—'}</span></div>
-    ${room.isExternal && endDate !== date ? `<div class="flex items-center justify-between"><span class="text-slate-500">Check-out</span><span class="font-medium navy-text">${formatDateLong(endDate)}</span></div>` : ''}
-    <div class="flex items-center justify-between"><span class="text-slate-500">Durasi</span><span class="font-medium navy-text">${durasiText}</span></div>
-    ${room.isExternal ? `
+function removeCartItem(cartId){
+  bookingCart = bookingCart.filter(it => it.cartId !== cartId);
+  renderBookingPage();
+  if(!bookingCart.length) toast('Keranjang pemesanan kosong.');
+}
+
+function updateCartItemField(cartId, field, value){
+  const item = bookingCart.find(it => it.cartId === cartId);
+  if(!item) return;
+  item[field] = value;
+  if(field === 'tariffType' && item.tariffType === 'jam'){
+    item.startTime = item.startTime || '09:00'; item.endTime = item.endTime || '11:00';
+  }
+  recomputeCartItem(item);
+  renderCartList();
+  renderCartSummarySidebar();
+}
+
+// Bentrok terhadap data tersimpan di server (diratakan via
+// flattenBookingItems) MAUPUN terhadap item lain di keranjang yang sama
+// (mis. ruangan yang sama dipilih dua kali dengan jadwal beririsan).
+function itemConflictsWithStored(item){
+  const candidate = { date: item.date, endDate: item.endDate || item.date, startTime: item.startTime, endTime: item.endTime, tariffType: item.tariffType };
+  const stored = flattenBookingItems(getBookings()).filter(b => b.roomId === item.roomId && STATUS_TIDAK_MENGUNCI_RUANGAN_.indexOf(b.status) === -1);
+  if(stored.some(b => bookingsConflict(candidate, b))) return true;
+  return bookingCart.some(other => other.cartId !== item.cartId && other.roomId === item.roomId &&
+    bookingsConflict(candidate, { date: other.date, endDate: other.endDate || other.date, startTime: other.startTime, endTime: other.endTime, tariffType: other.tariffType }));
+}
+
+function renderCartList(){
+  const wrap = document.getElementById('cart-items-list');
+  if(!bookingCart.length){
+    wrap.innerHTML = `<div class="text-center py-10 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Belum ada ruangan dipilih. Klik "Tambah Ruangan Lain" untuk memilih ruangan.</div>`;
+    lucide.createIcons();
+    return;
+  }
+  wrap.innerHTML = bookingCart.map(item => {
+    const room = findRoom(item.roomId);
+    if(!room) return '';
+    const conflict = itemConflictsWithStored(item);
+    return `
+    <div class="border border-slate-200 rounded-xl p-4" data-cart-id="${item.cartId}">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <img src="${room.img}" class="w-12 h-12 rounded-md object-cover flex-shrink-0" alt="${room.name}">
+          <div class="min-w-0">
+            <p class="font-display font-semibold navy-text text-sm truncate">${room.name}</p>
+            <p class="text-xs text-slate-400 truncate">${room.category} · Maks ${room.capacity} orang</p>
+          </div>
+        </div>
+        <button type="button" onclick="removeCartItem('${item.cartId}')" class="icon-btn-sm flex-shrink-0" title="Hapus ruangan ini"><i data-lucide="trash-2" class="w-4 h-4" style="color:var(--danger)"></i></button>
+      </div>
+      <div class="grid md:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="block text-xs font-semibold navy-text mb-1">${room.isExternal ? 'Tanggal check-in' : 'Tanggal pemakaian'}</label>
+          <input type="date" value="${item.date}" onchange="updateCartItemField('${item.cartId}','date',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold navy-text mb-1">Jenis tarif</label>
+          <select onchange="updateCartItemField('${item.cartId}','tariffType',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white">
+            ${tariffOptionsHtml(room, item.tariffType)}
+          </select>
+        </div>
+      </div>
+      ${item.tariffType === 'jam' ? `
+      <div class="grid md:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="block text-xs font-semibold navy-text mb-1">Jam mulai</label>
+          <input type="time" step="900" value="${item.startTime}" onchange="updateCartItemField('${item.cartId}','startTime',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold navy-text mb-1">Jam selesai</label>
+          <input type="time" step="900" value="${item.endTime}" onchange="updateCartItemField('${item.cartId}','endTime',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+        </div>
+      </div>` : (item.endDate && item.endDate !== item.date ? `<p class="text-xs text-slate-400 mb-3">Check-out: ${formatDateLong(item.endDate)}</p>` : '')}
+      <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+        ${conflict
+          ? `<span class="flex items-center gap-1.5" style="color:var(--danger)"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>Ruangan telah terpesan pada jadwal ini</span>`
+          : `<span class="flex items-center gap-1.5" style="color:var(--ok)"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Ruangan tersedia pada jadwal ini</span>`}
+        <span class="font-semibold navy-text">${room.isExternal ? priceFmt(item.amount) : 'Gratis'}</span>
+      </div>
+    </div>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function renderCartSummarySidebar(){
+  const total = bookingCart.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+  const hasConflictAny = bookingCart.some(itemConflictsWithStored);
+  document.getElementById('booking-room-loc').textContent = `${bookingCart.length} ruangan dipilih`;
+  document.getElementById('booking-summary-panel').innerHTML = bookingCart.length ? `
+    ${bookingCart.map(item => {
+      const room = findRoom(item.roomId);
+      if(!room) return '';
+      return `<div class="flex items-center justify-between gap-2"><span class="text-slate-500 truncate">${room.name}</span><span class="font-medium navy-text flex-shrink-0">${room.isExternal ? priceFmt(item.amount) : 'Gratis'}</span></div>`;
+    }).join('')}
     <div class="border-t border-slate-100 pt-3 mt-1 flex items-center justify-between">
       <span class="font-semibold navy-text">Total</span>
       <span class="font-display text-lg font-bold navy-text">${priceFmt(total)}</span>
-    </div>` : `
-    <div class="border-t border-slate-100 pt-3 mt-1">
-      <span class="text-xs text-slate-400">Fasilitas internal — tidak ada biaya sewa.</span>
-    </div>`}`;
+    </div>
+    ${hasConflictAny ? `<p class="text-xs mt-1" style="color:var(--danger)">Ada ruangan yang bentrok jadwal — perbaiki sebelum mengirim.</p>` : ''}
+  ` : `<p class="text-slate-400">Belum ada ruangan dipilih.</p>`;
+}
 
-  const badge = document.getElementById('availability-badge');
-  if(tariff === 'jam'){
-    if(date && start && end && hours > 0){
-      const conflict = hasConflict(bookingCtx.roomId, date, endDate, start, end, null, tariff);
-      badge.innerHTML = conflict
-        ? `<i data-lucide="alert-circle" class="w-3.5 h-3.5" style="color:var(--danger)"></i><span style="color:var(--danger)">Ruangan telah terpesan pada jadwal ini</span>`
-        : `<i data-lucide="check-circle-2" class="w-3.5 h-3.5" style="color:var(--ok)"></i><span style="color:var(--ok)">Ruangan tersedia pada jadwal ini</span>`;
-    } else if(hours <= 0){
-      badge.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5" style="color:var(--danger)"></i><span style="color:var(--danger)">Jam selesai harus setelah jam mulai</span>`;
-    } else {
-      badge.innerHTML = '';
+// Poin 1: kunci tombol "Kirim Pemesanan" bila akun yang sedang login belum
+// disetujui admin. Status disegarkan dari server setiap kali halaman ini
+// dibuka (bukan cuma dipercaya dari cache localStorage saat login), karena
+// admin bisa menyetujui kapan saja setelah sesi login dimulai.
+async function refreshMyApprovalLock(){
+  const user = getUser();
+  const box = document.getElementById('approval-lock-warning');
+  const boxText = document.getElementById('approval-lock-warning-text');
+  const submitBtn = document.getElementById('booking-submit-btn');
+  if(!user){ box.classList.add('hidden'); if(submitBtn) submitBtn.disabled = false; return; }
+
+  try{
+    const params = (user.isInternal && getUserToken()) ? { userToken: getUserToken() } : { email: user.email };
+    const data = await apiGet('myApprovalStatus', params);
+    if(data.ok){
+      user.approvalStatus = data.approvalStatus;
+      setUser(user);
     }
-  } else if(date){
-    const conflict = hasConflict(bookingCtx.roomId, date, endDate, '00:00', '23:59', null, tariff);
-    badge.innerHTML = conflict
-      ? `<i data-lucide="alert-circle" class="w-3.5 h-3.5" style="color:var(--danger)"></i><span style="color:var(--danger)">Ruangan telah terpesan pada periode ini</span>`
-      : `<i data-lucide="check-circle-2" class="w-3.5 h-3.5" style="color:var(--ok)"></i><span style="color:var(--ok)">Ruangan tersedia pada periode ini</span>`;
+  }catch(err){ /* pakai status lama dari cache bila gagal menyegarkan */ }
+
+  const locked = user.approvalStatus && user.approvalStatus !== 'disetujui';
+  if(locked){
+    boxText.textContent = user.approvalStatus === 'ditolak'
+      ? 'Pendaftaran akun Anda tidak disetujui oleh pengelola. Silakan hubungi kami bila ini keliru.'
+      : 'Akun Anda sedang menunggu persetujuan pengelola. Anda belum bisa mengirim pemesanan sampai akun disetujui.';
+    box.classList.remove('hidden');
+    if(submitBtn) submitBtn.disabled = true;
   } else {
-    badge.innerHTML = '';
+    box.classList.add('hidden');
+    if(submitBtn) submitBtn.disabled = false;
   }
   lucide.createIcons();
+}
+
+function renderBookingPage(){
+  document.getElementById('booking-back-btn').onclick = () => go('rooms');
+  document.getElementById('booking-room-title').textContent = 'Formulir Pemesanan';
+  document.getElementById('booking-room-subtitle').textContent = bookingCart.length ? `${bookingCart.length} ruangan dipilih untuk 1 pemesanan` : 'Pilih ruangan untuk mulai memesan.';
+  renderCartList();
+  renderCartSummarySidebar();
+  refreshMyApprovalLock();
+
+  // Field pemesan (nama/instansi/dst.) hanya diisi ulang dari akun yang
+  // login SEKALI (saat pertama kali keranjang diisi) — supaya menambah
+  // ruangan lain tidak menimpa isian yang sudah diketik pengguna.
+  if(!groupFieldsInitialized){
+    const user = getUser();
+    document.getElementById('bk-name').value = user ? user.name : '';
+    document.getElementById('bk-org').value = user && user.org ? user.org : '';
+    document.getElementById('bk-email').value = user ? user.email : '';
+    document.getElementById('bk-phone').value = '';
+    document.getElementById('bk-participants').value = '';
+    document.getElementById('bk-purpose').value = '';
+    document.getElementById('bk-notes').value = '';
+    document.getElementById('bk-consent').checked = false;
+    document.getElementById('conflict-warning').classList.add('hidden');
+    ['bk-name','bk-org','bk-email','bk-phone','bk-participants','bk-purpose'].forEach(id => setFieldError(id, null));
+    groupFieldsInitialized = true;
+  }
+  lucide.createIcons();
+}
+
+function resetBookingCart(){
+  bookingCart = [];
+  groupFieldsInitialized = false;
 }
 
 /* ===================== BOOKING DETAIL MODAL ===================== */
 function closeBookingModal(){
   document.getElementById('booking-modal-root').innerHTML = '';
 }
-function openBookingModal(id, adminMode){
-  const b = getBookings().find(x => x.id === id);
+
+// Teks periode 1 item booking (ruangan + tanggal/jam) — cermin dari
+// bookingItemPeriodText_() di Notifications.gs.
+function bookingItemPeriodText(it){
+  const room = findRoom(it.roomId);
+  const label = room ? room.name : (it.roomName || '');
+  const endDate = it.endDate || it.date;
+  if(it.tariffType === 'jam') return `${label}: ${formatDateLong(it.date)} · ${it.startTime}–${it.endTime}`;
+  if(endDate && endDate !== it.date) return `${label}: ${formatDateLong(it.date)} – ${formatDateLong(endDate)}`;
+  return `${label}: ${formatDateLong(it.date)}`;
+}
+
+function openBookingModal(groupId, adminMode){
+  const b = getBookings().find(x => x.groupId === groupId);
   if(!b) return;
-  const room = findRoom(b.roomId);
-  const canAct = adminMode && (b.status === 'pending' || b.status === 'confirmed');
+  const items = b.items || [];
+  const canAct = adminMode; // admin punya kuasa penuh mengubah status kapan saja
   const root = document.getElementById('booking-modal-root');
   root.innerHTML = `
     <div class="modal-overlay" onclick="if(event.target===this) closeBookingModal()">
@@ -1542,13 +1659,18 @@ function openBookingModal(id, adminMode){
             <p class="font-display font-bold text-lg">Kawasan Edukasi dan Digital Kemang</p>
             <p class="text-xs">Bukti Pemesanan Ruangan</p>
           </div>
-          <div class="flex items-center gap-4">
-            <img src="${room ? room.img : ''}" class="w-20 h-16 rounded-md object-cover flex-shrink-0 no-print" alt="">
-            <div>
-              <p class="font-display font-bold navy-text">${b.roomName}</p>
-              <p class="text-xs text-slate-500">${bookingPeriodText(b)}</p>
-              <div class="mt-1">${statusBadge(b.status)}</div>
-            </div>
+          <div class="mt-1">${statusBadge(b.status)}</div>
+          <div class="space-y-2 border-t border-slate-100 pt-4">
+            ${items.map(it => {
+              const room = findRoom(it.roomId);
+              return `<div class="flex items-center gap-3">
+                <img src="${room ? room.img : ''}" class="w-14 h-11 rounded-md object-cover flex-shrink-0 no-print" alt="">
+                <div>
+                  <p class="font-display font-bold navy-text text-sm">${room ? room.name : it.roomName}</p>
+                  <p class="text-xs text-slate-500">${bookingItemPeriodText(it)} ${(room && room.isExternal) ? '· ' + priceFmt(it.amount || 0) : '· Gratis'}</p>
+                </div>
+              </div>`;
+            }).join('')}
           </div>
           <div class="grid grid-cols-2 gap-y-4 gap-x-4 text-sm border-t border-slate-100 pt-5">
             <div><p class="text-xs text-slate-400 mb-0.5">Penanggung Jawab</p><p class="font-medium navy-text">${escapeHtml(b.name)}</p></div>
@@ -1556,28 +1678,25 @@ function openBookingModal(id, adminMode){
             <div><p class="text-xs text-slate-400 mb-0.5">Email</p><p class="font-medium navy-text break-all">${escapeHtml(b.email)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Telepon</p><p class="font-medium navy-text">${escapeHtml(b.phone)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Jumlah Peserta</p><p class="font-medium navy-text">${b.participants} orang</p></div>
-            ${(room ? room.isExternal : !!b.paymentMethod) ? `
-            <div><p class="text-xs text-slate-400 mb-0.5">Estimasi Biaya</p><p class="font-medium navy-text">${priceFmt(b.amount || 0)} <span class="text-xs text-slate-400 font-normal">(${tariffLabel(b.tariffType)})</span></p></div>
-            <div><p class="text-xs text-slate-400 mb-0.5">Metode Pembayaran</p><p class="font-medium navy-text">${({transfer:'Transfer Bank',kartu:'Kartu Kredit',ewallet:'E-Wallet'})[b.paymentMethod] || '—'}</p></div>` : `
-            <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Biaya</p><p class="font-medium navy-text">Gratis (fasilitas internal)</p></div>`}
+            <div><p class="text-xs text-slate-400 mb-0.5">Total Estimasi Biaya</p><p class="font-medium navy-text">${priceFmt(b.amount || 0)} <span class="text-xs text-slate-400 font-normal">(Transfer Bank)</span></p></div>
             <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Keperluan Acara</p><p class="font-medium navy-text">${escapeHtml(b.purpose)}</p></div>
             ${b.notes ? `<div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Catatan Tambahan</p><p class="font-medium navy-text">${escapeHtml(b.notes)}</p></div>` : ''}
             <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Diajukan pada</p><p class="font-medium navy-text">${new Date(b.createdAt).toLocaleString('id-ID')}</p></div>
           </div>
           ${b.adminNote ? `<div class="bg-[var(--paper)] border border-slate-200 rounded-md p-4 text-sm"><p class="text-xs font-semibold navy-text mb-1">Catatan Pengelola</p><p class="text-slate-600">${escapeHtml(b.adminNote)}</p></div>` : ''}
-          <p class="print-footer-note">Dokumen ini adalah bukti pemesanan ruangan. Status pada dokumen ini adalah status terkini saat dicetak dan dapat berubah. <span class="print-timestamp"></span></p>
+          <p class="print-footer-note">Dokumen ini adalah bukti pemesanan ruangan. Status pada dokumen ini adalah status terkini saat dicetak dan dapat berubah.</p>
           ${!adminMode ? `<div class="no-print"><button onclick="printBookingProof()" class="btn-outline text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="printer" class="w-4 h-4"></i>Cetak Bukti</button></div>` : ''}
           ${canAct ? `
-          <div class="border-t border-slate-100 pt-5">
+          <div class="border-t border-slate-100 pt-5 no-print">
             <label class="block text-xs font-semibold navy-text mb-1.5">Catatan admin (wajib diisi bila menolak / membatalkan)</label>
-            <textarea id="modal-admin-note" rows="2" placeholder="Contoh: Ruangan sedang dalam perawatan pada tanggal tersebut." class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4"></textarea>
-            <div class="flex flex-wrap gap-2">
-              ${b.status === 'pending' ? `
-                <button onclick="adminSetStatus('${b.id}','confirmed')" class="btn-primary text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4"></i>Konfirmasi Pemesanan</button>
-                <button onclick="adminSetStatus('${b.id}','rejected')" class="text-sm font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="x" class="w-4 h-4"></i>Tolak Pemesanan</button>` : ''}
-              ${b.status === 'confirmed' ? `
-                <button onclick="adminSetStatus('${b.id}','cancelled')" class="text-sm font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="ban" class="w-4 h-4"></i>Batalkan Pemesanan</button>` : ''}
+            <textarea id="modal-admin-note" rows="2" placeholder="Contoh: Ruangan sedang dalam perawatan pada tanggal tersebut." class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4">${escapeHtml(b.adminNote || '')}</textarea>
+            <div class="flex flex-wrap items-center gap-2">
+              <select id="modal-status-select" class="border border-slate-300 rounded-md px-3 py-2.5 text-sm bg-white">
+                ${STATUS_ORDER.map(s => `<option value="${s}" ${s === b.status ? 'selected' : ''}>${statusLabel(s)}</option>`).join('')}
+              </select>
+              <button onclick="adminSetStatus('${b.groupId}')" class="btn-primary text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4"></i>Ubah Status</button>
             </div>
+            <p class="text-xs text-slate-400 mt-2">Admin dapat mengubah ke status apa pun secara manual kapan saja.</p>
           </div>` : ''}
         </div>
       </div>
@@ -1585,8 +1704,8 @@ function openBookingModal(id, adminMode){
   lucide.createIcons();
 }
 
-// Sebuah booking dianggap "per jam" (hanya mengunci rentang jam pada SATU
-// tanggal) hanya bila tariffType === 'jam'. Selain itu ('hari' untuk
+// Sebuah item booking dianggap "per jam" (hanya mengunci rentang jam pada
+// SATU tanggal) hanya bila tariffType === 'jam'. Selain itu ('hari' untuk
 // internal, 'harian'/'mingguan' untuk eksternal) dianggap mengunci PENUH
 // dari date s.d. endDate (00:00–23:59 setiap harinya).
 function isHourlyBooking(b){
@@ -1607,23 +1726,14 @@ function bookingsConflict(a, b){
   return true; // salah satu/keduanya booking penuh-hari yang tanggalnya beririsan
 }
 
-function hasConflict(roomId, date, endDate, start, end, excludeId, tariffType){
-  const bookings = getBookings().filter(b => b.roomId === roomId && b.status !== 'cancelled' && b.status !== 'rejected' && b.id !== excludeId);
-  const candidate = { date, endDate, startTime: start, endTime: end, tariffType };
-  return bookings.some(b => bookingsConflict(candidate, b));
-}
-
 let bookingSubmitInFlight = false;
 
 async function submitBooking(e){
   e.preventDefault();
   if(bookingSubmitInFlight) return; // proteksi double-submit
 
-  const room = findRoom(bookingCtx.roomId);
-  const date = document.getElementById('bk-date').value;
-  const tariff = document.getElementById('bk-tariff').value;
-  const start = tariff === 'jam' ? document.getElementById('bk-start').value : '00:00';
-  const end = tariff === 'jam' ? document.getElementById('bk-end').value : '23:59';
+  if(!bookingCart.length){ toast('Pilih minimal 1 ruangan untuk dipesan.', 'error'); return; }
+
   const name = document.getElementById('bk-name').value.trim();
   const org = document.getElementById('bk-org').value.trim();
   const email = document.getElementById('bk-email').value.trim();
@@ -1631,34 +1741,45 @@ async function submitBooking(e){
   const participants = parseInt(document.getElementById('bk-participants').value);
   const purpose = document.getElementById('bk-purpose').value.trim();
   const notes = document.getElementById('bk-notes').value.trim();
-  const hours = tariff === 'jam' ? (timeToMinutes(end) - timeToMinutes(start)) / 60 : 1;
-  const stay = tariff !== 'jam' ? computeStay(room, tariff, date) : null;
-  const endDate = stay ? stay.endDate : date;
   const consent = document.getElementById('bk-consent');
 
   let ok = true;
-  if(!date){ setFieldError('bk-date','Tanggal pemakaian wajib diisi.'); ok = false; } else setFieldError('bk-date', null);
-  if(tariff === 'jam' && hours <= 0){ toast('Jam selesai harus setelah jam mulai.', 'error'); ok = false; }
   if(!name){ setFieldError('bk-name','Nama penanggung jawab wajib diisi.'); ok = false; } else setFieldError('bk-name', null);
   if(!org){ setFieldError('bk-org','Instansi/perusahaan wajib diisi.'); ok = false; } else setFieldError('bk-org', null);
   if(!email || !email.includes('@')){ setFieldError('bk-email','Masukkan email yang valid.'); ok = false; } else setFieldError('bk-email', null);
   if(!phone || phone.length < 8){ setFieldError('bk-phone','Masukkan nomor telepon yang valid.'); ok = false; } else setFieldError('bk-phone', null);
   if(!participants || participants < 1){ setFieldError('bk-participants','Jumlah peserta wajib diisi.'); ok = false; }
-  else if(participants > room.capacity){ setFieldError('bk-participants',`Melebihi kapasitas maksimal (${room.capacity} orang).`); ok = false; }
-  else setFieldError('bk-participants', null);
+  else {
+    // Paling ketat: kapasitas ruangan terkecil di antara semua ruangan yang dipilih.
+    const smallest = bookingCart.reduce((min, it) => {
+      const room = findRoom(it.roomId);
+      return room && room.capacity < min.capacity ? room : min;
+    }, findRoom(bookingCart[0].roomId));
+    if(smallest && participants > smallest.capacity){
+      setFieldError('bk-participants', `Melebihi kapasitas maksimal salah satu ruangan (${smallest.name}: ${smallest.capacity} orang).`);
+      ok = false;
+    } else setFieldError('bk-participants', null);
+  }
   if(!purpose){ setFieldError('bk-purpose','Keperluan acara wajib diisi.'); ok = false; } else setFieldError('bk-purpose', null);
   if(consent && !consent.checked){ toast('Anda perlu menyetujui persyaratan penggunaan data sebelum mengirim.', 'error'); ok = false; }
+  if(bookingCart.some(itemConflictsWithStored)){ toast('Ada ruangan yang bentrok jadwal — perbaiki sebelum mengirim.', 'error'); ok = false; }
 
   document.getElementById('conflict-warning').classList.add('hidden');
   if(!ok){ toast('Periksa kembali data yang belum lengkap.', 'error'); return; }
 
   const user = getUser();
-  const amount = room.isExternal ? (stay ? stay.amount : 0) : 0;
-  const paymentLabels = { transfer: 'Transfer Bank', kartu: 'Kartu Kredit', ewallet: 'E-Wallet' };
+  const items = bookingCart.map(it => {
+    const room = findRoom(it.roomId);
+    return {
+      roomId: it.roomId, roomName: room.name, date: it.date, endDate: it.endDate || it.date,
+      startTime: it.tariffType === 'jam' ? it.startTime : '00:00',
+      endTime: it.tariffType === 'jam' ? it.endTime : '23:59',
+      tariffType: it.tariffType, amount: it.amount || 0
+    };
+  });
+  const totalAmount = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
   const payload = {
-    roomId: room.id, roomName: room.name, date, endDate, startTime: start, endTime: end,
-    tariffType: tariff, name, org, email, phone, participants, purpose, notes,
-    amount, paymentMethod: room.isExternal ? bookingPaymentMethod : '',
+    name, org, email, phone, participants, purpose, notes, items,
     userEmail: user ? user.email : email,
     userToken: (user && user.isInternal) ? getUserToken() : undefined
   };
@@ -1670,14 +1791,16 @@ async function submitBooking(e){
   try{
     const data = await apiPost('createBooking', payload);
     if(!data.ok){
-      if(data.conflict){
+      if(data.notApproved){
+        toast(data.error || 'Akun Anda belum disetujui pengelola.', 'error');
+        refreshMyApprovalLock();
+      } else if(data.conflict){
         const warn = document.getElementById('conflict-warning');
-        document.getElementById('conflict-warning-text').textContent = tariff === 'jam'
-          ? `Ruangan ini sudah terpesan pada jam ${start}–${end} di tanggal tersebut. Silakan pilih jam lain atau tanggal berbeda.`
-          : `Ruangan ini sudah terpesan pada periode ${formatDateLong(date)}${endDate !== date ? ' – ' + formatDateLong(endDate) : ''}. Silakan pilih tanggal lain.`;
+        const room = findRoom(data.roomId);
+        document.getElementById('conflict-warning-text').textContent = `Ruangan "${room ? room.name : data.roomId}" sudah terpesan pada jadwal yang dipilih. Silakan ubah tanggal/jam ruangan tersebut.`;
         warn.classList.remove('hidden');
         lucide.createIcons();
-        toast('Terjadi bentrok jadwal pada periode yang dipilih.', 'error');
+        toast('Terjadi bentrok jadwal pada salah satu ruangan.', 'error');
       } else {
         toast(data.error || 'Gagal mengirim pemesanan. Silakan coba lagi.', 'error');
       }
@@ -1685,23 +1808,29 @@ async function submitBooking(e){
     }
 
     document.getElementById('success-summary').innerHTML = `
-      <div class="flex items-center gap-4 pb-4 mb-4 border-b border-slate-100">
-        <img src="${room.img}" class="w-20 h-16 rounded-md object-cover flex-shrink-0" alt="">
-        <div>
-          <p class="font-display font-bold navy-text">${room.name}</p>
-          <p class="text-xs text-slate-500">${tariff === 'jam' ? `${formatDateLong(date)} · ${start}–${end}` : `${formatDateLong(date)}${endDate !== date ? ' – ' + formatDateLong(endDate) : ''}`}</p>
-        </div>
+      <div class="space-y-2 pb-4 mb-4 border-b border-slate-100">
+        ${items.map(it => {
+          const room = findRoom(it.roomId);
+          return `<div class="flex items-center gap-3">
+            <img src="${room ? room.img : ''}" class="w-16 h-12 rounded-md object-cover flex-shrink-0" alt="">
+            <div>
+              <p class="font-display font-bold navy-text text-sm">${room ? room.name : it.roomName}</p>
+              <p class="text-xs text-slate-500">${bookingItemPeriodText(it)}</p>
+            </div>
+          </div>`;
+        }).join('')}
       </div>
       <div class="grid grid-cols-2 gap-y-3 text-sm">
         <div><p class="text-xs text-slate-400">Nomor Referensi</p><p class="font-display font-bold navy-text">${data.ref}</p></div>
-        ${room.isExternal ? `<div><p class="text-xs text-slate-400">Estimasi Biaya</p><p class="font-semibold navy-text">${priceFmt(amount)}</p></div>` : `<div><p class="text-xs text-slate-400">Biaya</p><p class="font-semibold navy-text">Gratis (fasilitas internal)</p></div>`}
+        <div><p class="text-xs text-slate-400">Total Estimasi Biaya</p><p class="font-semibold navy-text">${priceFmt(totalAmount)}</p></div>
         <div><p class="text-xs text-slate-400">Penanggung Jawab</p><p class="font-medium navy-text">${escapeHtml(name)}</p></div>
         <div><p class="text-xs text-slate-400">Instansi</p><p class="font-medium navy-text">${escapeHtml(org)}</p></div>
         <div><p class="text-xs text-slate-400">Jumlah Peserta</p><p class="font-medium navy-text">${participants} orang</p></div>
-        ${room.isExternal ? `<div><p class="text-xs text-slate-400">Metode Pembayaran</p><p class="font-medium navy-text">${paymentLabels[bookingPaymentMethod]}</p></div>` : ''}
-        <div class="col-span-2"><p class="text-xs text-slate-400">Status</p><p>${statusBadge('pending')}</p></div>
+        <div><p class="text-xs text-slate-400">Metode Pembayaran</p><p class="font-medium navy-text">Transfer Bank</p></div>
+        <div class="col-span-2"><p class="text-xs text-slate-400">Status</p><p>${statusBadge('belum_konfirmasi')}</p></div>
       </div>`;
     toast('Pemesanan berhasil dikirim dan menunggu konfirmasi. Email konfirmasi telah dikirim ke ' + email + '.');
+    resetBookingCart();
     go('success');
   }catch(err){
     toast('Gagal menghubungi server. Periksa koneksi Anda dan coba lagi.', 'error');
@@ -2050,4 +2179,4 @@ if(API_URL.indexOf('PASTE_URL') !== -1){
 }
 </script>
 </body>
-</html>
+</html>.
