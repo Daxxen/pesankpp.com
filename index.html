@@ -290,6 +290,22 @@ function printBookingProof(){
             </div>
           </div>
 
+          <div>
+            <label class="block text-sm font-semibold navy-text mb-1.5">Kategori Instansi</label>
+            <select id="bk-priority-tier" onchange="onPriorityTierChange()" class="w-full md:w-1/2 border border-slate-300 rounded-md px-4 py-2.5 text-sm bg-white">
+              <option value="pidi">PIDI</option>
+              <option value="bins">BINS</option>
+              <option value="satker_uker">Satker/Uker (Internal BI)</option>
+              <option value="eksternal_lppi" selected>Eksternal (LPPI)</option>
+            </select>
+            <p class="text-xs text-slate-400 mt-1.5">Dipakai pengelola sebagai konteks penjadwalan — bukan syarat, dan tidak memengaruhi apakah pemesanan Anda diproses.</p>
+          </div>
+
+          <div id="priority-info-banner" class="hidden bg-[var(--paper)] border border-slate-200 text-sm rounded-md p-4 flex items-start gap-2" style="color:var(--slate-600)">
+            <i data-lucide="info" class="w-4 h-4 mt-0.5 flex-shrink-0" style="color:var(--slate-500)"></i>
+            <span>Sebagai informasi, Kawasan Edukasi dan Digital Kemang mengatur urutan prioritas pemakaian ruangan: PIDI, lalu BINS, lalu Satker/Uker (Internal BI), dan terakhir pihak eksternal (LPPI). Pemesanan Anda tetap kami proses secara normal — bila suatu waktu terjadi penyesuaian jadwal karena kebutuhan unit dengan prioritas lebih tinggi, pengelola akan menghubungi Anda langsung untuk mencarikan alternatif terbaik.</span>
+          </div>
+
           <div class="grid md:grid-cols-2 gap-5">
             <div>
               <label class="block text-sm font-semibold navy-text mb-1.5">Nama penanggung jawab</label>
@@ -751,6 +767,16 @@ const STATUS_LABELS_ = {
 // kalender/cek bentrok) — cermin dari STATUS_TIDAK_MENGUNCI_RUANGAN_ di Code.gs.
 const STATUS_TIDAK_MENGUNCI_RUANGAN_ = ['ditolak','dibatalkan'];
 function statusLabel(status){ return STATUS_LABELS_[status] || status; }
+
+// Cermin dari PRIORITY_TIER_LABELS_ di Code.gs — murni label untuk
+// ditampilkan ke admin sebagai konteks, tidak memengaruhi logika apa pun.
+const PRIORITY_TIER_LABELS_ = {
+  pidi: 'PIDI',
+  bins: 'BINS',
+  satker_uker: 'Satker/Uker (Internal BI)',
+  eksternal_lppi: 'Eksternal (LPPI)'
+};
+function priorityTierLabel(tier){ return PRIORITY_TIER_LABELS_[tier] || '-'; }
 
 // Meratakan getBookings() menjadi daftar ITEM per-ruangan (dengan status
 // grupnya masing-masing) — dipakai untuk kalender ketersediaan & cek bentrok,
@@ -1386,6 +1412,17 @@ let groupFieldsInitialized = false;
 
 function timeToMinutes(t){ const [h,m] = (t||'0:0').split(':').map(Number); return h*60+m; }
 
+// Poin 9: banner info (bukan peringatan mengintimidasi) muncul untuk siapa
+// pun yang TIDAK memilih tier tertinggi (PIDI). Murni informasi — tidak
+// mengunci apa pun di form.
+function onPriorityTierChange(){
+  const sel = document.getElementById('bk-priority-tier');
+  const banner = document.getElementById('priority-info-banner');
+  if(!sel || !banner) return;
+  banner.classList.toggle('hidden', sel.value === 'pidi');
+  lucide.createIcons();
+}
+
 function openBookingForm(roomId, date){
   const room = findRoom(roomId);
   if(!room) return;
@@ -1610,6 +1647,8 @@ function renderBookingPage(){
     document.getElementById('bk-purpose').value = '';
     document.getElementById('bk-notes').value = '';
     document.getElementById('bk-consent').checked = false;
+    document.getElementById('bk-priority-tier').value = 'eksternal_lppi';
+    onPriorityTierChange();
     document.getElementById('conflict-warning').classList.add('hidden');
     ['bk-name','bk-org','bk-email','bk-phone','bk-participants','bk-purpose'].forEach(id => setFieldError(id, null));
     groupFieldsInitialized = true;
@@ -1675,6 +1714,7 @@ function openBookingModal(groupId, adminMode){
           <div class="grid grid-cols-2 gap-y-4 gap-x-4 text-sm border-t border-slate-100 pt-5">
             <div><p class="text-xs text-slate-400 mb-0.5">Penanggung Jawab</p><p class="font-medium navy-text">${escapeHtml(b.name)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Instansi / Unit Kerja</p><p class="font-medium navy-text">${escapeHtml(b.org)}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Kategori Instansi</p><p class="font-medium navy-text">${priorityTierLabel(b.priorityTier)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Email</p><p class="font-medium navy-text break-all">${escapeHtml(b.email)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Telepon</p><p class="font-medium navy-text">${escapeHtml(b.phone)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Jumlah Peserta</p><p class="font-medium navy-text">${b.participants} orang</p></div>
@@ -1741,6 +1781,7 @@ async function submitBooking(e){
   const participants = parseInt(document.getElementById('bk-participants').value);
   const purpose = document.getElementById('bk-purpose').value.trim();
   const notes = document.getElementById('bk-notes').value.trim();
+  const priorityTier = document.getElementById('bk-priority-tier').value;
   const consent = document.getElementById('bk-consent');
 
   let ok = true;
@@ -1779,7 +1820,7 @@ async function submitBooking(e){
   });
   const totalAmount = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
   const payload = {
-    name, org, email, phone, participants, purpose, notes, items,
+    name, org, email, phone, participants, purpose, notes, items, priorityTier,
     userEmail: user ? user.email : email,
     userToken: (user && user.isInternal) ? getUserToken() : undefined
   };
@@ -2104,7 +2145,7 @@ function renderAdminTable(){
       <td>${groupRoomNamesSummary(b)}</td>
       <td>${groupItemsSummary(b)}</td>
       <td>${escapeHtml(b.name)}</td>
-      <td>${escapeHtml(b.org)}</td>
+      <td>${escapeHtml(b.org)}<br><span class="badge" style="background:#eef2f7;color:var(--slate-600);margin-top:2px;">${priorityTierLabel(b.priorityTier)}</span></td>
       <td>${b.participants}</td>
       <td>${priceFmt(b.amount || 0)}</td>
       <td>${statusBadge(b.status)}</td>
