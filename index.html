@@ -1844,18 +1844,28 @@ async function submitBooking(e){
 function tariffLabel(tariffType){
   return { jam: 'Per Jam', hari: 'Per Hari (Internal)', harian: 'Harian', mingguan: 'Mingguan' }[tariffType] || tariffType;
 }
-// Teks ringkas tanggal/jam sebuah booking untuk ditampilkan di daftar &
-// modal — mengikuti jenis tarifnya (jam vs rentang tanggal harian/mingguan).
-function bookingPeriodText(b){
-  if(b.tariffType === 'jam') return `${formatDateLong(b.date)} · ${b.startTime}–${b.endTime}`;
-  if(b.endDate && b.endDate !== b.date) return `${formatDateLong(b.date)} – ${formatDateLong(b.endDate)}`;
-  return formatDateLong(b.date);
+// Ringkasan tanggal/jam SEMUA item sebuah grup pemesanan, untuk daftar
+// riwayat/admin. Cermin dari roomListHtml di Notifications.gs.
+function groupItemsSummary(b){
+  return (b.items || []).map(bookingItemPeriodText).join(' · ');
+}
+function groupRoomNamesSummary(b){
+  const items = b.items || [];
+  if(!items.length) return '-';
+  if(items.length === 1){ const r = findRoom(items[0].roomId); return r ? r.name : items[0].roomName; }
+  return `${items.length} Ruangan (${items.map(it => { const r = findRoom(it.roomId); return r ? r.name : it.roomName; }).join(', ')})`;
 }
 function statusBadge(status){
-  if(status === 'confirmed') return `<span class="badge badge-confirmed"><i data-lucide="check-circle-2" class="w-3 h-3"></i>Terkonfirmasi</span>`;
-  if(status === 'rejected') return `<span class="badge badge-cancelled"><i data-lucide="x-circle" class="w-3 h-3"></i>Ditolak</span>`;
-  if(status === 'cancelled') return `<span class="badge badge-cancelled"><i data-lucide="x-circle" class="w-3 h-3"></i>Dibatalkan</span>`;
-  return `<span class="badge badge-pending"><i data-lucide="clock" class="w-3 h-3"></i>Menunggu Konfirmasi</span>`;
+  const map = {
+    belum_konfirmasi: { cls: 'badge-pending', icon: 'clock' },
+    konfirmasi: { cls: 'badge-confirmed', icon: 'check-circle-2' },
+    menunggu_pembayaran: { cls: 'badge-payment', icon: 'wallet' },
+    pembayaran_selesai: { cls: 'badge-paid', icon: 'badge-check' },
+    ditolak: { cls: 'badge-cancelled', icon: 'x-circle' },
+    dibatalkan: { cls: 'badge-cancelled', icon: 'ban' }
+  };
+  const m = map[status] || map.belum_konfirmasi;
+  return `<span class="badge ${m.cls}"><i data-lucide="${m.icon}" class="w-3 h-3"></i>${statusLabel(status)}</span>`;
 }
 
 let historyFilterStatus = '';
@@ -1864,15 +1874,10 @@ function setHistoryFilter(status){
   renderHistory();
 }
 function renderHistoryFilterBar(all){
-  const counts = { '': all.length, pending: 0, confirmed: 0, rejected: 0, cancelled: 0 };
+  const counts = { '': all.length };
+  STATUS_ORDER.forEach(s => { counts[s] = 0; });
   all.forEach(b => { if(counts[b.status] !== undefined) counts[b.status]++; });
-  const tabs = [
-    { key: '', label: 'Semua' },
-    { key: 'pending', label: 'Menunggu' },
-    { key: 'confirmed', label: 'Terkonfirmasi' },
-    { key: 'rejected', label: 'Ditolak' },
-    { key: 'cancelled', label: 'Dibatalkan' }
-  ];
+  const tabs = [{ key: '', label: 'Semua' }].concat(STATUS_ORDER.map(s => ({ key: s, label: statusLabel(s) })));
   document.getElementById('history-filter').innerHTML = tabs.map(t =>
     `<button onclick="setHistoryFilter('${t.key}')" class="admin-tab ${historyFilterStatus === t.key ? 'active' : ''}" style="border:1px solid #e2e8f0;">${t.label} <span class="opacity-70">(${counts[t.key]})</span></button>`
   ).join('');
@@ -1886,9 +1891,7 @@ function renderHistory(){
 
   // Server sudah menyaring data ini sesuai akun yang login (lewat userToken
   // untuk staf internal, atau email untuk tamu) dan sudah menyamakan huruf
-  // besar/kecil di sisi server. Filter tambahan case-sensitive di sisi
-  // client SENGAJA dihapus karena sebelumnya bisa membuat riwayat terlihat
-  // kosong akibat perbedaan huruf besar/kecil pada email.
+  // besar/kecil di sisi server.
   const allBookings = getBookings();
   renderHistoryFilterBar(allBookings);
   const bookings = historyFilterStatus ? allBookings.filter(b => b.status === historyFilterStatus) : allBookings;
@@ -1909,25 +1912,21 @@ function renderHistory(){
     return;
   }
 
-  list.innerHTML = bookings.map(b => {
-    const room = findRoom(b.roomId);
-    return `
-    <div class="border border-slate-200 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 card-shadow cursor-pointer" onclick="openBookingModal('${b.id}', false)">
-      <img src="${room ? room.img : ''}" class="w-full md:w-28 h-28 md:h-20 rounded-md object-cover flex-shrink-0" alt="">
+  list.innerHTML = bookings.map(b => `
+    <div class="border border-slate-200 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 card-shadow cursor-pointer" onclick="openBookingModal('${b.groupId}', false)">
       <div class="flex-1">
         <div class="flex items-center gap-2 flex-wrap mb-1">
-          <p class="font-display font-bold navy-text">${b.roomName}</p>
+          <p class="font-display font-bold navy-text">${groupRoomNamesSummary(b)}</p>
           ${statusBadge(b.status)}
         </div>
-        <p class="text-xs text-slate-500">${bookingPeriodText(b)} · ${b.participants} peserta</p>
-        <p class="text-xs text-slate-400 mt-1">Ref: ${b.ref}</p>
+        <p class="text-xs text-slate-500">${groupItemsSummary(b)} · ${b.participants} peserta</p>
+        <p class="text-xs text-slate-400 mt-1">Ref: ${b.ref} · ${priceFmt(b.amount || 0)}</p>
       </div>
       <div class="flex items-center gap-2" onclick="event.stopPropagation()">
-        <button onclick="openBookingModal('${b.id}', false)" class="text-xs font-semibold text-slate-500 border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-md">Lihat Detail</button>
-        ${b.status === 'pending' ? `<button onclick="cancelBooking('${b.id}')" class="text-xs font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-3 py-2 rounded-md">Batalkan</button>` : ''}
+        <button onclick="openBookingModal('${b.groupId}', false)" class="text-xs font-semibold text-slate-500 border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-md">Lihat Detail</button>
+        ${b.status === 'belum_konfirmasi' ? `<button onclick="cancelBooking('${b.groupId}')" class="text-xs font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-3 py-2 rounded-md">Batalkan</button>` : ''}
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
   lucide.createIcons();
 }
 
@@ -1952,18 +1951,23 @@ async function cancelBooking(id){
 }
 
 /* ===================== ADMIN DASHBOARD ===================== */
-async function adminSetStatus(id, status){
+// Admin punya kuasa penuh mengubah ke status APA PUN secara manual — status
+// tujuan diambil dari dropdown #modal-status-select pada modal detail.
+async function adminSetStatus(id){
   const bookings = getBookings();
-  const target = bookings.find(b => b.id === id);
+  const target = bookings.find(b => b.groupId === id);
   if(!target) return;
+  const sel = document.getElementById('modal-status-select');
+  const status = sel ? sel.value : null;
+  if(!status) return;
   const noteInput = document.getElementById('modal-admin-note');
   const note = noteInput ? noteInput.value.trim() : '';
-  if((status === 'rejected' || status === 'cancelled') && !note){
+  if((status === 'ditolak' || status === 'dibatalkan') && !note){
     toast('Catatan admin wajib diisi untuk penolakan/pembatalan.', 'error');
     if(noteInput) noteInput.classList.add('input-error');
     return;
   }
-  const finalNote = note || (status === 'confirmed' ? 'Dikonfirmasi oleh pengelola.' : target.adminNote);
+  const finalNote = note || target.adminNote;
   try{
     const data = await apiPost('updateBookingStatus', { token: getAdminToken(), id, status, adminNote: finalNote });
     if(!data.ok){
@@ -1973,8 +1977,7 @@ async function adminSetStatus(id, status){
       toast(data.error || 'Gagal memperbarui status.', 'error');
       return;
     }
-    const labels = { confirmed: 'dikonfirmasi', rejected: 'ditolak', cancelled: 'dibatalkan' };
-    toast(`Pemesanan ${target.ref} berhasil ${labels[status] || 'diperbarui'}.`);
+    toast(`Pemesanan ${target.ref} berhasil diubah ke status "${statusLabel(status)}".`);
     closeBookingModal();
     await refreshBookings();
     renderAdmin();
@@ -1988,9 +1991,12 @@ function setAdminTab(tab){
   adminActiveTab = tab;
   document.getElementById('admin-tab-ringkasan').classList.toggle('active', tab === 'ringkasan');
   document.getElementById('admin-tab-pemesanan').classList.toggle('active', tab === 'pemesanan');
+  document.getElementById('admin-tab-pendaftar').classList.toggle('active', tab === 'pendaftar');
   document.getElementById('admin-panel-ringkasan').classList.toggle('hidden', tab !== 'ringkasan');
   document.getElementById('admin-panel-pemesanan').classList.toggle('hidden', tab !== 'pemesanan');
+  document.getElementById('admin-panel-pendaftar').classList.toggle('hidden', tab !== 'pendaftar');
   if(tab === 'pemesanan') renderAdminTable();
+  if(tab === 'pendaftar') renderAdminPendaftarList();
 }
 
 function renderAdmin(){
@@ -2004,26 +2010,22 @@ function renderAdmin(){
     roomSelect.innerHTML += ROOMS.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
   }
   renderAdminTable();
+  refreshAdminPendaftarCount();
   lucide.createIcons();
 }
 
 function renderAdminKpis(){
   const all = getBookings();
-  const now = new Date();
-  const pending = all.filter(b => b.status === 'pending').length;
-  const confirmedThisMonth = all.filter(b => {
-    if(b.status !== 'confirmed') return false;
-    const [y,m] = b.date.split('-').map(Number);
-    return y === now.getFullYear() && (m-1) === now.getMonth();
-  }).length;
-  const rejectedCancelled = all.filter(b => b.status === 'rejected' || b.status === 'cancelled').length;
-  const revenue = all.filter(b => b.status === 'confirmed').reduce((sum,b) => sum + (b.amount || 0), 0);
+  const belumKonfirmasi = all.filter(b => b.status === 'belum_konfirmasi').length;
+  const konfirmasi = all.filter(b => b.status === 'konfirmasi').length;
+  const menungguPembayaran = all.filter(b => b.status === 'menunggu_pembayaran').length;
+  const revenue = all.filter(b => b.status === 'pembayaran_selesai').reduce((sum,b) => sum + (b.amount || 0), 0);
 
   const cards = [
-    { label: 'Menunggu Konfirmasi', value: pending, icon: 'clock', color: 'var(--warn)' },
-    { label: 'Terkonfirmasi Bulan Ini', value: confirmedThisMonth, icon: 'check-circle-2', color: 'var(--ok)' },
-    { label: 'Ditolak / Dibatalkan', value: rejectedCancelled, icon: 'x-circle', color: 'var(--danger)' },
-    { label: 'Estimasi Pendapatan Terkonfirmasi', value: priceFmt(revenue), icon: 'wallet', color: 'var(--navy-900)' }
+    { label: 'Belum Konfirmasi', value: belumKonfirmasi, icon: 'clock', color: 'var(--warn)' },
+    { label: 'Konfirmasi', value: konfirmasi, icon: 'check-circle-2', color: 'var(--ok)' },
+    { label: 'Menunggu Pembayaran', value: menungguPembayaran, icon: 'wallet', color: 'var(--navy-900)' },
+    { label: 'Pendapatan Terbayar', value: priceFmt(revenue), icon: 'badge-check', color: '#116638' }
   ];
   document.getElementById('admin-kpi-grid').innerHTML = cards.map(c => `
     <div class="kpi-card">
@@ -2036,27 +2038,27 @@ function renderAdminKpis(){
 }
 
 function renderAdminPendingList(){
-  const pending = getBookings().filter(b => b.status === 'pending').slice(0, 5);
+  const pending = getBookings().filter(b => b.status === 'belum_konfirmasi').slice(0, 5);
   const el = document.getElementById('admin-pending-list');
   if(!pending.length){
     el.innerHTML = `<div class="text-center py-10 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Tidak ada pemesanan yang menunggu konfirmasi.</div>`;
     return;
   }
   el.innerHTML = pending.map(b => `
-    <div class="border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50" onclick="openBookingModal('${b.id}', true)">
+    <div class="border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50" onclick="openBookingModal('${b.groupId}', true)">
       <div class="min-w-0">
-        <p class="font-semibold navy-text text-sm truncate">${b.roomName}</p>
-        <p class="text-xs text-slate-500 truncate">${escapeHtml(b.name)} · ${bookingPeriodText(b)}</p>
+        <p class="font-semibold navy-text text-sm truncate">${groupRoomNamesSummary(b)}</p>
+        <p class="text-xs text-slate-500 truncate">${escapeHtml(b.name)} · ${groupItemsSummary(b)}</p>
       </div>
       <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 flex-shrink-0"></i>
     </div>`).join('');
 }
 
 function renderAdminRoomStats(){
-  const all = getBookings().filter(b => b.status !== 'cancelled' && b.status !== 'rejected');
-  const max = Math.max(1, ...ROOMS.map(r => all.filter(b => b.roomId === r.id).length));
+  const items = flattenBookingItems(getBookings()).filter(it => STATUS_TIDAK_MENGUNCI_RUANGAN_.indexOf(it.status) === -1);
+  const max = Math.max(1, ...ROOMS.map(r => items.filter(it => it.roomId === r.id).length));
   document.getElementById('admin-room-stats').innerHTML = ROOMS.map(r => {
-    const count = all.filter(b => b.roomId === r.id).length;
+    const count = items.filter(it => it.roomId === r.id).length;
     const pct = Math.round((count / max) * 100);
     return `
     <div>
@@ -2077,10 +2079,11 @@ function getAdminFilteredBookings(){
   const roomId = document.getElementById('admin-filter-room').value;
   const date = document.getElementById('admin-filter-date').value;
   return getBookings().filter(b => {
+    const items = b.items || [];
     const matchQ = !q || [b.ref, b.name, b.org, b.email].join(' ').toLowerCase().includes(q);
     const matchStatus = !status || b.status === status;
-    const matchRoom = !roomId || b.roomId === roomId;
-    const matchDate = !date || b.date === date;
+    const matchRoom = !roomId || items.some(it => it.roomId === roomId);
+    const matchDate = !date || items.some(it => it.date === date || (it.endDate && it.date <= date && it.endDate >= date));
     return matchQ && matchStatus && matchRoom && matchDate;
   });
 }
@@ -2092,41 +2095,37 @@ function renderAdminTable(){
   document.getElementById('admin-result-count').textContent = `${list.length} pemesanan ditemukan`;
   const body = document.getElementById('admin-table-body');
   if(!list.length){
-    body.innerHTML = `<tr><td colspan="9" class="text-center py-14 text-slate-400">Tidak ada pemesanan yang cocok dengan filter.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="8" class="text-center py-14 text-slate-400">Tidak ada pemesanan yang cocok dengan filter.</td></tr>`;
     return;
   }
-  body.innerHTML = list.map(b => {
-    const room = findRoom(b.roomId);
-    const isExt = room ? room.isExternal : !!b.paymentMethod;
-    return `
-    <tr onclick="openBookingModal('${b.id}', true)">
+  body.innerHTML = list.map(b => `
+    <tr onclick="openBookingModal('${b.groupId}', true)">
       <td class="font-semibold navy-text">${b.ref}</td>
-      <td>${b.roomName}</td>
-      <td>${isExt ? `<span class="badge" style="background:#fdf1e0;color:#8a5a12">Eksternal</span>` : `<span class="badge" style="background:#eef4ff;color:var(--navy-900)">Internal</span>`}</td>
-      <td>${bookingPeriodText(b)}</td>
+      <td>${groupRoomNamesSummary(b)}</td>
+      <td>${groupItemsSummary(b)}</td>
       <td>${escapeHtml(b.name)}</td>
       <td>${escapeHtml(b.org)}</td>
       <td>${b.participants}</td>
+      <td>${priceFmt(b.amount || 0)}</td>
       <td>${statusBadge(b.status)}</td>
       <td onclick="event.stopPropagation()">
-        ${b.status === 'pending' ? `
+        ${b.status === 'belum_konfirmasi' ? `
           <div class="flex gap-1.5">
-            <button onclick="quickAdminAction('${b.id}','confirmed')" class="icon-btn-sm" title="Konfirmasi"><i data-lucide="check" class="w-4 h-4" style="color:var(--ok)"></i></button>
-            <button onclick="openBookingModal('${b.id}', true)" class="icon-btn-sm" title="Tolak / Detail"><i data-lucide="x" class="w-4 h-4" style="color:var(--danger)"></i></button>
-          </div>` : `<button onclick="openBookingModal('${b.id}', true)" class="text-xs font-semibold text-[var(--blue-accent)] hover:underline">Detail</button>`}
+            <button onclick="quickAdminAction('${b.groupId}','konfirmasi')" class="icon-btn-sm" title="Konfirmasi"><i data-lucide="check" class="w-4 h-4" style="color:var(--ok)"></i></button>
+            <button onclick="openBookingModal('${b.groupId}', true)" class="icon-btn-sm" title="Tolak / Detail"><i data-lucide="x" class="w-4 h-4" style="color:var(--danger)"></i></button>
+          </div>` : `<button onclick="openBookingModal('${b.groupId}', true)" class="text-xs font-semibold text-[var(--blue-accent)] hover:underline">Detail</button>`}
       </td>
-    </tr>`;
-  }).join('');
+    </tr>`).join('');
 }
 
 async function quickAdminAction(id, status){
   const bookings = getBookings();
-  const target = bookings.find(b => b.id === id);
+  const target = bookings.find(b => b.groupId === id);
   if(!target) return;
   try{
     const data = await apiPost('updateBookingStatus', { token: getAdminToken(), id, status, adminNote: 'Dikonfirmasi oleh pengelola.' });
     if(!data.ok){ toast(data.error || 'Gagal memperbarui status.', 'error'); return; }
-    toast(`Pemesanan ${target.ref} berhasil dikonfirmasi.`);
+    toast(`Pemesanan ${target.ref} berhasil diubah ke status "${statusLabel(status)}".`);
     await refreshBookings();
     renderAdmin();
   }catch(err){
@@ -2145,24 +2144,92 @@ function resetAdminFilters(){
 function exportAdminCSV(){
   const list = adminFilteredCache.length ? adminFilteredCache : getAdminFilteredBookings();
   if(!list.length){ toast('Tidak ada data untuk diunduh.', 'error'); return; }
-  const headers = ['Referensi','Ruangan','Tipe','Tanggal Mulai','Tanggal Selesai','Jam Mulai','Jam Selesai','Jenis Tarif','Nama','Instansi','Email','Telepon','Peserta','Estimasi Biaya','Metode Pembayaran','Status','Catatan Tambahan','Diajukan'];
-  const rows = list.map(b => {
-    const room = findRoom(b.roomId);
-    return [
-    b.ref, b.roomName, (room ? room.isExternal : !!b.paymentMethod) ? 'Eksternal' : 'Internal',
-    b.date, b.endDate || b.date, b.startTime, b.endTime, tariffLabel(b.tariffType),
+  const headers = ['Referensi','Ruangan','Tanggal & Jam','Nama','Instansi','Email','Telepon','Peserta','Estimasi Biaya','Metode Pembayaran','Status','Catatan Tambahan','Catatan Pengelola','Diajukan'];
+  const rows = list.map(b => [
+    b.ref, groupRoomNamesSummary(b), groupItemsSummary(b),
     b.name, b.org, b.email, b.phone, b.participants, b.amount || 0,
-    ({transfer:'Transfer Bank',kartu:'Kartu Kredit',ewallet:'E-Wallet'})[b.paymentMethod] || '-',
-    b.status, b.notes || '', b.createdAt
-  ];});
+    'Transfer Bank', statusLabel(b.status), b.notes || '', b.adminNote || '', b.createdAt
+  ]);
   const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `pemesanan-kpp-bi-kemang-${new Date().toISOString().slice(0,10)}.csv`;
+  a.href = url; a.download = `pemesanan-kedika-${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('Data pemesanan berhasil diunduh.');
+}
+
+/* ===================== PENDAFTAR MENUNGGU (POIN 1) ===================== */
+// Tab admin terpisah untuk menyetujui/menolak akun baru (tamu eksternal
+// MAUPUN staf internal @bi.go.id) sebelum mereka bisa mengirim pemesanan.
+let adminPendaftarCache = [];
+
+async function refreshAdminPendaftarCount(){
+  if(!isAdmin()) return;
+  try{
+    const data = await apiGet('pendingUsers', { token: getAdminToken() });
+    if(data.ok){
+      adminPendaftarCache = data.users;
+      const badge = document.getElementById('admin-pendaftar-count-badge');
+      if(badge) badge.textContent = data.users.length ? `(${data.users.length})` : '';
+    }
+  }catch(err){ /* diamkan — badge cukup tampil kosong bila gagal */ }
+}
+
+async function renderAdminPendaftarList(){
+  const el = document.getElementById('admin-pendaftar-list');
+  el.innerHTML = `<div class="skeleton h-20 rounded-xl"></div>`;
+  try{
+    const data = await apiGet('pendingUsers', { token: getAdminToken() });
+    if(!data.ok){
+      if(data.error && data.error.indexOf('Sesi admin') !== -1){ toast(data.error, 'error'); logout(); go('admin-login'); return; }
+      el.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">${escapeHtml(data.error || 'Gagal memuat data.')}</div>`;
+      return;
+    }
+    adminPendaftarCache = data.users;
+    const badge = document.getElementById('admin-pendaftar-count-badge');
+    if(badge) badge.textContent = data.users.length ? `(${data.users.length})` : '';
+    if(!data.users.length){
+      el.innerHTML = `<div class="text-center py-16 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Tidak ada pendaftar yang menunggu persetujuan.</div>`;
+      lucide.createIcons();
+      return;
+    }
+    el.innerHTML = data.users.map(u => `
+      <div class="border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center gap-3 card-shadow">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap mb-1">
+            <p class="font-display font-bold navy-text">${escapeHtml(u.name || '(tanpa nama)')}</p>
+            <span class="badge" style="background:${u.org === 'Internal (Staf @bi.go.id)' ? '#eef4ff' : '#fdf1e0'};color:${u.org === 'Internal (Staf @bi.go.id)' ? 'var(--navy-900)' : '#8a5a12'}">${u.org === 'Internal (Staf @bi.go.id)' ? 'Staf Internal' : 'Tamu Eksternal'}</span>
+          </div>
+          <p class="text-xs text-slate-500">${escapeHtml(u.email)}</p>
+          <p class="text-xs text-slate-400 mt-0.5">${escapeHtml(u.org || '-')} · Daftar: ${u.createdAt ? new Date(u.createdAt).toLocaleString('id-ID') : '-'}</p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button onclick="adminDecideUser('${escapeHtml(u.email)}','disetujui')" class="btn-primary text-xs font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5"></i>Setujui</button>
+          <button onclick="adminDecideUser('${escapeHtml(u.email)}','ditolak')" class="text-xs font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="x" class="w-3.5 h-3.5"></i>Tolak</button>
+        </div>
+      </div>`).join('');
+    lucide.createIcons();
+  }catch(err){
+    el.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">Gagal menghubungi server. Periksa koneksi Anda.</div>`;
+  }
+}
+
+async function adminDecideUser(email, status){
+  if(status === 'ditolak' && !confirm(`Tolak pendaftaran ${email}? Pengguna ini tidak akan bisa mengirim pemesanan.`)) return;
+  try{
+    const data = await apiPost('updateUserApproval', { token: getAdminToken(), email, status });
+    if(!data.ok){
+      if(data.error && data.error.indexOf('Sesi admin') !== -1){ toast(data.error, 'error'); logout(); go('admin-login'); return; }
+      toast(data.error || 'Gagal memperbarui status akun.', 'error');
+      return;
+    }
+    toast(`Akun ${email} berhasil ${status === 'disetujui' ? 'disetujui' : 'ditolak'}.`);
+    renderAdminPendaftarList();
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }
 }
 
 /* ===================== INIT ===================== */
@@ -2179,4 +2246,4 @@ if(API_URL.indexOf('PASTE_URL') !== -1){
 }
 </script>
 </body>
-</html>.
+</html>
