@@ -277,17 +277,10 @@ function printBookingProof(){
             <div id="cart-items-list" class="space-y-4"></div>
           </div>
 
-          <div class="grid md:grid-cols-2 gap-5">
-            <div>
-              <label class="block text-sm font-semibold navy-text mb-1.5">Jumlah peserta</label>
-              <input id="bk-participants" type="number" min="1" placeholder="Jumlah orang" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
-              <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold navy-text mb-1.5">Instansi / Perusahaan</label>
-              <input id="bk-org" type="text" placeholder="Contoh: DPRN / Satker Anda" class="w-full border border-slate-300 rounded-md px-4 py-2.5 text-sm">
-              <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
-            </div>
+          <div>
+            <label class="block text-sm font-semibold navy-text mb-1.5">Instansi / Perusahaan</label>
+            <input id="bk-org" type="text" placeholder="Contoh: DPRN / Satker Anda" class="w-full md:w-1/2 border border-slate-300 rounded-md px-4 py-2.5 text-sm">
+            <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
           </div>
 
           <div>
@@ -1444,7 +1437,8 @@ function openBookingForm(roomId, date){
     date,
     tariffType: room.isExternal ? 'harian' : 'jam',
     startTime: '09:00',
-    endTime: '11:00'
+    endTime: '11:00',
+    participants: '' // diisi per ruangan — lihat catatan Poin peserta multi-ruangan
   };
   recomputeCartItem(item);
   bookingCart.push(item);
@@ -1510,6 +1504,15 @@ function updateCartItemField(cartId, field, value){
   const item = bookingCart.find(it => it.cartId === cartId);
   if(!item) return;
   item[field] = value;
+  if(field === 'participants'){
+    // Field ini diketik karakter demi karakter (oninput) — jangan
+    // render ulang seluruh kartu (akan merebut fokus input tiap
+    // ketikan), cukup bersihkan error lama dan perbarui sidebar.
+    const errEl = document.getElementById('cart-participants-error-' + cartId);
+    if(errEl) errEl.textContent = '';
+    renderCartSummarySidebar();
+    return;
+  }
   if(field === 'tariffType' && item.tariffType === 'jam'){
     item.startTime = item.startTime || '09:00'; item.endTime = item.endTime || '11:00';
   }
@@ -1552,7 +1555,7 @@ function renderCartList(){
         </div>
         <button type="button" onclick="removeCartItem('${item.cartId}')" class="icon-btn-sm flex-shrink-0" title="Hapus ruangan ini"><i data-lucide="trash-2" class="w-4 h-4" style="color:var(--danger)"></i></button>
       </div>
-      <div class="grid md:grid-cols-2 gap-3 mb-3">
+      <div class="grid md:grid-cols-3 gap-3 mb-3">
         <div>
           <label class="block text-xs font-semibold navy-text mb-1">${room.isExternal ? 'Tanggal check-in' : 'Tanggal pemakaian'}</label>
           <input type="date" value="${item.date}" onchange="updateCartItemField('${item.cartId}','date',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
@@ -1562,6 +1565,11 @@ function renderCartList(){
           <select onchange="updateCartItemField('${item.cartId}','tariffType',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white">
             ${tariffOptionsHtml(room, item.tariffType)}
           </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold navy-text mb-1">Jumlah peserta</label>
+          <input type="number" min="1" max="${room.capacity}" value="${item.participants || ''}" placeholder="Maks ${room.capacity} orang" oninput="updateCartItemField('${item.cartId}','participants',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm" id="cart-participants-${item.cartId}">
+          <p class="text-xs mt-1" style="color:var(--danger)" id="cart-participants-error-${item.cartId}"></p>
         </div>
       </div>
       ${item.tariffType === 'jam' ? `
@@ -1588,16 +1596,22 @@ function renderCartList(){
 
 function renderCartSummarySidebar(){
   const total = bookingCart.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+  const totalParticipants = bookingCart.reduce((sum, it) => sum + (parseInt(it.participants) || 0), 0);
   const hasConflictAny = bookingCart.some(itemConflictsWithStored);
   document.getElementById('booking-room-loc').textContent = `${bookingCart.length} ruangan dipilih`;
   document.getElementById('booking-summary-panel').innerHTML = bookingCart.length ? `
     ${bookingCart.map(item => {
       const room = findRoom(item.roomId);
       if(!room) return '';
-      return `<div class="flex items-center justify-between gap-2"><span class="text-slate-500 truncate">${room.name}</span><span class="font-medium navy-text flex-shrink-0">${room.isExternal ? priceFmt(item.amount) : 'Gratis'}</span></div>`;
+      const pLabel = parseInt(item.participants) > 0 ? `${parseInt(item.participants)} peserta` : 'Peserta belum diisi';
+      return `<div class="flex items-center justify-between gap-2"><span class="text-slate-500 truncate">${room.name} <span class="text-slate-400">(${pLabel})</span></span><span class="font-medium navy-text flex-shrink-0">${room.isExternal ? priceFmt(item.amount) : 'Gratis'}</span></div>`;
     }).join('')}
-    <div class="border-t border-slate-100 pt-3 mt-1 flex items-center justify-between">
-      <span class="font-semibold navy-text">Total</span>
+    <div class="border-t border-slate-100 pt-3 mt-1 flex items-center justify-between text-xs text-slate-500">
+      <span>Total Peserta</span>
+      <span class="font-medium navy-text">${totalParticipants > 0 ? totalParticipants + ' orang' : '-'}</span>
+    </div>
+    <div class="flex items-center justify-between">
+      <span class="font-semibold navy-text">Total Biaya</span>
       <span class="font-display text-lg font-bold navy-text">${priceFmt(total)}</span>
     </div>
     ${hasConflictAny ? `<p class="text-xs mt-1" style="color:var(--danger)">Ada ruangan yang bentrok jadwal — perbaiki sebelum mengirim.</p>` : ''}
@@ -1655,7 +1669,6 @@ function renderBookingPage(){
     document.getElementById('bk-org').value = user && user.org ? user.org : '';
     document.getElementById('bk-email').value = user ? user.email : '';
     document.getElementById('bk-phone').value = '';
-    document.getElementById('bk-participants').value = '';
     document.getElementById('bk-purpose').value = '';
     document.getElementById('bk-notes').value = '';
     document.getElementById('bk-consent').checked = false;
@@ -1663,7 +1676,7 @@ function renderBookingPage(){
     onPriorityTierChange();
     resetAttachments();
     document.getElementById('conflict-warning').classList.add('hidden');
-    ['bk-name','bk-org','bk-email','bk-phone','bk-participants','bk-purpose'].forEach(id => setFieldError(id, null));
+    ['bk-name','bk-org','bk-email','bk-phone','bk-purpose'].forEach(id => setFieldError(id, null));
     groupFieldsInitialized = true;
   }
   lucide.createIcons();
@@ -1720,7 +1733,7 @@ function openBookingModal(groupId, adminMode){
                 <img src="${room ? room.img : ''}" class="w-14 h-11 rounded-md object-cover flex-shrink-0 no-print" alt="">
                 <div>
                   <p class="font-display font-bold navy-text text-sm">${room ? room.name : it.roomName}</p>
-                  <p class="text-xs text-slate-500">${bookingItemPeriodText(it)} ${(room && room.isExternal) ? '· ' + priceFmt(it.amount || 0) : '· Gratis'}</p>
+                  <p class="text-xs text-slate-500">${bookingItemPeriodText(it)} ${it.participants ? '· ' + it.participants + ' peserta' : ''} ${(room && room.isExternal) ? '· ' + priceFmt(it.amount || 0) : '· Gratis'}</p>
                 </div>
               </div>`;
             }).join('')}
@@ -1880,7 +1893,6 @@ async function submitBooking(e){
   const org = document.getElementById('bk-org').value.trim();
   const email = document.getElementById('bk-email').value.trim();
   const phone = document.getElementById('bk-phone').value.trim();
-  const participants = parseInt(document.getElementById('bk-participants').value);
   const purpose = document.getElementById('bk-purpose').value.trim();
   const notes = document.getElementById('bk-notes').value.trim();
   const priorityTier = document.getElementById('bk-priority-tier').value;
@@ -1891,18 +1903,23 @@ async function submitBooking(e){
   if(!org){ setFieldError('bk-org','Instansi/perusahaan wajib diisi.'); ok = false; } else setFieldError('bk-org', null);
   if(!email || !email.includes('@')){ setFieldError('bk-email','Masukkan email yang valid.'); ok = false; } else setFieldError('bk-email', null);
   if(!phone || phone.length < 8){ setFieldError('bk-phone','Masukkan nomor telepon yang valid.'); ok = false; } else setFieldError('bk-phone', null);
-  if(!participants || participants < 1){ setFieldError('bk-participants','Jumlah peserta wajib diisi.'); ok = false; }
-  else {
-    // Paling ketat: kapasitas ruangan terkecil di antara semua ruangan yang dipilih.
-    const smallest = bookingCart.reduce((min, it) => {
-      const room = findRoom(it.roomId);
-      return room && room.capacity < min.capacity ? room : min;
-    }, findRoom(bookingCart[0].roomId));
-    if(smallest && participants > smallest.capacity){
-      setFieldError('bk-participants', `Melebihi kapasitas maksimal salah satu ruangan (${smallest.name}: ${smallest.capacity} orang).`);
+
+  // Peserta sekarang divalidasi PER RUANGAN — masing-masing ruangan bisa
+  // punya jumlah peserta berbeda, dibatasi oleh kapasitas ruangan itu
+  // sendiri saja, bukan disamaratakan dengan ruangan terkecil di keranjang.
+  bookingCart.forEach(it => {
+    const room = findRoom(it.roomId);
+    const errEl = document.getElementById('cart-participants-error-' + it.cartId);
+    const p = parseInt(it.participants);
+    if(!p || p < 1){
+      if(errEl) errEl.textContent = 'Jumlah peserta wajib diisi.';
       ok = false;
-    } else setFieldError('bk-participants', null);
-  }
+    } else if(room && p > room.capacity){
+      if(errEl) errEl.textContent = `Melebihi kapasitas maksimal ruangan ini (${room.capacity} orang).`;
+      ok = false;
+    } else if(errEl) errEl.textContent = '';
+  });
+
   if(!purpose){ setFieldError('bk-purpose','Keperluan acara wajib diisi.'); ok = false; } else setFieldError('bk-purpose', null);
   if(consent && !consent.checked){ toast('Anda perlu menyetujui persyaratan penggunaan data sebelum mengirim.', 'error'); ok = false; }
   if(bookingCart.some(itemConflictsWithStored)){ toast('Ada ruangan yang bentrok jadwal — perbaiki sebelum mengirim.', 'error'); ok = false; }
@@ -1917,10 +1934,15 @@ async function submitBooking(e){
       roomId: it.roomId, roomName: room.name, date: it.date, endDate: it.endDate || it.date,
       startTime: it.tariffType === 'jam' ? it.startTime : '00:00',
       endTime: it.tariffType === 'jam' ? it.endTime : '23:59',
-      tariffType: it.tariffType, amount: it.amount || 0
+      tariffType: it.tariffType, amount: it.amount || 0, participants: parseInt(it.participants) || 0
     };
   });
   const totalAmount = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+  // Jumlah peserta level-pemesanan (dikirim ke server & ditampilkan di
+  // dashboard admin/CSV/email) adalah TOTAL dari seluruh ruangan — dipakai
+  // untuk gambaran total kebutuhan (mis. konsumsi/parkir), bukan lagi
+  // dibatasi oleh kapasitas ruangan terkecil.
+  const participants = items.reduce((sum, it) => sum + (Number(it.participants) || 0), 0);
 
   const submitBtn = document.getElementById('booking-submit-btn');
   bookingSubmitInFlight = true;
@@ -1971,7 +1993,7 @@ async function submitBooking(e){
             <img src="${room ? room.img : ''}" class="w-16 h-12 rounded-md object-cover flex-shrink-0" alt="">
             <div>
               <p class="font-display font-bold navy-text text-sm">${room ? room.name : it.roomName}</p>
-              <p class="text-xs text-slate-500">${bookingItemPeriodText(it)}</p>
+              <p class="text-xs text-slate-500">${bookingItemPeriodText(it)} ${it.participants ? '· ' + it.participants + ' peserta' : ''}</p>
             </div>
           </div>`;
         }).join('')}
