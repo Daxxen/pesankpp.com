@@ -117,6 +117,7 @@ function printBookingProof(){
 
 <div id="toast-container"></div>
 <div id="booking-modal-root"></div>
+<div id="floorplan-modal-root"></div>
 
 <!-- ===== TOP BAR ===== -->
 <div class="navy-950 text-white text-xs">
@@ -173,17 +174,33 @@ function printBookingProof(){
 <main id="page-home" class="page active">
   <section class="hero-bg text-white">
     <div class="max-w-7xl mx-auto px-6 py-24 md:py-32">
-      <div class="max-w-2xl fade-in">
-        <p class="uppercase tracking-[0.2em] text-blue-200 text-xs font-semibold mb-4">Kawasan Edukasi dan Digital Kemang · Jakarta Selatan</p>
-        <h1 class="font-display text-5xl md:text-6xl font-bold leading-[1.05] mb-6">Pemesanan Ruang &amp; Fasilitas</h1>
-        <p class="text-slate-200 text-lg leading-relaxed mb-8">Cek ketersediaan ruang secara real-time dan ajukan pemesanan untuk mendukung diklat, rapat, dan acara kelembagaan di Kawasan Edukasi dan Digital Kemang.</p>
-        <div class="flex flex-wrap gap-3">
-          <button onclick="go('rooms')" class="font-semibold px-6 py-3 rounded-md hover:bg-slate-100 transition" style="background:#fff;color:var(--navy-900);">Lihat Semua Ruangan</button>
-          <button onclick="go('contact')" class="border border-white/40 text-white font-semibold px-6 py-3 rounded-md hover:bg-white/10 transition">Hubungi Kami</button>
+      <div class="grid lg:grid-cols-5 gap-12 items-center">
+        <div class="lg:col-span-3 fade-in">
+          <p class="uppercase tracking-[0.2em] text-blue-200 text-xs font-semibold mb-4">Kawasan Edukasi dan Digital Kemang · Jakarta Selatan</p>
+          <h1 class="font-display text-5xl md:text-6xl font-bold leading-[1.05] mb-6">Pemesanan Ruang &amp; Fasilitas</h1>
+          <p class="text-slate-200 text-lg leading-relaxed mb-8">Cek ketersediaan ruang secara real-time dan ajukan pemesanan untuk mendukung diklat, rapat, dan acara kelembagaan di Kawasan Edukasi dan Digital Kemang.</p>
+          <div class="flex flex-wrap gap-3">
+            <button onclick="go('rooms')" class="font-semibold px-6 py-3 rounded-md hover:bg-slate-100 transition" style="background:#fff;color:var(--navy-900);">Lihat Semua Ruangan</button>
+            <button onclick="go('contact')" class="border border-white/40 text-white font-semibold px-6 py-3 rounded-md hover:bg-white/10 transition">Hubungi Kami</button>
+          </div>
+          <div class="flex items-center gap-6 mt-10 text-sm text-slate-200/90">
+            <span class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-blue-300"></i>Konfirmasi tervalidasi otomatis</span>
+            <span class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-blue-300"></i>Anti bentrok jadwal</span>
+          </div>
         </div>
-        <div class="flex items-center gap-6 mt-10 text-sm text-slate-200/90">
-          <span class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-blue-300"></i>Konfirmasi tervalidasi otomatis</span>
-          <span class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-blue-300"></i>Anti bentrok jadwal</span>
+        <div class="lg:col-span-2 fade-in">
+          <button onclick="openFloorPlanModal()" class="group block w-full text-left bg-white/10 border border-white/25 rounded-xl p-4 hover:bg-white/15 transition backdrop-blur-sm">
+            <div class="rounded-lg overflow-hidden mb-3 border border-white/20">
+              <img src="images/denah-gedung.jpg" alt="Denah Gedung Kawasan Edukasi dan Digital Kemang" class="w-full h-44 object-cover group-hover:scale-105 transition duration-500">
+            </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-display text-base font-bold text-white leading-tight">Denah Gedung</p>
+                <p class="text-xs text-slate-300 mt-0.5">Baru ke sini? Kenali lokasi ruangan</p>
+              </div>
+              <span class="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center flex-shrink-0 group-hover:bg-white/25 transition"><i data-lucide="maximize-2" class="w-3.5 h-3.5 text-white"></i></span>
+            </div>
+          </button>
         </div>
       </div>
     </div>
@@ -755,6 +772,28 @@ async function refreshBookings(scope){
 // Fungsi lama getBookings() dipertahankan sebagai alias sinkron ke cache
 // supaya kode render yang sudah ada tidak perlu ditulis ulang total.
 function getBookings(){ return bookingsCache; }
+
+/* ===================== DENAH GEDUNG (Beranda — Hero) ===================== */
+// Klik thumbnail denah di Hero membuka gambar ukuran penuh dalam modal.
+function openFloorPlanModal(){
+  const root = document.getElementById('floorplan-modal-root');
+  root.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this) closeFloorPlanModal()">
+      <div class="modal-box" style="max-width:900px;">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <p class="font-display text-lg font-bold navy-text">Denah Gedung</p>
+          <button onclick="closeFloorPlanModal()" class="icon-btn-sm flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="p-5">
+          <img src="images/denah-gedung.jpg" alt="Denah Gedung Kawasan Edukasi dan Digital Kemang" class="w-full rounded-lg border border-slate-200">
+        </div>
+      </div>
+    </div>`;
+  lucide.createIcons();
+}
+function closeFloorPlanModal(){
+  document.getElementById('floorplan-modal-root').innerHTML = '';
+}
 
 /* ===================== STATUS (4 TAHAP + 2 STATUS AKHIR) ===================== */
 // Cermin persis dari STATUS_* / STATUS_LABELS_ di Code.gs & Notifications.gs —
