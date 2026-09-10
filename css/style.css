@@ -238,6 +238,19 @@ textarea:focus {
   color: var(--danger);
 }
 
+/* Dipakai di JS (statusBadge()) untuk status "Menunggu Pembayaran" dan
+   "Pembayaran Selesai", tapi sebelumnya tidak pernah didefinisikan di sini
+   sehingga badge tampil tanpa warna latar. Ditambahkan saat modularisasi. */
+.badge-payment {
+  background: #fdeee0;
+  color: #a15c1f;
+}
+
+.badge-paid {
+  background: #e0f0e8;
+  color: #116638;
+}
+
 /* ===== TOAST NOTIFICATIONS ===== */
 #toast-container {
   position: fixed;
