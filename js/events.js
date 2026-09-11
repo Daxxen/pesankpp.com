@@ -13,9 +13,9 @@ import {
   API_URL, GOOGLE_CLIENT_ID,
   LS_USER, LS_ADMIN_TOKEN, LS_USER_TOKEN,
   STATUS_ORDER, STATUS_LABELS, STATUS_TIDAK_MENGUNCI_RUANGAN as STATUS_TIDAK_MENGUNCI_RUANGAN_, statusLabel,
-  PRIORITY_TIER_LABELS, priorityTierLabel
+  PRIORITY_TIER_LABELS, priorityTierLabel, FEATURED_IDS
 } from './config.js';
-import { ROOMS, findRoom, FEATURED_IDS } from './rooms.js';
+import { ROOMS, findRoom } from './rooms.js';
 
 function printBookingProof(){
   // Isi catatan waktu cetak setiap kali tombol "Cetak Bukti" ditekan,
