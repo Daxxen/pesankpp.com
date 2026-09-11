@@ -410,6 +410,7 @@ function go(page, roomId){
   if(target) target.classList.add('active');
 
   if(page === 'login') initGoogleSignIn();
+  if(page === 'home') { refreshBookings('public').then(renderHomeCalendarWidget); }
   if(page === 'detail' && roomId) { renderDetail(roomId); refreshBookings('public').then(renderCalendar); }
   if(page === 'history') { document.getElementById('history-list').innerHTML = historySkeletonHTML(); refreshBookings().then(renderHistory); }
   if(page === 'admin') { refreshBookings().then(renderAdmin); }
@@ -464,6 +465,66 @@ function roomCard(room){
 }
 function renderFeatured(){
   document.getElementById('featured-grid').innerHTML = ROOMS.filter(r => FEATURED_IDS.includes(r.id)).map(roomCard).join('');
+  lucide.createIcons();
+}
+
+/* ===================== WIDGET KALENDER KETERSEDIAAN (Beranda) ===================== */
+// Ringkasan 7 hari ke depan untuk ruangan unggulan (FEATURED_IDS), dipakai
+// di beranda saja — bukan pengganti kalender penuh per-ruangan yang sudah
+// ada di halaman detail (lihat renderCalendar). Sengaja dibatasi ke
+// FEATURED_IDS + 7 hari supaya ringan dimuat di halaman pertama.
+// Memakai bookingsCache yang sama dengan cek-bentrok (lihat refreshBookings),
+// jadi tidak menambah beban request baru ke server.
+function isDateBookedForRoom(roomId, dateStr, bookings){
+  return (bookings || []).some(b => {
+    if(b.roomId !== roomId) return false;
+    const end = b.endDate || b.date;
+    return dateStr >= b.date && dateStr <= end;
+  });
+}
+
+function renderHomeCalendarWidget(){
+  const container = document.getElementById('home-calendar-widget');
+  if(!container) return;
+
+  const dayNamesShort = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
+  const today = new Date();
+  const days = Array.from({length:7}).map((_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    return { key: dateKey(d.getFullYear(), d.getMonth(), d.getDate()), label: dayNamesShort[d.getDay()], date: d.getDate() };
+  });
+
+  const rooms = ROOMS.filter(r => FEATURED_IDS.includes(r.id));
+  const bookings = getBookings() || [];
+
+  const headerCells = days.map(d =>
+    `<div class="text-center py-1.5"><p class="text-[10px] uppercase tracking-wide text-slate-400">${d.label}</p><p class="text-xs font-semibold navy-text">${d.date}</p></div>`
+  ).join('');
+
+  const roomRows = rooms.map(room => {
+    const dayCells = days.map(d => {
+      const booked = isDateBookedForRoom(room.id, d.key, bookings);
+      return `<div class="h-8 rounded-md ${booked ? 'bg-red-50 border border-red-200' : 'bg-slate-50 border border-slate-200'}"></div>`;
+    }).join('');
+    return `<div class="text-sm font-medium navy-text truncate pr-3 flex items-center">${escapeHtml(room.name)}</div>${dayCells}`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="flex items-center justify-between mb-5 flex-wrap gap-2">
+      <div>
+        <h3 class="font-display text-lg font-bold navy-text">Ketersediaan 7 hari ke depan</h3>
+        <p class="text-xs text-slate-500 mt-0.5">Ruangan unggulan · diperbarui real-time</p>
+      </div>
+      <button onclick="go('rooms')" class="text-xs font-semibold text-[var(--blue-accent)] hover:underline flex items-center gap-1">Lihat kalender lengkap per ruangan <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+    </div>
+    <div class="grid gap-1.5" style="grid-template-columns: 160px repeat(7, minmax(0,1fr));">
+      <div></div>${headerCells}
+      ${roomRows}
+    </div>
+    <div class="flex items-center gap-5 mt-4 text-xs text-slate-500">
+      <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded bg-red-50 border border-red-200"></span>Terpesan</span>
+      <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded bg-slate-50 border border-slate-200"></span>Tersedia</span>
+    </div>`;
   lucide.createIcons();
 }
 function renderRoomsGrid(){
@@ -1632,6 +1693,7 @@ renderFeatured();
 renderRoomsGrid();
 renderAuthArea();
 setAuthTab('masuk');
+refreshBookings('public').then(renderHomeCalendarWidget); // beranda sudah aktif duluan sebelum go() pernah dipanggil
 lucide.createIcons();
 window.addEventListener('load', initGoogleSignIn); // jaga-jaga bila skrip GIS baru siap belakangan
 
