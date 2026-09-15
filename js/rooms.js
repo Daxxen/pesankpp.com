@@ -2,17 +2,44 @@
  * KAWASAN EDUKASI DAN DIGITAL KEMANG
  * Data Ruangan
  *
- * Data di file ini diambil PERSIS dari data yang sedang live di situs
- * (bukan perkiraan) — termasuk harga (priceHour/priceDay/priceWeek),
- * kapasitas, dan luas ruangan internal maupun eksternal.
+ * Data di file ini sebagian besar diambil PERSIS dari sumber resmi
+ * (bukan perkiraan) — termasuk harga (priceHour/priceDay/priceWeek) dan
+ * luas ruangan internal maupun eksternal. PENGECUALIAN: kapasitas (orang)
+ * untuk ruang kelas (Vision Hall, Catalyst, Frontier, Momentum, Ignite,
+ * Spark, Muse, Genesis, Quantum, Pioneer, Ideation, Inspire Hall) MASIH
+ * PERKIRAAN kasar dari luas ruangan — lihat catatan di dekat definisi
+ * ROOMS untuk detail sumber dan yang wajib dikonfirmasi.
  *
  * REKOMENDASI JANGKA PANJANG: pindahkan data ini ke API backend supaya
  * bisa diubah tanpa deploy ulang dan tersinkron real-time dengan sistem
  * booking.
  */
 
+// =====================================================================
+// RUANG KELAS (Vision Hall, Catalyst/Frontier/Momentum/Ignite/Spark/
+// Muse/Genesis/Quantum/Pioneer/Ideation, Inspire Hall) — sumber: "Lampiran
+// Surat No.28/.../DPRN/Srt/B ... perihal Penggunaan Ruang Kelas pada
+// Kawasan Edukasi dan Digitalisasi Bank Indonesia Kemang" (tabel 8 baris).
+// Luas (area), lantai (floor), Tarif Harian (priceDay), dan Tarif
+// Mingguan (priceWeek) diambil PERSIS dari tabel tsb — TIDAK diperkirakan.
+// Surat ini TIDAK mencantumkan tarif per jam sama sekali untuk ruang-ruang
+// ini, jadi field priceHour sengaja DIHAPUS (bukan 0) — kalau nanti ada
+// kebutuhan sewa per jam untuk ruang kelas ini, perlu tarif resmi baru
+// dari pengelola dulu.
+// YANG MASIH PERKIRAAN/PLACEHOLDER dan WAJIB dikonfirmasi ke Bapak Darren:
+//   - capacity: dihitung kasar dari luas ruangan (asumsi ±1,9 m²/orang gaya
+//     kelas, mengikuti rasio kapasitas/luas yang dipakai versi rooms.js
+//     sebelumnya) — BUKAN dari tabel resmi, karena tabel resmi ini hanya
+//     mencantumkan luas (m²), tidak ada kolom kapasitas orang.
+//   - img: Spark/Muse/Genesis dipakaikan foto yang sama dengan Ignite
+//     (images/ignite-spark-muse-genesis.jpg, nama filenya sendiri sudah
+//     mengisyaratkan 1 foto untuk 4 ruangan sekelompok ini — kemungkinan
+//     4 ruangan identik dari 1 baris "Kelas Sedang" di tabel resmi).
+//     Quantum/Pioneer/Ideation/Inspire Hall (ruangan baru, lantai 2) belum
+//     ada foto asli sama sekali, masih pakai ilustrasi SVG placeholder.
+// =====================================================================
 export const ROOMS = [
-  { id: "vision-hall", isExternal: false, name: "Vision Hall", category: "Auditorium", capacity: 80, area: 150, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang (konfirmasi lantai)", priceHour: 1500000, priceDay: 9000000,
+  { id: "vision-hall", isExternal: false, name: "Vision Hall", category: "Auditorium", roomClass: "Ampitheater", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 1", priceDay: 3130000, priceWeek: 17580000,
     desc: "Ruang auditorium bertingkat dengan meja lengkung mengikuti kontur ruangan, cocok untuk seminar, kuliah umum, dan pelatihan skala besar.",
     facilities: ["Kursi bertingkat", "Proyektor & layar besar", "Sistem tata suara", "Pencahayaan panggung"],
     img: "images/vision-hall.jpg" },
@@ -20,18 +47,34 @@ export const ROOMS = [
     desc: "Area lounge santai dengan sofa, meja diskusi kecil, dan pantry mini — cocok untuk pertemuan informal atau area transit peserta diklat.",
     facilities: ["Sofa & armchair", "Meja diskusi santai", "Pantry mini (kulkas, dispenser)", "AC"],
     img: "images/transit-lounge.jpg" },
-  { id: "catalyst", isExternal: false, name: "Catalyst Room", category: "Ruang Pelatihan", capacity: 30, area: 55, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang (konfirmasi lantai)", priceHour: 500000, priceDay: 3200000,
+  { id: "catalyst", isExternal: false, name: "Catalyst Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 1", priceDay: 3130000, priceWeek: 17580000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
     img: "images/illustration-catalyst.svg", placeholderImg: true },
-  { id: "frontier", isExternal: false, name: "Frontier Room", category: "Ruang Pelatihan", capacity: 30, area: 55, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang (konfirmasi lantai)", priceHour: 500000, priceDay: 3200000,
+  { id: "frontier", isExternal: false, name: "Frontier Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 1", priceDay: 3130000, priceWeek: 17580000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
     img: "images/illustration-frontier.svg", placeholderImg: true },
-  { id: "momentum", isExternal: false, name: "Momentum Room", category: "Ruang Pelatihan", capacity: 30, area: 55, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang (konfirmasi lantai)", priceHour: 500000, priceDay: 3200000,
+  { id: "momentum", isExternal: false, name: "Momentum Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 90, area: 171.6, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 1", priceDay: 2830000, priceWeek: 15850000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
     img: "images/illustration-momentum.svg", placeholderImg: true },
+  { id: "quantum", isExternal: false, name: "Quantum Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 2", priceDay: 3130000, priceWeek: 17580000,
+    desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
+    facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
+    img: "images/illustration-quantum.svg", placeholderImg: true },
+  { id: "pioneer", isExternal: false, name: "Pioneer Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 90, area: 171.6, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 2", priceDay: 2830000, priceWeek: 15850000,
+    desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
+    facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
+    img: "images/illustration-pioneer.svg", placeholderImg: true },
+  { id: "ideation", isExternal: false, name: "Ideation Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 55, area: 103.8, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 2", priceDay: 1710000, priceWeek: 9590000,
+    desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV pendamping — fleksibel untuk berbagai format kelas.",
+    facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV pendamping", "Meja fasilitator adjustable"],
+    img: "images/illustration-ideation.svg", placeholderImg: true },
+  { id: "inspire-hall", isExternal: false, name: "Inspire Hall", category: "Auditorium", roomClass: "Ampitheater", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 2", priceDay: 3130000, priceWeek: 17580000,
+    desc: "Ruang auditorium bertingkat dengan meja lengkung mengikuti kontur ruangan, cocok untuk seminar, kuliah umum, dan pelatihan skala besar.",
+    facilities: ["Kursi bertingkat", "Proyektor & layar besar", "Sistem tata suara", "Pencahayaan panggung"],
+    img: "images/illustration-inspire-hall.svg", placeholderImg: true },
   { id: "sync-pods", isExternal: false, name: "Sync Pods", category: "Ruang Diskusi", capacity: 6, area: 15, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang (konfirmasi lantai)", priceHour: 200000, priceDay: 1200000,
     desc: "Ruang diskusi kecil untuk rapat tim atau sesi mentoring singkat, dilengkapi layar TV untuk presentasi.",
     facilities: ["Meja rapat kecil", "TV presentasi", "Kursi ergonomis", "AC"],
@@ -48,8 +91,20 @@ export const ROOMS = [
     desc: "Ruang rapat pimpinan dengan meja panjang, dua layar TV besar, dan lemari built-in — cocok untuk rapat komite atau rapat strategis.",
     facilities: ["Meja rapat panjang (16 kursi)", "2 unit TV besar", "Sistem video konferensi", "Karpet & akustik premium"],
     img: "images/steering-committee.jpg" },
-  { id: "ignite", isExternal: false, name: "Ignite Room", category: "Ruang Pelatihan", capacity: 40, area: 90, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang (konfirmasi lantai)", priceHour: 600000, priceDay: 3800000,
-    desc: "Ruang pelatihan besar dengan kursi meja lipat yang fleksibel disusun ulang dan TV presentasi.",
+  { id: "ignite", isExternal: false, name: "Ignite Room", category: "Ruang Pelatihan", roomClass: "Kelas Sedang", capacity: 35, area: 72.5, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 1", priceDay: 1200000, priceWeek: 6700000,
+    desc: "Ruang pelatihan berukuran sedang dengan kursi meja lipat yang fleksibel disusun ulang dan TV presentasi.",
+    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Pencahayaan alami"],
+    img: "images/ignite-spark-muse-genesis.jpg" },
+  { id: "spark", isExternal: false, name: "Spark Room", category: "Ruang Pelatihan", roomClass: "Kelas Sedang", capacity: 35, area: 72.5, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 1", priceDay: 1200000, priceWeek: 6700000,
+    desc: "Ruang pelatihan berukuran sedang dengan kursi meja lipat yang fleksibel disusun ulang dan TV presentasi.",
+    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Pencahayaan alami"],
+    img: "images/ignite-spark-muse-genesis.jpg" },
+  { id: "muse", isExternal: false, name: "Muse Room", category: "Ruang Pelatihan", roomClass: "Kelas Sedang", capacity: 35, area: 72.5, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 1", priceDay: 1200000, priceWeek: 6700000,
+    desc: "Ruang pelatihan berukuran sedang dengan kursi meja lipat yang fleksibel disusun ulang dan TV presentasi.",
+    facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Pencahayaan alami"],
+    img: "images/ignite-spark-muse-genesis.jpg" },
+  { id: "genesis", isExternal: false, name: "Genesis Room", category: "Ruang Pelatihan", roomClass: "Kelas Sedang", capacity: 35, area: 72.5, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang, Lantai 1", priceDay: 1200000, priceWeek: 6700000,
+    desc: "Ruang pelatihan berukuran sedang dengan kursi meja lipat yang fleksibel disusun ulang dan TV presentasi.",
     facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Pencahayaan alami"],
     img: "images/ignite-spark-muse-genesis.jpg" },
   { id: "recharge-zone", isExternal: false, name: "Game Room \"Recharge Zone\"", category: "Area Santai & Fasilitas", capacity: 10, area: 35, floor: "Gedung Utama Kawasan Edukasi dan Digital Kemang (konfirmasi lantai)", priceHour: 250000, priceDay: 1500000,
