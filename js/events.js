@@ -405,12 +405,13 @@ function go(page, roomId){
   document.getElementById('page-' + page).classList.add('fade-in');
 
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-  const navMap = {home:'home', rooms:'rooms', detail:'rooms', contact:'contact', history:'history', booking:'rooms', success:'rooms', login:null, 'admin-login':null, admin:null};
+  const navMap = {home:'home', rooms:'rooms', detail:'rooms', calendar:'calendar', contact:'contact', history:'history', booking:'rooms', success:'rooms', login:null, 'admin-login':null, admin:null};
   const target = document.querySelector(`.nav-link[data-nav="${navMap[page]}"]`);
   if(target) target.classList.add('active');
 
   if(page === 'login') initGoogleSignIn();
   if(page === 'home') { refreshBookings('public').then(renderHomeCalendarWidget); }
+  if(page === 'calendar') { refreshBookings('public').then(renderFullCalendarPage); }
   if(page === 'detail' && roomId) { renderDetail(roomId); refreshBookings('public').then(renderCalendar); }
   if(page === 'history') { document.getElementById('history-list').innerHTML = historySkeletonHTML(); refreshBookings().then(renderHistory); }
   if(page === 'admin') { refreshBookings().then(renderAdmin); }
@@ -515,7 +516,7 @@ function renderHomeCalendarWidget(){
         <h3 class="font-display text-lg font-bold navy-text">Ketersediaan 7 hari ke depan</h3>
         <p class="text-xs text-slate-500 mt-0.5">Ruangan unggulan · diperbarui real-time</p>
       </div>
-      <button onclick="go('rooms')" class="text-xs font-semibold text-[var(--blue-accent)] hover:underline flex items-center gap-1">Lihat kalender lengkap per ruangan <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+      <button onclick="go('calendar')" class="text-xs font-semibold text-[var(--blue-accent)] hover:underline flex items-center gap-1">Lihat kalender lengkap semua ruangan <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
     </div>
     <div class="grid gap-1.5" style="grid-template-columns: 160px repeat(7, minmax(0,1fr));">
       <div></div>${headerCells}
@@ -527,6 +528,93 @@ function renderHomeCalendarWidget(){
     </div>`;
   lucide.createIcons();
 }
+
+/* ===================== KALENDER LENGKAP (Semua Ruangan, 1 Bulan) ===================== */
+// Menampilkan SEMUA ruangan (internal + eksternal) x satu bulan penuh,
+// termasuk nama & instansi pemesan pada tanggal yang terpesan. Publik atas
+// permintaan pengelola (lihat catatan privasi di handleGetBookings di
+// Code.gs) — TIDAK menampilkan email/telepon/dokumen, hanya nama & instansi.
+let fullCalState = { year: new Date().getFullYear(), month: new Date().getMonth() };
+
+function shiftFullCalendarMonth(delta){
+  fullCalState.month += delta;
+  if(fullCalState.month > 11){ fullCalState.month = 0; fullCalState.year++; }
+  if(fullCalState.month < 0){ fullCalState.month = 11; fullCalState.year--; }
+  renderFullCalendarPage();
+}
+
+function findBookingsForRoomDate(roomId, dateStr, bookings){
+  return (bookings || []).filter(b => {
+    if(b.roomId !== roomId) return false;
+    const end = b.endDate || b.date;
+    return dateStr >= b.date && dateStr <= end;
+  });
+}
+
+function showCalendarCellInfo(roomId, dateStr){
+  const room = findRoom(roomId);
+  const matches = findBookingsForRoomDate(roomId, dateStr, getBookings());
+  if(!matches.length){
+    toast(`${room ? room.name : ''} tersedia pada ${formatDateLong(dateStr)}.`);
+    return;
+  }
+  const who = matches.map(m => m.org ? `${m.name} (${m.org})` : m.name).join(', ');
+  toast(`${room ? room.name : ''} · ${formatDateLong(dateStr)} — dipesan oleh ${who}.`);
+}
+
+function renderFullCalendarPage(){
+  const { year, month } = fullCalState;
+  const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const dayNamesShort = ["Min","Sen","Sel","Rab","Kam","Jum","Sab"];
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const bookings = getBookings() || [];
+
+  document.getElementById('full-cal-month-label').textContent = `${monthNames[month]} ${year}`;
+
+  const dayCols = Array.from({length: daysInMonth}).map((_, i) => {
+    const d = new Date(year, month, i+1);
+    return { day: i+1, key: dateKey(year, month, i+1), label: dayNamesShort[d.getDay()], isPast: d < today };
+  });
+
+  const headerCells = dayCols.map(d =>
+    `<div class="text-center py-2 border-l border-slate-100" style="width:42px;min-width:42px;"><p class="text-[9px] uppercase text-slate-400">${d.label}</p><p class="text-xs font-semibold navy-text">${d.day}</p></div>`
+  ).join('');
+
+  function roomRowHtml(room){
+    const cells = dayCols.map(d => {
+      const matches = findBookingsForRoomDate(room.id, d.key, bookings);
+      const booked = matches.length > 0;
+      const tip = booked ? matches.map(m => m.org ? `${m.name} (${m.org})` : m.name).join(', ') : 'Tersedia';
+      const pastCls = d.isPast ? 'opacity-50' : '';
+      const colorCls = booked ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200';
+      return `<div class="border-l border-slate-100 flex items-center justify-center" style="width:42px;min-width:42px;">
+        <button type="button" onclick="showCalendarCellInfo('${room.id}','${d.key}')" title="${escapeHtml(tip)}" class="w-8 h-7 rounded ${colorCls} ${pastCls} border hover:opacity-80 transition"></button>
+      </div>`;
+    }).join('');
+    return `<div class="flex items-stretch border-t border-slate-100">
+      <div class="flex items-center px-3 py-1.5 text-xs font-medium navy-text truncate" style="width:170px;min-width:170px;">${escapeHtml(room.name)}</div>
+      ${cells}
+    </div>`;
+  }
+
+  const internalRooms = ROOMS.filter(r => !r.isExternal);
+  const externalRooms = ROOMS.filter(r => r.isExternal);
+
+  const html = `
+    <div class="flex items-stretch bg-[var(--paper)]">
+      <div style="width:170px;min-width:170px;" class="px-3 py-2 text-xs font-semibold navy-text flex items-center">Ruangan</div>
+      ${headerCells}
+    </div>
+    <div class="px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wide bg-white border-t border-slate-100">Fasilitas Internal</div>
+    ${internalRooms.map(roomRowHtml).join('')}
+    <div class="px-3 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wide bg-white border-t border-slate-100">Wisma &amp; Aula (Eksternal)</div>
+    ${externalRooms.map(roomRowHtml).join('')}
+  `;
+  document.getElementById('full-calendar-grid').innerHTML = html;
+  lucide.createIcons();
+}
+
 function renderRoomsGrid(){
   const q = (document.getElementById('search-input').value || '').toLowerCase();
   const cat = document.getElementById('filter-category').value;
@@ -1718,6 +1806,7 @@ Object.assign(window, {
   onAttachmentsSelected, onPriorityTierChange, openBookingModal, openFloorPlanModal,
   printBookingProof, quickAdminAction, removeAttachment, removeCartItem,
   renderAdminTable, renderRoomsGrid, requireAuth, resetAdminFilters, selectDay,
-  setAdminTab, setAuthTab, setHistoryFilter, shiftMonth, submitAdminLogin,
+  setAdminTab, setAuthTab, setHistoryFilter, shiftMonth, shiftFullCalendarMonth,
+  showCalendarCellInfo, submitAdminLogin,
   submitBooking, submitLogin, submitRegister, toggleMobileMenu, updateCartItemField
 });
