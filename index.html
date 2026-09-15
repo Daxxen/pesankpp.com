@@ -42,6 +42,7 @@
     <nav class="hidden md:flex items-center gap-8 text-sm">
       <a href="#" onclick="go('home');return false;" class="nav-link" data-nav="home">Beranda</a>
       <a href="#" onclick="go('rooms');return false;" class="nav-link" data-nav="rooms">Ruangan</a>
+      <a href="#" onclick="go('calendar');return false;" class="nav-link" data-nav="calendar">Kalender</a>
       <a href="#" onclick="requireAuth('history');return false;" class="nav-link" data-nav="history">Riwayat</a>
       <a href="#" onclick="go('contact');return false;" class="nav-link" data-nav="contact">Kontak</a>
     </nav>
@@ -62,6 +63,7 @@
   </div>
   <a href="#" onclick="go('home');toggleMobileMenu(false);return false;" class="py-3 border-b border-slate-100 text-sm font-medium">Beranda</a>
   <a href="#" onclick="go('rooms');toggleMobileMenu(false);return false;" class="py-3 border-b border-slate-100 text-sm font-medium">Ruangan</a>
+  <a href="#" onclick="go('calendar');toggleMobileMenu(false);return false;" class="py-3 border-b border-slate-100 text-sm font-medium">Kalender</a>
   <a href="#" onclick="requireAuth('history');toggleMobileMenu(false);return false;" class="py-3 border-b border-slate-100 text-sm font-medium">Riwayat Pemesanan</a>
   <a href="#" onclick="go('contact');toggleMobileMenu(false);return false;" class="py-3 border-b border-slate-100 text-sm font-medium">Kontak</a>
   <a href="#" onclick="goAdminEntry();toggleMobileMenu(false);return false;" class="py-3 border-b border-slate-100 text-sm font-medium text-slate-500 flex items-center gap-1.5"><i data-lucide="user-cog" class="w-3.5 h-3.5"></i>Portal Admin</a>
@@ -169,6 +171,30 @@
     </div>
 
     <div id="rooms-grid" class="grid md:grid-cols-3 gap-8"></div>
+  </div>
+</main>
+
+<!-- ================= FULL CALENDAR PAGE ================= -->
+<main id="page-calendar" class="page">
+  <div class="max-w-7xl mx-auto px-6 py-12">
+    <h1 class="font-display text-3xl font-bold navy-text mb-2">Kalender Ketersediaan Semua Ruangan</h1>
+    <p class="text-sm text-slate-500 mb-6">Klik atau arahkan kursor ke tanggal yang terpesan untuk melihat nama pemesan.</p>
+
+    <div class="flex items-center justify-between mb-5">
+      <button onclick="shiftFullCalendarMonth(-1)" class="w-9 h-9 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+      <span id="full-cal-month-label" class="font-display text-lg font-bold navy-text"></span>
+      <button onclick="shiftFullCalendarMonth(1)" class="w-9 h-9 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+    </div>
+
+    <div class="border border-slate-200 rounded-xl overflow-x-auto card-shadow">
+      <div id="full-calendar-grid" class="min-w-max"></div>
+    </div>
+
+    <div class="flex items-center gap-5 mt-4 text-xs text-slate-500">
+      <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded bg-red-50 border border-red-200"></span>Terpesan</span>
+      <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded bg-slate-50 border border-slate-200"></span>Tersedia</span>
+      <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded bg-slate-100 opacity-60"></span>Tanggal lampau</span>
+    </div>
   </div>
 </main>
 
