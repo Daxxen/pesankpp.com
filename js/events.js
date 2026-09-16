@@ -13,7 +13,8 @@ import {
   API_URL, GOOGLE_CLIENT_ID,
   LS_USER, LS_ADMIN_TOKEN, LS_USER_TOKEN,
   STATUS_ORDER, STATUS_LABELS, STATUS_TIDAK_MENGUNCI_RUANGAN as STATUS_TIDAK_MENGUNCI_RUANGAN_, statusLabel,
-  PRIORITY_TIER_LABELS, priorityTierLabel, FEATURED_IDS
+  PRIORITY_TIER_LABELS, priorityTierLabel, FEATURED_IDS,
+  PRIORITY_TIER_COLORS, priorityTierColor, priorityTierShort
 } from './config.js';
 import { ROOMS, findRoom } from './rooms.js';
 
@@ -140,7 +141,7 @@ function flattenBookingItems(list){
   const out = [];
   (list || []).forEach(g => {
     if(Array.isArray(g.items)){
-      g.items.forEach(it => out.push(Object.assign({}, it, { status: g.status, groupId: g.groupId })));
+      g.items.forEach(it => out.push(Object.assign({}, it, { status: g.status, groupId: g.groupId, priorityTier: g.priorityTier })));
     } else if(g.roomId){
       out.push(g); // sudah rata (tampilan publik dari server)
     }
@@ -476,13 +477,6 @@ function renderFeatured(){
 // FEATURED_IDS + 7 hari supaya ringan dimuat di halaman pertama.
 // Memakai bookingsCache yang sama dengan cek-bentrok (lihat refreshBookings),
 // jadi tidak menambah beban request baru ke server.
-function isDateBookedForRoom(roomId, dateStr, bookings){
-  return (bookings || []).some(b => {
-    if(b.roomId !== roomId) return false;
-    const end = b.endDate || b.date;
-    return dateStr >= b.date && dateStr <= end;
-  });
-}
 
 function renderHomeCalendarWidget(){
   const container = document.getElementById('home-calendar-widget');
@@ -502,12 +496,25 @@ function renderHomeCalendarWidget(){
     `<div class="text-center py-1.5"><p class="text-[10px] uppercase tracking-wide text-slate-400">${d.label}</p><p class="text-xs font-semibold navy-text">${d.date}</p></div>`
   ).join('');
 
+  // Sel yang terpesan sekarang diwarnai SOLID sesuai kategori instansi
+  // pemesan (PIDI/BINS/Internal/Eksternal) dengan label singkat di dalamnya
+  // — bukan lagi kotak merah polos tanpa keterangan — supaya orang bisa
+  // langsung membaca "siapa yang pakai" tanpa hover satu-satu.
   const roomRows = rooms.map(room => {
     const dayCells = days.map(d => {
-      const booked = isDateBookedForRoom(room.id, d.key, bookings);
-      return `<div class="h-8 rounded-md ${booked ? 'bg-red-50 border border-red-200' : 'bg-slate-50 border border-slate-200'}"></div>`;
+      const match = bookings.find(b => b.roomId === room.id && d.key >= b.date && d.key <= (b.endDate || b.date));
+      if(match){
+        const c = priorityTierColor(match.priorityTier);
+        return `<div class="h-8 rounded-md flex items-center justify-center text-[10px] font-bold border" style="background:${c.bg};border-color:${c.border};color:${c.text}" title="${escapeHtml(match.org ? match.org : match.name)}">${priorityTierShort(match.priorityTier)}</div>`;
+      }
+      return `<div class="h-8 rounded-md bg-emerald-50 border border-emerald-200"></div>`;
     }).join('');
     return `<div class="text-sm font-medium navy-text truncate pr-3 flex items-center">${escapeHtml(room.name)}</div>${dayCells}`;
+  }).join('');
+
+  const legendChips = Object.keys(PRIORITY_TIER_COLORS).map(tier => {
+    const c = PRIORITY_TIER_COLORS[tier];
+    return `<span class="flex items-center gap-1.5"><span class="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold border" style="background:${c.bg};border-color:${c.border};color:${c.text}">${priorityTierShort(tier)}</span>${priorityTierLabel(tier)}</span>`;
   }).join('');
 
   container.innerHTML = `
@@ -522,9 +529,9 @@ function renderHomeCalendarWidget(){
       <div></div>${headerCells}
       ${roomRows}
     </div>
-    <div class="flex items-center gap-5 mt-4 text-xs text-slate-500">
-      <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded bg-red-50 border border-red-200"></span>Terpesan</span>
-      <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded bg-slate-50 border border-slate-200"></span>Tersedia</span>
+    <div class="flex items-center gap-4 mt-4 text-xs text-slate-500 flex-wrap">
+      <span class="flex items-center gap-1.5"><span class="inline-block w-4 h-4 rounded bg-emerald-50 border border-emerald-200"></span>Tersedia</span>
+      ${legendChips}
     </div>`;
   lucide.createIcons();
 }
@@ -586,10 +593,18 @@ function renderFullCalendarPage(){
       const matches = findBookingsForRoomDate(room.id, d.key, bookings);
       const booked = matches.length > 0;
       const tip = booked ? matches.map(m => m.org ? `${m.name} (${m.org})` : m.name).join(', ') : 'Tersedia';
-      const pastCls = d.isPast ? 'opacity-50' : '';
-      const colorCls = booked ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200';
+      const pastCls = d.isPast ? 'opacity-45' : '';
+      let inner = '';
+      let style = '';
+      if(booked){
+        const c = priorityTierColor(matches[0].priorityTier);
+        style = `background:${c.bg};border-color:${c.border};color:${c.text}`;
+        inner = `<span class="text-[9px] font-bold leading-none">${priorityTierShort(matches[0].priorityTier)}</span>`;
+      } else {
+        style = 'background:#ecfdf5;border-color:#a7f3d0';
+      }
       return `<div class="border-l border-slate-100 flex items-center justify-center" style="width:42px;min-width:42px;">
-        <button type="button" onclick="showCalendarCellInfo('${room.id}','${d.key}')" title="${escapeHtml(tip)}" class="w-8 h-7 rounded ${colorCls} ${pastCls} border hover:opacity-80 transition"></button>
+        <button type="button" onclick="showCalendarCellInfo('${room.id}','${d.key}')" title="${escapeHtml(tip)}" class="w-8 h-7 rounded flex items-center justify-center border ${pastCls} hover:opacity-80 transition" style="${style}">${inner}</button>
       </div>`;
     }).join('');
     return `<div class="flex items-stretch border-t border-slate-100">
@@ -612,6 +627,14 @@ function renderFullCalendarPage(){
     ${externalRooms.map(roomRowHtml).join('')}
   `;
   document.getElementById('full-calendar-grid').innerHTML = html;
+  const legendChips = Object.keys(PRIORITY_TIER_COLORS).map(tier => {
+    const c = PRIORITY_TIER_COLORS[tier];
+    return `<span class="flex items-center gap-1.5"><span class="inline-flex items-center justify-center w-5 h-5 rounded text-[9px] font-bold border" style="background:${c.bg};border-color:${c.border};color:${c.text}">${priorityTierShort(tier)}</span>${priorityTierLabel(tier)}</span>`;
+  }).join('');
+  document.getElementById('full-calendar-legend').innerHTML = `
+    <span class="flex items-center gap-1.5"><span class="inline-block w-4 h-4 rounded" style="background:#ecfdf5;border:1px solid #a7f3d0"></span>Tersedia</span>
+    ${legendChips}
+    <span class="flex items-center gap-1.5"><span class="inline-block w-4 h-4 rounded bg-slate-100 opacity-60"></span>Tanggal lampau</span>`;
   lucide.createIcons();
 }
 
@@ -632,12 +655,15 @@ function renderRoomsGrid(){
 }
 
 /* ===================== CALENDAR (DETAIL PAGE) ===================== */
+// Sekarang mengembalikan Map<tanggal, booking> (bukan cuma Set tanggal)
+// supaya renderCalendar tahu kategori instansi (priorityTier) pemesannya
+// dan bisa mewarnai sel sesuai kategori itu, bukan cuma merah polos.
 function realBookedDays(roomId, y, m){
   const bookings = flattenBookingItems(getBookings()).filter(b => b.roomId === roomId && STATUS_TIDAK_MENGUNCI_RUANGAN_.indexOf(b.status) === -1);
-  const booked = new Set();
+  const booked = new Map();
   bookings.forEach(b => {
     const [by,bm,bd] = b.date.split('-').map(Number);
-    if(by === y && (bm-1) === m) booked.add(bd);
+    if(by === y && (bm-1) === m) booked.set(bd, b);
   });
   return booked;
 }
@@ -653,20 +679,28 @@ function renderCalendar(){
   const daysInMonth = new Date(year, month+1, 0).getDate();
 
   const today = new Date(); today.setHours(0,0,0,0);
+  const isToday = d => { const t = new Date(); return d === t.getDate() && month === t.getMonth() && year === t.getFullYear(); };
 
   let cells = '';
   for(let i=0;i<offset;i++) cells += `<div class="cal-day cal-empty"></div>`;
   for(let d=1; d<=daysInMonth; d++){
     const thisDate = new Date(year, month, d);
     const isPast = thisDate < today;
-    const isBooked = booked.has(d);
+    const match = booked.get(d);
     let cls = 'cal-day ';
     let attr = '';
+    let style = '';
     if(isPast){ cls += 'cal-past'; }
-    else if(isBooked){ cls += 'cal-booked'; }
+    else if(match){
+      cls += 'cal-booked';
+      const c = priorityTierColor(match.priorityTier);
+      style = `style="background:${c.bg};border-color:${c.border};color:${c.text}"`;
+      attr = `title="${escapeHtml(priorityTierLabel(match.priorityTier))}"`;
+    }
     else { cls += 'cal-available'; attr = `onclick="selectDay(${d})"`; }
     if(calState.selectedDay === d) cls += ' cal-selected';
-    cells += `<div class="${cls}" ${attr} id="cal-cell-${d}">${d}</div>`;
+    if(isToday(d) && calState.selectedDay !== d) cls += ' cal-today';
+    cells += `<div class="${cls}" ${attr} ${style} id="cal-cell-${d}">${d}</div>`;
   }
 
   document.getElementById('cal-month-label').textContent = `${monthNames[month]} ${year}`;
@@ -751,9 +785,12 @@ function renderDetail(roomId){
         </div>
         <div id="cal-grid" class="grid grid-cols-7 gap-1 mb-4"></div>
 
-        <div class="flex items-center gap-4 text-xs mb-5">
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#eef2f7"></span>Tersedia</span>
-          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block bg-[#fbe3e6]"></span>Terpesan</span>
+        <div class="flex items-center gap-3 text-[11px] mb-5 flex-wrap">
+          <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block" style="background:#ecfdf5;border:1px solid #a7f3d0"></span>Tersedia</span>
+          ${Object.keys(PRIORITY_TIER_COLORS).map(tier => {
+            const c = PRIORITY_TIER_COLORS[tier];
+            return `<span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm inline-block border" style="background:${c.bg};border-color:${c.border}"></span>${priorityTierShort(tier)}</span>`;
+          }).join('')}
         </div>
         <p class="flex items-center gap-2 text-sm mb-4"><i data-lucide="users" class="w-4 h-4" style="color:var(--navy-900)"></i>Maksimal ${room.capacity} peserta</p>
         <p id="detail-booking-hint" class="text-xs text-slate-400 mb-3"></p>
