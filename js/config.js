@@ -79,14 +79,35 @@ export const PRIORITY_TIER_LABELS = {
 // FEATURED ROOMS (di halaman beranda)
 // =====================================================================
 
-// 'steering-committee' dan 'sync-pods' (versi lama) sudah dipangkas dari
-// rooms.js karena bukan bagian dari 12 ruang kelas resmi — diganti ke 3
-// ruangan yang mewakili keragaman tipe (Ampitheater, Kelas Besar, Kelas Sedang).
-export const FEATURED_IDS = ['vision-hall', 'quantum', 'ignite'];
+export const FEATURED_IDS = ['vision-hall', 'steering-committee', 'sync-pods'];
 
 // =====================================================================
 // HELPER FUNCTIONS
 // =====================================================================
+
+// =====================================================================
+// WARNA & SINGKATAN KATEGORI INSTANSI — dipakai untuk mewarnai kalender
+// (badge per tanggal terpesan) supaya kategori pemesan langsung terlihat
+// sekilas tanpa perlu hover/klik. Warna dipilih pastel-tapi-menonjol,
+// masing-masing beda hue supaya gampang dibedakan mata, tapi tetap sepadan
+// dengan palet navy/biru situs (lihat --navy-900/--blue-accent di style.css).
+// =====================================================================
+export const PRIORITY_TIER_COLORS = {
+  pidi:            { bg: '#f7c59f', border: '#e2935a', text: '#7c3a10' },
+  bins:            { bg: '#9bd8de', border: '#4fb0b8', text: '#0b4a4f' },
+  satker_uker:     { bg: '#a9dfbf', border: '#5cb583', text: '#14532d' },
+  eksternal_lppi:  { bg: '#c9b6ea', border: '#9c78d6', text: '#4c1d78' }
+};
+export const PRIORITY_TIER_SHORT = {
+  pidi: 'PIDI', bins: 'BINS', satker_uker: 'INT', eksternal_lppi: 'EKS'
+};
+
+export function priorityTierColor(tier){
+  return PRIORITY_TIER_COLORS[tier] || { bg: '#e2e8f0', border: '#94a3b8', text: '#334155' };
+}
+export function priorityTierShort(tier){
+  return PRIORITY_TIER_SHORT[tier] || '?';
+}
 
 export function statusLabel(status) {
   return STATUS_LABELS[status] || status;
