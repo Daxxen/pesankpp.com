@@ -79,7 +79,10 @@ export const PRIORITY_TIER_LABELS = {
 // FEATURED ROOMS (di halaman beranda)
 // =====================================================================
 
-export const FEATURED_IDS = ['vision-hall', 'steering-committee', 'sync-pods'];
+// 'steering-committee' dan 'sync-pods' (versi lama) sudah dipangkas dari
+// rooms.js karena bukan bagian dari 12 ruang kelas resmi — diganti ke 3
+// ruangan yang mewakili keragaman tipe (Ampitheater, Kelas Besar, Kelas Sedang).
+export const FEATURED_IDS = ['vision-hall', 'quantum', 'ignite'];
 
 // =====================================================================
 // HELPER FUNCTIONS
