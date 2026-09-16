@@ -167,22 +167,37 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 0.8rem;
-  border-radius: 6px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: transform 0.12s ease, background 0.15s ease;
 }
 
 .cal-available {
-  background: #eef2f7;
-  color: var(--navy-900);
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #047857;
   cursor: pointer;
 }
 
 .cal-available:hover {
-  background: #dbe6f4;
+  background: #d1fae5;
+  border-color: #6ee7b7;
+  transform: scale(1.06);
 }
 
 .cal-booked {
+  /* Warna sesungguhnya (per kategori instansi pemesan — PIDI/BINS/Internal/
+     Eksternal) di-set lewat inline style oleh renderCalendar() di events.js,
+     lihat priorityTierColor(). Ini cuma fallback kalau tidak ada tier. */
   background: #fbe3e6;
   color: var(--danger);
+  cursor: not-allowed;
+  font-weight: 700;
+}
+
+.cal-today {
+  box-shadow: inset 0 0 0 2px var(--blue-accent);
 }
 
 .cal-empty {
@@ -191,6 +206,7 @@ body {
 
 .cal-selected {
   background: var(--navy-900) !important;
+  border-color: var(--navy-900) !important;
   color: #fff !important;
 }
 
