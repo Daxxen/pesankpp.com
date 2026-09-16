@@ -157,7 +157,10 @@
       <select id="filter-category" onchange="renderRoomsGrid()" class="border border-slate-300 rounded-md px-4 py-2.5 text-sm bg-white">
         <option value="">Semua kategori</option>
         <option>Auditorium</option>
+        <option>Ruang Rapat</option>
+        <option>Ruang Diskusi</option>
         <option>Ruang Pelatihan</option>
+        <option>Area Santai & Fasilitas</option>
       </select>
       <select id="filter-capacity" onchange="renderRoomsGrid()" class="border border-slate-300 rounded-md px-4 py-2.5 text-sm bg-white">
         <option value="">Semua kapasitas</option>
@@ -187,11 +190,7 @@
       <div id="full-calendar-grid" class="min-w-max"></div>
     </div>
 
-    <div class="flex items-center gap-5 mt-4 text-xs text-slate-500">
-      <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded bg-red-50 border border-red-200"></span>Terpesan</span>
-      <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded bg-slate-50 border border-slate-200"></span>Tersedia</span>
-      <span class="flex items-center gap-1.5"><span class="inline-block w-3 h-3 rounded bg-slate-100 opacity-60"></span>Tanggal lampau</span>
-    </div>
+    <div id="full-calendar-legend" class="flex items-center gap-4 mt-4 text-xs text-slate-500 flex-wrap"></div>
   </div>
 </main>
 
