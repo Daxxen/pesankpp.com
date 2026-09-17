@@ -92,7 +92,19 @@ async function refreshBookings(scope){
       }
     }
     const data = await apiGet('bookings', params);
-    if(data.ok) bookingsCache = data.bookings;
+    if(data.ok){
+      bookingsCache = data.bookings;
+    } else {
+      // Sebelumnya kegagalan di sini (mis. error server yang tertangkap
+      // try/catch backend dan dibalas sebagai {ok:false,...} berstatus
+      // HTTP 200) DIAM-DIAM diabaikan — dashboard/kalender jadi terlihat
+      // kosong tanpa ada notifikasi sama sekali, sehingga error backend
+      // sungguhan (mis. fungsi hilang di Code.gs) sangat sulit dibedakan
+      // dari "memang belum ada pemesanan". Sekarang ditampilkan sebagai
+      // toast supaya keliatan jelas ada masalah di server, bukan data kosong.
+      console.error('Server membalas ok:false untuk action=bookings:', data.error);
+      toast('Gagal memuat data pemesanan: ' + (data.error || 'error tidak diketahui dari server'), 'error');
+    }
     return bookingsCache;
   }catch(err){
     console.error(err);
