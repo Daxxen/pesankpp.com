@@ -1,5 +1,5 @@
 /**
- * KAWASAN EDUKASI DAN DIGITAL KEMANG
+ * Kawasan Pendidikan dan Pelatihan
  * Logika Aplikasi Utama
  *
  * Dipindahkan dari inline <script> di index.html. Dimuat sebagai ES module
@@ -128,7 +128,7 @@ function openFloorPlanModal(){
           <button onclick="closeFloorPlanModal()" class="icon-btn-sm flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
         </div>
         <div class="p-5">
-          <img src="images/denah-gedung.jpg" alt="Denah Gedung Kawasan Edukasi dan Digital Kemang" class="w-full rounded-lg border border-slate-200">
+          <img src="images/denah-gedung.jpg" alt="Denah Gedung Kawasan Pendidikan dan Pelatihan" class="w-full rounded-lg border border-slate-200">
         </div>
       </div>
     </div>`;
@@ -353,7 +353,7 @@ async function submitAdminLogin(e){
       return;
     }
     setAdminToken(data.token);
-    setUser({ name: 'Administrator', email, org: 'Pengelola Kawasan Edukasi dan Digital Kemang', role: 'admin' });
+    setUser({ name: 'Administrator', email, org: 'Pengelola Kawasan Pendidikan dan Pelatihan', role: 'admin' });
     renderAuthArea();
     toast('Selamat datang, Administrator.');
     go('admin');
@@ -390,13 +390,13 @@ function setAuthTab(tab){
     daftarTab.style.background = '#fff'; daftarTab.style.color = 'var(--slate-600)';
     masukForm.classList.remove('hidden'); daftarForm.classList.add('hidden');
     heading.textContent = 'Masuk ke akun Anda';
-    subtext.textContent = 'Akun diperlukan untuk mengirim pemesanan, memantau status konfirmasi, dan melihat riwayat penggunaan ruangan di Kawasan Edukasi dan Digital Kemang.';
+    subtext.textContent = 'Akun diperlukan untuk mengirim pemesanan, memantau status konfirmasi, dan melihat riwayat penggunaan ruangan di Kawasan Pendidikan dan Pelatihan.';
   } else {
     daftarTab.style.background = 'var(--navy-900)'; daftarTab.style.color = '#fff';
     masukTab.style.background = '#fff'; masukTab.style.color = 'var(--slate-600)';
     daftarForm.classList.remove('hidden'); masukForm.classList.add('hidden');
     heading.textContent = 'Buat akun baru';
-    subtext.textContent = 'Daftarkan diri Anda untuk mulai mengajukan pemesanan ruang dan fasilitas di Kawasan Edukasi dan Digital Kemang.';
+    subtext.textContent = 'Daftarkan diri Anda untuk mulai mengajukan pemesanan ruang dan fasilitas di Kawasan Pendidikan dan Pelatihan.';
   }
 }
 
@@ -1137,7 +1137,7 @@ function openBookingModal(groupId, adminMode){
         </div>
         <div class="p-6 space-y-5 print-area">
           <div class="print-letterhead">
-            <p class="font-display font-bold text-lg">Kawasan Edukasi dan Digital Kemang</p>
+            <p class="font-display font-bold text-lg">Kawasan Pendidikan dan Pelatihan</p>
             <p class="text-xs">Bukti Pemesanan Ruangan</p>
           </div>
           <div class="mt-1">${statusBadge(b.status)}</div>

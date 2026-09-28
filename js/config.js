@@ -1,5 +1,5 @@
 /**
- * KAWASAN EDUKASI DAN DIGITAL KEMANG
+ * Kawasan Pendidikan dan Pelatihan
  * Konfigurasi Global
  *
  * File ini berisi semua konfigurasi API, credentials, dan konstanta global.
