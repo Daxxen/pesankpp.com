@@ -78,8 +78,15 @@ export const PRIORITY_TIER_LABELS = {
 // =====================================================================
 // FEATURED ROOMS (di halaman beranda)
 // =====================================================================
-
-export const FEATURED_IDS = ['vision-hall', 'steering-committee', 'sync-pods'];
+// PERBAIKAN (sesi ini): 'steering-committee' dan 'sync-pods' sudah TIDAK
+// ADA lagi di rooms.js (dihapus saat database dirapikan ke 12 ruang kelas
+// resmi + 7 Wisma) — sebelumnya ini membuat "Pilihan Fasilitas Unggulan"
+// di beranda dan widget kalender 7-hari cuma menampilkan 1 dari 3 slot.
+// Diganti ke 3 ruangan yang benar-benar ada, mewakili tiap kategori:
+// Auditorium (Vision Hall), Ruang Pelatihan (Catalyst), dan Wisma
+// (Wisma Anggrek Lt.1). Ganti ID di sini kapan saja sesuai ruangan mana
+// yang ingin ditonjolkan.
+export const FEATURED_IDS = ['vision-hall', 'catalyst', 'wisma-anggrek-lt1'];
 
 // =====================================================================
 // HELPER FUNCTIONS
