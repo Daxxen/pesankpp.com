@@ -436,7 +436,56 @@ function historySkeletonHTML(){
 }
 
 /* ===================== HELPERS ===================== */
-function priceFmt(n){ return 'Rp ' + n.toLocaleString('id-ID'); }
+function priceFmt(n){ return 'Rp ' + (Number(n) || 0).toLocaleString('id-ID'); }
+
+/* ===================== KATEGORI PEMESAN (PRIORITAS) & HARGA =====================
+ * Urutan prioritas: PIDI > BINS > Satker/Uker > LPPI (Eksternal).
+ * HANYA kategori LPPI (Eksternal) yang dikenai tarif. Untuk 3 kategori teratas
+ * tidak ada harga/biaya/tagihan yang ditampilkan di mana pun pada alur
+ * pemesanan (form, ringkasan, riwayat, dashboard, bukti cetak, ekspor).
+ * Nilai kunci harus sama dengan PRIORITY_TIER_LABELS_ di Code.gs. */
+const TIER_LABELS = {
+  pidi: 'PIDI',
+  bins: 'BINS',
+  satker_uker: 'Satker/Uker (Internal BI)',
+  eksternal_lppi: 'LPPI (Eksternal)'
+};
+const PRICED_TIER = 'eksternal_lppi';
+function tierLabel(t){ return TIER_LABELS[t] || ''; }
+function isPricedTier(t){ return t === PRICED_TIER; }
+function currentTier(){ const el = document.getElementById('bk-tier'); return el ? el.value : ''; }
+// Teks harga satu item di keranjang (hanya untuk kategori berharga).
+function itemPriceText(room, item){
+  if(!isPricedTier(currentTier())) return '';
+  const hasTariff = item.tariffType === 'mingguan' ? !!room.priceWeek : !!room.priceDay;
+  return hasTariff ? priceFmt(item.amount) : 'Tarif belum ditetapkan';
+}
+// Jenis tarif bawaan sesuai kategori & ruangan.
+function defaultTariffFor(room){
+  if(isPricedTier(currentTier())) return 'harian';
+  return room.isExternal ? 'harian' : 'jam';
+}
+// Dipanggil saat dropdown Kategori Pemesan berubah: sesuaikan jenis tarif
+// tiap item keranjang, hitung ulang harga, lalu render ulang.
+function onTierChange(){
+  const priced = isPricedTier(currentTier());
+  bookingCart.forEach(item => {
+    const room = findRoom(item.roomId);
+    if(!room) return;
+    if(priced){
+      if(item.tariffType === 'jam' || item.tariffType === 'hari') item.tariffType = 'harian';
+      if(item.tariffType === 'mingguan' && !room.priceWeek) item.tariffType = 'harian';
+    } else if(!room.isExternal && (item.tariffType === 'harian' || item.tariffType === 'mingguan')){
+      item.tariffType = 'jam'; item.startTime = item.startTime || '09:00'; item.endTime = item.endTime || '11:00';
+    }
+    recomputeCartItem(item);
+  });
+  const note = document.getElementById('payment-note');
+  if(note) note.classList.toggle('hidden', !priced);
+  setFieldError('bk-tier', null);
+  renderCartList();
+  renderCartSummarySidebar();
+}
 function escapeHtml(str){
   // Mencegah XSS: data dari formulir pemesanan (nama, penyelenggara,
   // kegiatan, catatan) bisa diisi bebas oleh siapa saja tanpa login, lalu
@@ -841,7 +890,7 @@ function openBookingForm(roomId, date){
     roomId,
     date,
     endDate: date, // rentang tanggal — sama dengan date untuk pemesanan 1 hari
-    tariffType: room.isExternal ? 'harian' : 'jam',
+    tariffType: defaultTariffFor(room),
     startTime: '09:00',
     endTime: '11:00',
     participants: '' // diisi per ruangan
@@ -857,7 +906,10 @@ function openBookingForm(roomId, date){
 // multi-tanggal) atau eksternal (Harian / Mingguan).
 function tariffOptionsHtml(room, selected){
   let opts;
-  if(room.isExternal){
+  if(isPricedTier(currentTier())){
+    opts = [['harian','Harian']];
+    if(room.priceWeek) opts.push(['mingguan','Mingguan']);
+  } else if(room.isExternal){
     opts = [['harian','Harian']];
     if(room.priceWeek) opts.push(['mingguan','Mingguan']);
   } else {
@@ -890,11 +942,11 @@ function recomputeCartItem(item){
     item.amount = 0;
   } else if(item.tariffType === 'mingguan'){
     item.endDate = addDays(item.date, 6);
-    item.amount = room.priceWeek || 0;
+    item.amount = isPricedTier(currentTier()) ? (room.priceWeek || 0) : 0;
   } else { // 'harian' — eksternal, bisa multi-tanggal, dihitung per hari
     if(!item.endDate || item.endDate < item.date) item.endDate = item.date;
     const nDays = daysBetweenInclusive(item.date, item.endDate);
-    item.amount = (room.priceDay || 0) * nDays;
+    item.amount = isPricedTier(currentTier()) ? (room.priceDay || 0) * nDays : 0;
   }
 }
 
@@ -1002,7 +1054,7 @@ function renderCartList(){
         ${conflict
           ? `<span class="flex items-center gap-1.5" style="color:var(--danger)"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>Ruangan telah terpesan pada jadwal ini</span>`
           : `<span class="flex items-center gap-1.5" style="color:var(--ok)"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Ruangan tersedia pada jadwal ini</span>`}
-        <span class="font-semibold navy-text">${room.isExternal ? priceFmt(item.amount) : 'Gratis'}</span>
+        <span class="font-semibold navy-text">${escapeHtml(itemPriceText(room, item))}</span>
       </div>
     </div>`;
   }).join('');
@@ -1019,16 +1071,17 @@ function renderCartSummarySidebar(){
       const room = findRoom(item.roomId);
       if(!room) return '';
       const pLabel = parseInt(item.participants) > 0 ? `${parseInt(item.participants)} peserta` : 'Peserta belum diisi';
-      return `<div class="flex items-center justify-between gap-2"><span class="text-slate-500 truncate">${escapeHtml(room.name)} <span class="text-slate-400">(${pLabel})</span></span><span class="font-medium navy-text flex-shrink-0">${room.isExternal ? priceFmt(item.amount) : 'Gratis'}</span></div>`;
+      return `<div class="flex items-center justify-between gap-2"><span class="text-slate-500 truncate">${escapeHtml(room.name)} <span class="text-slate-400">(${pLabel})</span></span><span class="font-medium navy-text flex-shrink-0">${escapeHtml(itemPriceText(room, item))}</span></div>`;
     }).join('')}
     <div class="border-t border-slate-100 pt-3 mt-1 flex items-center justify-between text-xs text-slate-500">
       <span>Total Peserta</span>
       <span class="font-medium navy-text">${totalParticipants > 0 ? totalParticipants + ' orang' : '-'}</span>
     </div>
+    ${isPricedTier(currentTier()) ? `
     <div class="flex items-center justify-between">
       <span class="font-semibold navy-text">Total Biaya</span>
       <span class="font-display text-lg font-bold navy-text">${priceFmt(total)}</span>
-    </div>
+    </div>` : ''}
     ${hasConflictAny ? `<p class="text-xs mt-1" style="color:var(--danger)">Ada ruangan yang bentrok jadwal — perbaiki sebelum mengirim.</p>` : ''}
   ` : `<p class="text-slate-400">Belum ada ruangan dipilih.</p>`;
 }
@@ -1082,13 +1135,15 @@ function renderBookingPage(){
     document.getElementById('bk-name').value = user ? user.name : '';
     document.getElementById('bk-org').value = user && user.org ? user.org : '';
     document.getElementById('bk-email').value = user ? user.email : '';
+    document.getElementById('bk-tier').value = '';
+    const payNote = document.getElementById('payment-note'); if(payNote) payNote.classList.add('hidden');
     document.getElementById('bk-phone').value = '';
     document.getElementById('bk-purpose').value = '';
     document.getElementById('bk-notes').value = '';
     document.getElementById('bk-consent').checked = false;
     resetAttachments();
     document.getElementById('conflict-warning').classList.add('hidden');
-    ['bk-name','bk-org','bk-email','bk-phone','bk-purpose'].forEach(id => setFieldError(id, null));
+    ['bk-name','bk-org','bk-tier','bk-email','bk-phone','bk-purpose'].forEach(id => setFieldError(id, null));
     groupFieldsInitialized = true;
   }
   lucide.createIcons();
@@ -1144,7 +1199,7 @@ function openBookingModal(groupId, adminMode){
                 <img src="${room ? room.img : ''}" class="w-14 h-11 rounded-md object-cover flex-shrink-0 no-print" alt="">
                 <div>
                   <p class="font-display font-bold navy-text text-sm">${room ? escapeHtml(room.name) : escapeHtml(it.roomName)}</p>
-                  <p class="text-xs text-slate-500">${escapeHtml(bookingItemPeriodText(it))} ${it.participants ? '· ' + it.participants + ' peserta' : ''} ${(room && room.isExternal) ? '· ' + priceFmt(it.amount || 0) : '· Gratis'}</p>
+                  <p class="text-xs text-slate-500">${escapeHtml(bookingItemPeriodText(it))} ${it.participants ? '· ' + it.participants + ' peserta' : ''} ${isPricedTier(b.priorityTier) ? '· ' + (Number(it.amount) > 0 ? priceFmt(it.amount) : 'Tarif belum ditetapkan') : ''}</p>
                 </div>
               </div>`;
             }).join('')}
@@ -1155,7 +1210,8 @@ function openBookingModal(groupId, adminMode){
             <div><p class="text-xs text-slate-400 mb-0.5">Email</p><p class="font-medium navy-text break-all">${escapeHtml(b.email)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Telepon</p><p class="font-medium navy-text">${escapeHtml(b.phone)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Jumlah Peserta</p><p class="font-medium navy-text">${b.participants} orang</p></div>
-            <div><p class="text-xs text-slate-400 mb-0.5">Total Estimasi Biaya</p><p class="font-medium navy-text">${priceFmt(b.amount || 0)} <span class="text-xs text-slate-400 font-normal">(Transfer Bank)</span></p></div>
+            ${b.priorityTier ? `<div><p class="text-xs text-slate-400 mb-0.5">Kategori Pemesan</p><p class="font-medium navy-text">${escapeHtml(tierLabel(b.priorityTier))}</p></div>` : ''}
+            ${isPricedTier(b.priorityTier) ? `<div><p class="text-xs text-slate-400 mb-0.5">Total Estimasi Biaya</p><p class="font-medium navy-text">${priceFmt(b.amount || 0)} <span class="text-xs text-slate-400 font-normal">(Transfer Bank)</span></p></div>` : ''}
             <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Kegiatan</p><p class="font-medium navy-text">${escapeHtml(b.purpose)}</p></div>
             ${b.notes ? `<div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Catatan Tambahan</p><p class="font-medium navy-text">${escapeHtml(b.notes)}</p></div>` : ''}
             <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Diajukan pada</p><p class="font-medium navy-text">${new Date(b.createdAt).toLocaleString('id-ID')}</p></div>
@@ -1301,6 +1357,7 @@ async function submitBooking(e){
 
   const name = document.getElementById('bk-name').value.trim();
   const org = document.getElementById('bk-org').value.trim();
+  const tier = document.getElementById('bk-tier').value;
   const email = document.getElementById('bk-email').value.trim();
   const phone = document.getElementById('bk-phone').value.trim();
   const purpose = document.getElementById('bk-purpose').value.trim();
@@ -1310,6 +1367,7 @@ async function submitBooking(e){
   let ok = true;
   if(!name){ setFieldError('bk-name','Nama penanggung jawab wajib diisi.'); ok = false; } else setFieldError('bk-name', null);
   if(!org){ setFieldError('bk-org','Penyelenggara wajib diisi.'); ok = false; } else setFieldError('bk-org', null);
+  if(!tier){ setFieldError('bk-tier','Pilih kategori pemesan.'); ok = false; } else setFieldError('bk-tier', null);
   if(!email || !email.includes('@')){ setFieldError('bk-email','Masukkan email yang valid.'); ok = false; } else setFieldError('bk-email', null);
   if(!phone || phone.length < 8){ setFieldError('bk-phone','Masukkan nomor telepon yang valid.'); ok = false; } else setFieldError('bk-phone', null);
 
@@ -1342,7 +1400,7 @@ async function submitBooking(e){
       roomId: it.roomId, roomName: room.name, date: it.date, endDate: it.endDate || it.date,
       startTime: it.tariffType === 'jam' ? it.startTime : '00:00',
       endTime: it.tariffType === 'jam' ? it.endTime : '23:59',
-      tariffType: it.tariffType, amount: it.amount || 0, participants: parseInt(it.participants) || 0
+      tariffType: it.tariffType, amount: isPricedTier(tier) ? (it.amount || 0) : 0, participants: parseInt(it.participants) || 0
     };
   });
   const totalAmount = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
@@ -1363,7 +1421,7 @@ async function submitBooking(e){
   }
 
   const payload = {
-    name, org, email, phone, participants, purpose, notes, items, attachments,
+    name, org, email, phone, participants, purpose, notes, items, attachments, priorityTier: tier,
     userEmail: user ? user.email : email,
     userToken: (user && user.isInternal) ? getUserToken() : undefined
   };
@@ -1404,11 +1462,13 @@ async function submitBooking(e){
       </div>
       <div class="grid grid-cols-2 gap-y-3 text-sm">
         <div><p class="text-xs text-slate-400">Nomor Referensi</p><p class="font-display font-bold navy-text">${escapeHtml(data.ref)}</p></div>
-        <div><p class="text-xs text-slate-400">Total Estimasi Biaya</p><p class="font-semibold navy-text">${priceFmt(totalAmount)}</p></div>
+        ${isPricedTier(tier)
+          ? `<div><p class="text-xs text-slate-400">Total Estimasi Biaya</p><p class="font-semibold navy-text">${priceFmt(totalAmount)}</p></div>`
+          : `<div><p class="text-xs text-slate-400">Kategori Pemesan</p><p class="font-semibold navy-text">${escapeHtml(tierLabel(tier))}</p></div>`}
         <div><p class="text-xs text-slate-400">Penanggung Jawab</p><p class="font-medium navy-text">${escapeHtml(name)}</p></div>
         <div><p class="text-xs text-slate-400">Penyelenggara</p><p class="font-medium navy-text">${escapeHtml(org)}</p></div>
         <div><p class="text-xs text-slate-400">Jumlah Peserta</p><p class="font-medium navy-text">${participants} orang</p></div>
-        <div><p class="text-xs text-slate-400">Metode Pembayaran</p><p class="font-medium navy-text">Transfer Bank</p></div>
+        ${isPricedTier(tier) ? `<div><p class="text-xs text-slate-400">Metode Pembayaran</p><p class="font-medium navy-text">Transfer Bank</p></div>` : `<div><p class="text-xs text-slate-400">Jumlah Ruangan</p><p class="font-medium navy-text">${items.length} ruangan</p></div>`}
         <div class="col-span-2"><p class="text-xs text-slate-400">Status</p><p>${statusBadge('belum_konfirmasi')}</p></div>
       </div>`;
     toast('Pemesanan berhasil dikirim dan menunggu konfirmasi. Email konfirmasi telah dikirim ke ' + escapeHtml(email) + '.');
@@ -1494,7 +1554,7 @@ function renderHistory(){
           ${statusBadge(b.status)}
         </div>
         <p class="text-xs text-slate-500">${escapeHtml(groupItemsSummary(b))} · ${b.participants} peserta</p>
-        <p class="text-xs text-slate-400 mt-1">Ref: ${escapeHtml(b.ref)} · ${priceFmt(b.amount || 0)}</p>
+        <p class="text-xs text-slate-400 mt-1">Ref: ${escapeHtml(b.ref)}${b.priorityTier ? ' · ' + escapeHtml(tierLabel(b.priorityTier)) : ''}${isPricedTier(b.priorityTier) ? ' · ' + priceFmt(b.amount || 0) : ''}</p>
       </div>
       <div class="flex items-center gap-2" onclick="event.stopPropagation()">
         <button onclick="openBookingModal('${b.groupId}', false)" class="text-xs font-semibold text-slate-500 border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-md">Lihat Detail</button>
@@ -1673,13 +1733,13 @@ function renderAdminTable(){
   body.innerHTML = list.map(b => `
     <tr onclick="openBookingModal('${b.groupId}', true)">
       <td class="font-semibold navy-text">${escapeHtml(b.ref)}</td>
-      <td>${escapeHtml(b.org)}</td>
+      <td>${escapeHtml(b.org)}${b.priorityTier ? `<span class="block text-[10px] text-slate-400">${escapeHtml(tierLabel(b.priorityTier))}</span>` : ''}</td>
       <td>${escapeHtml(b.purpose)}</td>
       <td>${escapeHtml(groupRoomNamesSummary(b))}</td>
       <td>${escapeHtml(groupItemsSummary(b))}</td>
       <td>${escapeHtml(b.name)}</td>
       <td>${b.participants}</td>
-      <td>${priceFmt(b.amount || 0)}</td>
+      <td>${isPricedTier(b.priorityTier) ? priceFmt(b.amount || 0) : '-'}</td>
       <td>${statusBadge(b.status)}</td>
       <td onclick="event.stopPropagation()">
         ${b.status === 'belum_konfirmasi' ? `
@@ -1717,11 +1777,11 @@ function resetAdminFilters(){
 function exportAdminCSV(){
   const list = adminFilteredCache.length ? adminFilteredCache : getAdminFilteredBookings();
   if(!list.length){ toast('Tidak ada data untuk diunduh.', 'error'); return; }
-  const headers = ['Referensi','Penyelenggara','Kegiatan','Ruangan','Tanggal & Jam','Nama','Email','Telepon','Peserta','Estimasi Biaya','Metode Pembayaran','Status','Catatan Tambahan','Catatan Pengelola','Diajukan'];
+  const headers = ['Referensi','Penyelenggara','Kategori Pemesan','Kegiatan','Ruangan','Tanggal & Jam','Nama','Email','Telepon','Peserta','Estimasi Biaya','Metode Pembayaran','Status','Catatan Tambahan','Catatan Pengelola','Diajukan'];
   const rows = list.map(b => [
-    b.ref, b.org, b.purpose, groupRoomNamesSummary(b), groupItemsSummary(b),
-    b.name, b.email, b.phone, b.participants, b.amount || 0,
-    'Transfer Bank', statusLabel(b.status), b.notes || '', b.adminNote || '', b.createdAt
+    b.ref, b.org, tierLabel(b.priorityTier), b.purpose, groupRoomNamesSummary(b), groupItemsSummary(b),
+    b.name, b.email, b.phone, b.participants, isPricedTier(b.priorityTier) ? (b.amount || 0) : '',
+    isPricedTier(b.priorityTier) ? 'Transfer Bank' : '', statusLabel(b.status), b.notes || '', b.adminNote || '', b.createdAt
   ]);
   const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1829,7 +1889,7 @@ if(API_URL.indexOf('PASTE_URL') !== -1){
 Object.assign(window, {
   adminDecideUser, adminSetStatus, cancelBooking, closeBookingModal, closeFloorPlanModal,
   exportAdminCSV, go, goAdminEntry, handleDetailBookingClick, logout,
-  onAttachmentsSelected, openBookingModal, openFloorPlanModal,
+  onAttachmentsSelected, onTierChange, openBookingModal, openFloorPlanModal,
   printBookingProof, quickAdminAction, removeAttachment, removeCartItem,
   renderAdminTable, renderRoomsGrid, requireAuth, resetAdminFilters, selectDay,
   setAdminTab, setAuthTab, setHistoryFilter, shiftMonth, shiftFullCalendarMonth,

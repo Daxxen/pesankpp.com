@@ -221,6 +221,18 @@
             <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
           </div>
 
+          <div>
+            <label class="block text-sm font-semibold navy-text mb-1.5">Kategori Pemesan</label>
+            <select id="bk-tier" onchange="onTierChange()" class="w-full md:w-1/2 border border-slate-300 rounded-md px-4 py-2.5 text-sm bg-white">
+              <option value="">Pilih kategori pemesan</option>
+              <option value="pidi">PIDI</option>
+              <option value="bins">BINS</option>
+              <option value="satker_uker">Satker/Uker (Internal BI)</option>
+              <option value="eksternal_lppi">LPPI (Eksternal)</option>
+            </select>
+            <p class="field-error text-xs mt-1" style="color:var(--danger)"></p>
+          </div>
+
           <div class="grid md:grid-cols-2 gap-5">
             <div>
               <label class="block text-sm font-semibold navy-text mb-1.5">Nama penanggung jawab</label>
@@ -276,9 +288,9 @@
             <span id="conflict-warning-text"></span>
           </div>
 
-          <div class="bg-[#eef4ff] border border-[#c7d9f5] text-sm rounded-md p-4 flex items-start gap-2" style="color:var(--navy-900)">
+          <div id="payment-note" class="hidden bg-[#eef4ff] border border-[#c7d9f5] text-sm rounded-md p-4 flex items-start gap-2" style="color:var(--navy-900)">
             <i data-lucide="landmark" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-            <span>Metode pembayaran: <strong>Transfer Bank</strong> (satu-satunya metode yang tersedia). Tagihan baru dikirimkan lewat email <strong>setelah pemakaian ruangan selesai</strong> — ruangan fasilitas internal tanpa biaya sewa tidak akan ditagih.</span>
+            <span>Metode pembayaran: <strong>Transfer Bank</strong> (satu-satunya metode yang tersedia). Tagihan baru dikirimkan lewat email <strong>setelah pemakaian ruangan selesai</strong></span>
           </div>
 
           <div id="approval-lock-warning" class="hidden bg-amber-50 border border-amber-200 text-sm rounded-md p-4 flex items-start gap-2" style="color:var(--warn)">
