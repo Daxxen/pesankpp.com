@@ -821,3 +821,1018 @@ function handleDetailBookingClick(){
   const dk = dateKey(calState.year, calState.month, calState.selectedDay);
   requireAuth('booking', { roomId: calState.room.id, date: dk });
 }
+
+/* ===================== BOOKING FORM (KERANJANG MULTI-RUANGAN) ===================== */
+// 1 pemesanan (BookingGroup) bisa berisi BEBERAPA ruangan (BookingItem),
+// masing-masing dengan tanggal/jam sendiri — dan (poin baru sesi ini) SATU
+// ruangan boleh dipesan untuk RENTANG beberapa tanggal sekaligus (mis. 1–3
+// Desember 2026), bukan cuma 1 hari. bookingCart menyimpan item-item itu di
+// memori sampai dikirim lewat submitBooking().
+let bookingCart = [];
+let groupFieldsInitialized = false;
+
+function timeToMinutes(t){ const [h,m] = (t||'0:0').split(':').map(Number); return h*60+m; }
+
+function openBookingForm(roomId, date){
+  const room = findRoom(roomId);
+  if(!room) return;
+  const item = {
+    cartId: 'c' + Date.now() + '_' + Math.floor(Math.random()*1000),
+    roomId,
+    date,
+    endDate: date, // rentang tanggal — sama dengan date untuk pemesanan 1 hari
+    tariffType: room.isExternal ? 'harian' : 'jam',
+    startTime: '09:00',
+    endTime: '11:00',
+    participants: '' // diisi per ruangan
+  };
+  recomputeCartItem(item);
+  bookingCart.push(item);
+  renderBookingPage();
+  go('booking');
+  toast(`${escapeHtml(room.name)} ditambahkan ke pemesanan.`);
+}
+
+// Jenis tarif tergantung apakah ruangan internal (Per jam / Per hari, bisa
+// multi-tanggal) atau eksternal (Harian / Mingguan).
+function tariffOptionsHtml(room, selected){
+  let opts;
+  if(room.isExternal){
+    opts = [['harian','Harian']];
+    if(room.priceWeek) opts.push(['mingguan','Mingguan']);
+  } else {
+    opts = [['jam','Per jam (1 hari)'], ['hari','Per hari (bisa multi-tanggal)']];
+  }
+  return opts.map(([v,label]) => `<option value="${v}" ${v === selected ? 'selected' : ''}>${label}</option>`).join('');
+}
+
+function addDays(dateStr, n){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  dt.setDate(dt.getDate() + n);
+  return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+}
+
+// Menghitung ulang amount berdasarkan JUMLAH HARI aktual antara date dan
+// endDate (bukan lagi selalu 1 hari) — supaya ruangan eksternal yang dipesan
+// beberapa hari sekaligus terhitung benar, dan ruangan 'hari' (internal,
+// multi-tanggal) tetap Rp0 berapa pun jumlah harinya.
+function recomputeCartItem(item){
+  const room = findRoom(item.roomId);
+  if(!room) return;
+  if(item.tariffType === 'jam'){
+    item.endDate = item.date; // per jam selalu 1 hari
+    item.amount = 0;
+  } else if(item.tariffType === 'hari'){
+    // Internal, per hari — endDate diambil dari input pengguna sendiri
+    // (bisa multi-tanggal), tidak dihitung ulang di sini. Selalu gratis.
+    if(!item.endDate || item.endDate < item.date) item.endDate = item.date;
+    item.amount = 0;
+  } else if(item.tariffType === 'mingguan'){
+    item.endDate = addDays(item.date, 6);
+    item.amount = room.priceWeek || 0;
+  } else { // 'harian' — eksternal, bisa multi-tanggal, dihitung per hari
+    if(!item.endDate || item.endDate < item.date) item.endDate = item.date;
+    const nDays = daysBetweenInclusive(item.date, item.endDate);
+    item.amount = (room.priceDay || 0) * nDays;
+  }
+}
+
+function removeCartItem(cartId){
+  bookingCart = bookingCart.filter(it => it.cartId !== cartId);
+  renderBookingPage();
+  if(!bookingCart.length) toast('Keranjang pemesanan kosong.');
+}
+
+function updateCartItemField(cartId, field, value){
+  const item = bookingCart.find(it => it.cartId === cartId);
+  if(!item) return;
+  item[field] = value;
+  if(field === 'participants'){
+    // Field ini diketik karakter demi karakter (oninput) — jangan render
+    // ulang seluruh kartu (akan merebut fokus input tiap ketikan), cukup
+    // bersihkan error lama dan perbarui sidebar.
+    const errEl = document.getElementById('cart-participants-error-' + cartId);
+    if(errEl) errEl.textContent = '';
+    renderCartSummarySidebar();
+    return;
+  }
+  if(field === 'date' && (!item.endDate || item.endDate < item.date)) item.endDate = item.date;
+  if(field === 'tariffType' && item.tariffType === 'jam'){
+    item.startTime = item.startTime || '09:00'; item.endTime = item.endTime || '11:00';
+  }
+  recomputeCartItem(item);
+  renderCartList();
+  renderCartSummarySidebar();
+}
+
+// Bentrok terhadap data tersimpan di server MAUPUN terhadap item lain di
+// keranjang yang sama (mis. ruangan yang sama dipilih dua kali dengan
+// jadwal beririsan).
+function itemConflictsWithStored(item){
+  const candidate = { date: item.date, endDate: item.endDate || item.date, startTime: item.startTime, endTime: item.endTime, tariffType: item.tariffType };
+  const stored = activeItems().filter(b => b.roomId === item.roomId);
+  if(stored.some(b => bookingsConflict(candidate, b))) return true;
+  return bookingCart.some(other => other.cartId !== item.cartId && other.roomId === item.roomId &&
+    bookingsConflict(candidate, { date: other.date, endDate: other.endDate || other.date, startTime: other.startTime, endTime: other.endTime, tariffType: other.tariffType }));
+}
+
+function renderCartList(){
+  const wrap = document.getElementById('cart-items-list');
+  if(!bookingCart.length){
+    wrap.innerHTML = `<div class="text-center py-10 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Belum ada ruangan dipilih. Klik "Tambah Ruangan Lain" untuk memilih ruangan.</div>`;
+    lucide.createIcons();
+    return;
+  }
+  wrap.innerHTML = bookingCart.map(item => {
+    const room = findRoom(item.roomId);
+    if(!room) return '';
+    const conflict = itemConflictsWithStored(item);
+    const multiDate = item.tariffType === 'hari' || item.tariffType === 'harian';
+    return `
+    <div class="border border-slate-200 rounded-xl p-4" data-cart-id="${item.cartId}">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <img src="${room.img}" class="w-12 h-12 rounded-md object-cover flex-shrink-0" alt="${room.name}">
+          <div class="min-w-0">
+            <p class="font-display font-semibold navy-text text-sm truncate">${escapeHtml(room.name)}</p>
+            <p class="text-xs text-slate-400 truncate">${escapeHtml(room.category)} · Maks ${room.capacity} orang</p>
+          </div>
+        </div>
+        <button type="button" onclick="removeCartItem('${item.cartId}')" class="icon-btn-sm flex-shrink-0" title="Hapus ruangan ini"><i data-lucide="trash-2" class="w-4 h-4" style="color:var(--danger)"></i></button>
+      </div>
+      <div class="grid md:grid-cols-3 gap-3 mb-3">
+        <div>
+          <label class="block text-xs font-semibold navy-text mb-1">${multiDate ? 'Tanggal mulai' : 'Tanggal pemakaian'}</label>
+          <input type="date" value="${item.date}" onchange="updateCartItemField('${item.cartId}','date',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold navy-text mb-1">Jenis tarif</label>
+          <select onchange="updateCartItemField('${item.cartId}','tariffType',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white">
+            ${tariffOptionsHtml(room, item.tariffType)}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold navy-text mb-1">Jumlah peserta</label>
+          <input type="number" min="1" max="${room.capacity}" value="${item.participants || ''}" placeholder="Maks ${room.capacity} orang" oninput="updateCartItemField('${item.cartId}','participants',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm" id="cart-participants-${item.cartId}">
+          <p class="text-xs mt-1" style="color:var(--danger)" id="cart-participants-error-${item.cartId}"></p>
+        </div>
+      </div>
+      ${item.tariffType === 'jam' ? `
+      <div class="grid md:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="block text-xs font-semibold navy-text mb-1">Jam mulai</label>
+          <input type="time" step="900" value="${item.startTime}" onchange="updateCartItemField('${item.cartId}','startTime',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold navy-text mb-1">Jam selesai</label>
+          <input type="time" step="900" value="${item.endTime}" onchange="updateCartItemField('${item.cartId}','endTime',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+        </div>
+      </div>` : (multiDate ? `
+      <div class="grid md:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label class="block text-xs font-semibold navy-text mb-1">Tanggal selesai</label>
+          <input type="date" min="${item.date}" value="${item.endDate}" onchange="updateCartItemField('${item.cartId}','endDate',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+        </div>
+        <div class="flex items-end">
+          <p class="text-xs text-slate-400 pb-2.5">${daysBetweenInclusive(item.date, item.endDate)} hari (${formatDateLong(item.date)} – ${formatDateLong(item.endDate)})</p>
+        </div>
+      </div>` : (item.tariffType === 'mingguan' ? `<p class="text-xs text-slate-400 mb-3">Check-out: ${formatDateLong(item.endDate)} (7 hari)</p>` : ''))}
+      <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+        ${conflict
+          ? `<span class="flex items-center gap-1.5" style="color:var(--danger)"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>Ruangan telah terpesan pada jadwal ini</span>`
+          : `<span class="flex items-center gap-1.5" style="color:var(--ok)"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Ruangan tersedia pada jadwal ini</span>`}
+        <span class="font-semibold navy-text">${room.isExternal ? priceFmt(item.amount) : 'Gratis'}</span>
+      </div>
+    </div>`;
+  }).join('');
+  lucide.createIcons();
+}
+
+function renderCartSummarySidebar(){
+  const total = bookingCart.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+  const totalParticipants = bookingCart.reduce((sum, it) => sum + (parseInt(it.participants) || 0), 0);
+  const hasConflictAny = bookingCart.some(itemConflictsWithStored);
+  document.getElementById('booking-room-loc').textContent = `${bookingCart.length} ruangan dipilih`;
+  document.getElementById('booking-summary-panel').innerHTML = bookingCart.length ? `
+    ${bookingCart.map(item => {
+      const room = findRoom(item.roomId);
+      if(!room) return '';
+      const pLabel = parseInt(item.participants) > 0 ? `${parseInt(item.participants)} peserta` : 'Peserta belum diisi';
+      return `<div class="flex items-center justify-between gap-2"><span class="text-slate-500 truncate">${escapeHtml(room.name)} <span class="text-slate-400">(${pLabel})</span></span><span class="font-medium navy-text flex-shrink-0">${room.isExternal ? priceFmt(item.amount) : 'Gratis'}</span></div>`;
+    }).join('')}
+    <div class="border-t border-slate-100 pt-3 mt-1 flex items-center justify-between text-xs text-slate-500">
+      <span>Total Peserta</span>
+      <span class="font-medium navy-text">${totalParticipants > 0 ? totalParticipants + ' orang' : '-'}</span>
+    </div>
+    <div class="flex items-center justify-between">
+      <span class="font-semibold navy-text">Total Biaya</span>
+      <span class="font-display text-lg font-bold navy-text">${priceFmt(total)}</span>
+    </div>
+    ${hasConflictAny ? `<p class="text-xs mt-1" style="color:var(--danger)">Ada ruangan yang bentrok jadwal — perbaiki sebelum mengirim.</p>` : ''}
+  ` : `<p class="text-slate-400">Belum ada ruangan dipilih.</p>`;
+}
+
+// Kunci tombol "Kirim Pemesanan" bila akun yang sedang login belum
+// disetujui admin. Status disegarkan dari server setiap kali halaman ini
+// dibuka.
+async function refreshMyApprovalLock(){
+  const user = getUser();
+  const box = document.getElementById('approval-lock-warning');
+  const boxText = document.getElementById('approval-lock-warning-text');
+  const submitBtn = document.getElementById('booking-submit-btn');
+  if(!user){ box.classList.add('hidden'); if(submitBtn) submitBtn.disabled = false; return; }
+
+  try{
+    const params = (user.isInternal && getUserToken()) ? { userToken: getUserToken() } : { email: user.email };
+    const data = await apiGet('myApprovalStatus', params);
+    if(data.ok){
+      user.approvalStatus = data.approvalStatus;
+      setUser(user);
+    }
+  }catch(err){ /* pakai status lama dari cache bila gagal menyegarkan */ }
+
+  const locked = user.approvalStatus && user.approvalStatus !== 'disetujui';
+  if(locked){
+    boxText.textContent = user.approvalStatus === 'ditolak'
+      ? 'Pendaftaran akun Anda tidak disetujui oleh pengelola. Silakan hubungi kami bila ini keliru.'
+      : 'Akun Anda sedang menunggu persetujuan pengelola. Anda belum bisa mengirim pemesanan sampai akun disetujui.';
+    box.classList.remove('hidden');
+    if(submitBtn) submitBtn.disabled = true;
+  } else {
+    box.classList.add('hidden');
+    if(submitBtn) submitBtn.disabled = false;
+  }
+  lucide.createIcons();
+}
+
+function renderBookingPage(){
+  document.getElementById('booking-back-btn').onclick = () => go('rooms');
+  document.getElementById('booking-room-title').textContent = 'Formulir Pemesanan';
+  document.getElementById('booking-room-subtitle').textContent = bookingCart.length ? `${bookingCart.length} ruangan dipilih untuk 1 pemesanan` : 'Pilih ruangan untuk mulai memesan.';
+  renderCartList();
+  renderCartSummarySidebar();
+  refreshMyApprovalLock();
+
+  // Field pemesan (nama/penyelenggara/dst.) hanya diisi ulang dari akun
+  // yang login SEKALI (saat pertama kali keranjang diisi) — supaya
+  // menambah ruangan lain tidak menimpa isian yang sudah diketik pengguna.
+  if(!groupFieldsInitialized){
+    const user = getUser();
+    document.getElementById('bk-name').value = user ? user.name : '';
+    document.getElementById('bk-org').value = user && user.org ? user.org : '';
+    document.getElementById('bk-email').value = user ? user.email : '';
+    document.getElementById('bk-phone').value = '';
+    document.getElementById('bk-purpose').value = '';
+    document.getElementById('bk-notes').value = '';
+    document.getElementById('bk-consent').checked = false;
+    resetAttachments();
+    document.getElementById('conflict-warning').classList.add('hidden');
+    ['bk-name','bk-org','bk-email','bk-phone','bk-purpose'].forEach(id => setFieldError(id, null));
+    groupFieldsInitialized = true;
+  }
+  lucide.createIcons();
+}
+
+function resetBookingCart(){
+  bookingCart = [];
+  groupFieldsInitialized = false;
+  resetAttachments();
+}
+
+/* ===================== BOOKING DETAIL MODAL ===================== */
+function closeBookingModal(){
+  document.getElementById('booking-modal-root').innerHTML = '';
+}
+
+// Teks periode 1 item booking (ruangan + tanggal/jam).
+function bookingItemPeriodText(it){
+  const room = findRoom(it.roomId);
+  const label = room ? room.name : (it.roomName || '');
+  const endDate = it.endDate || it.date;
+  if(it.tariffType === 'jam') return `${label}: ${formatDateLong(it.date)} · ${it.startTime}–${it.endTime}`;
+  if(endDate && endDate !== it.date) return `${label}: ${formatDateLong(it.date)} – ${formatDateLong(endDate)}`;
+  return `${label}: ${formatDateLong(it.date)}`;
+}
+
+function openBookingModal(groupId, adminMode){
+  const b = getBookings().find(x => x.groupId === groupId);
+  if(!b) return;
+  const items = b.items || [];
+  const canAct = adminMode; // admin punya kuasa penuh mengubah status kapan saja
+  const root = document.getElementById('booking-modal-root');
+  root.innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this) closeBookingModal()">
+      <div class="modal-box">
+        <div class="p-6 border-b border-slate-100 flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Nomor Referensi</p>
+            <p class="font-display text-xl font-bold navy-text">${escapeHtml(b.ref)}</p>
+          </div>
+          <button onclick="closeBookingModal()" class="icon-btn-sm flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="p-6 space-y-5 print-area">
+          <div class="print-letterhead">
+            <p class="font-display font-bold text-lg">Kawasan Pendidikan dan Pelatihan</p>
+            <p class="text-xs">Bukti Pemesanan Ruangan</p>
+          </div>
+          <div class="mt-1">${statusBadge(b.status)}</div>
+          <div class="space-y-2 border-t border-slate-100 pt-4">
+            ${items.map(it => {
+              const room = findRoom(it.roomId);
+              return `<div class="flex items-center gap-3">
+                <img src="${room ? room.img : ''}" class="w-14 h-11 rounded-md object-cover flex-shrink-0 no-print" alt="">
+                <div>
+                  <p class="font-display font-bold navy-text text-sm">${room ? escapeHtml(room.name) : escapeHtml(it.roomName)}</p>
+                  <p class="text-xs text-slate-500">${escapeHtml(bookingItemPeriodText(it))} ${it.participants ? '· ' + it.participants + ' peserta' : ''} ${(room && room.isExternal) ? '· ' + priceFmt(it.amount || 0) : '· Gratis'}</p>
+                </div>
+              </div>`;
+            }).join('')}
+          </div>
+          <div class="grid grid-cols-2 gap-y-4 gap-x-4 text-sm border-t border-slate-100 pt-5">
+            <div><p class="text-xs text-slate-400 mb-0.5">Penanggung Jawab</p><p class="font-medium navy-text">${escapeHtml(b.name)}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Penyelenggara</p><p class="font-medium navy-text">${escapeHtml(b.org)}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Email</p><p class="font-medium navy-text break-all">${escapeHtml(b.email)}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Telepon</p><p class="font-medium navy-text">${escapeHtml(b.phone)}</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Jumlah Peserta</p><p class="font-medium navy-text">${b.participants} orang</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Total Estimasi Biaya</p><p class="font-medium navy-text">${priceFmt(b.amount || 0)} <span class="text-xs text-slate-400 font-normal">(Transfer Bank)</span></p></div>
+            <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Kegiatan</p><p class="font-medium navy-text">${escapeHtml(b.purpose)}</p></div>
+            ${b.notes ? `<div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Catatan Tambahan</p><p class="font-medium navy-text">${escapeHtml(b.notes)}</p></div>` : ''}
+            <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Diajukan pada</p><p class="font-medium navy-text">${new Date(b.createdAt).toLocaleString('id-ID')}</p></div>
+          </div>
+          ${b.attachmentUrls ? `
+          <div class="border-t border-slate-100 pt-4 no-print">
+            <p class="text-xs font-semibold navy-text mb-2 flex items-center gap-1.5"><i data-lucide="paperclip" class="w-3.5 h-3.5"></i>Dokumen Persuratan</p>
+            <div class="space-y-1.5">
+              ${String(b.attachmentUrls).split(',').filter(Boolean).map((url, i) => `
+                <a href="${escapeHtml(url.trim())}" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-[var(--blue-accent)] hover:underline"><i data-lucide="file-text" class="w-4 h-4 flex-shrink-0"></i>Dokumen ${i+1}</a>
+              `).join('')}
+            </div>
+          </div>` : ''}
+          ${b.adminNote ? `<div class="bg-[var(--paper)] border border-slate-200 rounded-md p-4 text-sm"><p class="text-xs font-semibold navy-text mb-1">Catatan Pengelola</p><p class="text-slate-600">${escapeHtml(b.adminNote)}</p></div>` : ''}
+          <p class="print-footer-note">Dokumen ini adalah bukti pemesanan ruangan. Status pada dokumen ini adalah status terkini saat dicetak dan dapat berubah.</p>
+          ${!adminMode ? `<div class="no-print"><button onclick="printBookingProof()" class="btn-outline text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="printer" class="w-4 h-4"></i>Cetak Bukti</button></div>` : ''}
+          ${canAct ? `
+          <div class="border-t border-slate-100 pt-5 no-print">
+            <label class="block text-xs font-semibold navy-text mb-1.5">Catatan admin (wajib diisi bila menolak / membatalkan)</label>
+            <textarea id="modal-admin-note" rows="2" placeholder="Contoh: Ruangan sedang dalam perawatan pada tanggal tersebut." class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4">${escapeHtml(b.adminNote || '')}</textarea>
+            <div class="flex flex-wrap items-center gap-2">
+              <select id="modal-status-select" class="border border-slate-300 rounded-md px-3 py-2.5 text-sm bg-white">
+                ${STATUS_ORDER.map(s => `<option value="${s}" ${s === b.status ? 'selected' : ''}>${escapeHtml(statusLabel(s))}</option>`).join('')}
+              </select>
+              <button onclick="adminSetStatus('${b.groupId}')" class="btn-primary text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="check" class="w-4 h-4"></i>Ubah Status</button>
+            </div>
+            <p class="text-xs text-slate-400 mt-2">Admin dapat mengubah ke status apa pun secara manual kapan saja.</p>
+          </div>` : ''}
+        </div>
+      </div>
+    </div>`;
+  lucide.createIcons();
+}
+
+// Sebuah item booking dianggap "per jam" (hanya mengunci rentang jam pada
+// SATU tanggal) hanya bila tariffType === 'jam'. Selain itu ('hari' untuk
+// internal — bisa multi-tanggal, 'harian'/'mingguan' untuk eksternal)
+// dianggap mengunci PENUH dari date s.d. endDate.
+function isHourlyBooking(b){
+  return b.tariffType === 'jam';
+}
+
+function dateRangesOverlap(aStart, aEnd, bStart, bEnd){
+  return aStart <= bEnd && aEnd >= bStart; // format YYYY-MM-DD, aman dibandingkan sebagai string
+}
+
+function bookingsConflict(a, b){
+  const aEnd = a.endDate || a.date;
+  const bEnd = b.endDate || b.date;
+  if(!dateRangesOverlap(a.date, aEnd, b.date, bEnd)) return false;
+  if(isHourlyBooking(a) && isHourlyBooking(b) && a.date === b.date){
+    return a.startTime < b.endTime && a.endTime > b.startTime;
+  }
+  return true;
+}
+
+/* ===================== DOKUMEN PERSURATAN (multi-file) ===================== */
+// File dipilih user disimpan di memori (bukan langsung diunggah) sampai
+// submitBooking() mengirim semuanya sebagai base64 dalam 1 payload
+// createBooking. Server (Code.gs) yang benar-benar menyimpannya ke Google
+// Drive dan menyimpan link-nya.
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_MB = 5;
+const ALLOWED_ATTACHMENT_EXT = ['pdf','doc','docx','jpg','jpeg','png'];
+let pendingAttachments = []; // [{file, name, sizeLabel}]
+
+function fileExt(name){ return (name.split('.').pop() || '').toLowerCase(); }
+function fileSizeLabel(bytes){
+  if(bytes < 1024*1024) return Math.max(1, Math.round(bytes/1024)) + ' KB';
+  return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+
+function onAttachmentsSelected(e){
+  const errEl = document.getElementById('attachment-error');
+  errEl.textContent = '';
+  const incoming = Array.from(e.target.files || []);
+  e.target.value = ''; // reset input supaya bisa pilih file yang sama lagi kalau dihapus lalu ditambah ulang
+
+  for(const file of incoming){
+    if(pendingAttachments.length >= MAX_ATTACHMENTS){
+      errEl.textContent = `Maksimal ${MAX_ATTACHMENTS} file.`;
+      break;
+    }
+    if(!ALLOWED_ATTACHMENT_EXT.includes(fileExt(file.name))){
+      errEl.textContent = `Format "${file.name}" tidak didukung. Gunakan PDF/Word/gambar.`;
+      continue;
+    }
+    if(file.size > MAX_ATTACHMENT_MB * 1024 * 1024){
+      errEl.textContent = `File "${file.name}" melebihi ${MAX_ATTACHMENT_MB} MB.`;
+      continue;
+    }
+    pendingAttachments.push({ file, name: file.name, sizeLabel: fileSizeLabel(file.size) });
+  }
+  renderAttachmentList();
+}
+
+function removeAttachment(idx){
+  pendingAttachments.splice(idx, 1);
+  document.getElementById('attachment-error').textContent = '';
+  renderAttachmentList();
+}
+
+function renderAttachmentList(){
+  const wrap = document.getElementById('attachment-list');
+  wrap.innerHTML = pendingAttachments.map((a, idx) => `
+    <div class="flex items-center justify-between gap-2 border border-slate-200 rounded-md px-3 py-2 text-sm">
+      <span class="flex items-center gap-2 min-w-0"><i data-lucide="file-text" class="w-4 h-4 text-slate-400 flex-shrink-0"></i><span class="truncate">${escapeHtml(a.name)}</span><span class="text-xs text-slate-400 flex-shrink-0">(${a.sizeLabel})</span></span>
+      <button type="button" onclick="removeAttachment(${idx})" class="icon-btn-sm flex-shrink-0" title="Hapus"><i data-lucide="x" class="w-3.5 h-3.5" style="color:var(--danger)"></i></button>
+    </div>`).join('');
+  lucide.createIcons();
+}
+
+function resetAttachments(){
+  pendingAttachments = [];
+  document.getElementById('attachment-error').textContent = '';
+  renderAttachmentList();
+}
+
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || ''); // buang prefix "data:...;base64,"
+    reader.onerror = () => reject(new Error('Gagal membaca file ' + file.name));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function buildAttachmentsPayload(){
+  return Promise.all(pendingAttachments.map(async a => ({
+    name: a.name,
+    mimeType: a.file.type || 'application/octet-stream',
+    base64: await fileToBase64(a.file)
+  })));
+}
+
+let bookingSubmitInFlight = false;
+
+async function submitBooking(e){
+  e.preventDefault();
+  if(bookingSubmitInFlight) return; // proteksi double-submit
+
+  if(!bookingCart.length){ toast('Pilih minimal 1 ruangan untuk dipesan.', 'error'); return; }
+
+  const name = document.getElementById('bk-name').value.trim();
+  const org = document.getElementById('bk-org').value.trim();
+  const email = document.getElementById('bk-email').value.trim();
+  const phone = document.getElementById('bk-phone').value.trim();
+  const purpose = document.getElementById('bk-purpose').value.trim();
+  const notes = document.getElementById('bk-notes').value.trim();
+  const consent = document.getElementById('bk-consent');
+
+  let ok = true;
+  if(!name){ setFieldError('bk-name','Nama penanggung jawab wajib diisi.'); ok = false; } else setFieldError('bk-name', null);
+  if(!org){ setFieldError('bk-org','Penyelenggara wajib diisi.'); ok = false; } else setFieldError('bk-org', null);
+  if(!email || !email.includes('@')){ setFieldError('bk-email','Masukkan email yang valid.'); ok = false; } else setFieldError('bk-email', null);
+  if(!phone || phone.length < 8){ setFieldError('bk-phone','Masukkan nomor telepon yang valid.'); ok = false; } else setFieldError('bk-phone', null);
+
+  // Peserta divalidasi PER RUANGAN — masing-masing ruangan bisa punya
+  // jumlah peserta berbeda, dibatasi oleh kapasitas ruangan itu sendiri.
+  bookingCart.forEach(it => {
+    const room = findRoom(it.roomId);
+    const errEl = document.getElementById('cart-participants-error-' + it.cartId);
+    const p = parseInt(it.participants);
+    if(!p || p < 1){
+      if(errEl) errEl.textContent = 'Jumlah peserta wajib diisi.';
+      ok = false;
+    } else if(room && p > room.capacity){
+      if(errEl) errEl.textContent = `Melebihi kapasitas maksimal ruangan ini (${room.capacity} orang).`;
+      ok = false;
+    } else if(errEl) errEl.textContent = '';
+  });
+
+  if(!purpose){ setFieldError('bk-purpose','Kegiatan wajib diisi.'); ok = false; } else setFieldError('bk-purpose', null);
+  if(consent && !consent.checked){ toast('Anda perlu menyetujui persyaratan penggunaan data sebelum mengirim.', 'error'); ok = false; }
+  if(bookingCart.some(itemConflictsWithStored)){ toast('Ada ruangan yang bentrok jadwal — perbaiki sebelum mengirim.', 'error'); ok = false; }
+
+  document.getElementById('conflict-warning').classList.add('hidden');
+  if(!ok){ toast('Periksa kembali data yang belum lengkap.', 'error'); return; }
+
+  const user = getUser();
+  const items = bookingCart.map(it => {
+    const room = findRoom(it.roomId);
+    return {
+      roomId: it.roomId, roomName: room.name, date: it.date, endDate: it.endDate || it.date,
+      startTime: it.tariffType === 'jam' ? it.startTime : '00:00',
+      endTime: it.tariffType === 'jam' ? it.endTime : '23:59',
+      tariffType: it.tariffType, amount: it.amount || 0, participants: parseInt(it.participants) || 0
+    };
+  });
+  const totalAmount = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
+  const participants = items.reduce((sum, it) => sum + (Number(it.participants) || 0), 0);
+
+  const submitBtn = document.getElementById('booking-submit-btn');
+  bookingSubmitInFlight = true;
+  if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = 'Mengunggah dokumen...'; }
+
+  let attachments = [];
+  try{
+    attachments = await buildAttachmentsPayload();
+  }catch(err){
+    bookingSubmitInFlight = false;
+    if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = 'Kirim Pemesanan'; }
+    toast('Gagal membaca salah satu file lampiran. Coba pilih ulang filenya.', 'error');
+    return;
+  }
+
+  const payload = {
+    name, org, email, phone, participants, purpose, notes, items, attachments,
+    userEmail: user ? user.email : email,
+    userToken: (user && user.isInternal) ? getUserToken() : undefined
+  };
+
+  if(submitBtn) submitBtn.textContent = 'Mengirim...';
+
+  try{
+    const data = await apiPost('createBooking', payload);
+    if(!data.ok){
+      if(data.notApproved){
+        toast(escapeHtml(data.error || 'Akun Anda belum disetujui pengelola.'), 'error');
+        refreshMyApprovalLock();
+      } else if(data.conflict){
+        const warn = document.getElementById('conflict-warning');
+        const room = findRoom(data.roomId);
+        document.getElementById('conflict-warning-text').textContent = `Ruangan "${room ? room.name : data.roomId}" sudah terpesan pada jadwal yang dipilih. Silakan ubah tanggal/jam ruangan tersebut.`;
+        warn.classList.remove('hidden');
+        lucide.createIcons();
+        toast('Terjadi bentrok jadwal pada salah satu ruangan.', 'error');
+      } else {
+        toast(escapeHtml(data.error || 'Gagal mengirim pemesanan. Silakan coba lagi.'), 'error');
+      }
+      return;
+    }
+
+    document.getElementById('success-summary').innerHTML = `
+      <div class="space-y-2 pb-4 mb-4 border-b border-slate-100">
+        ${items.map(it => {
+          const room = findRoom(it.roomId);
+          return `<div class="flex items-center gap-3">
+            <img src="${room ? room.img : ''}" class="w-16 h-12 rounded-md object-cover flex-shrink-0" alt="">
+            <div>
+              <p class="font-display font-bold navy-text text-sm">${room ? escapeHtml(room.name) : escapeHtml(it.roomName)}</p>
+              <p class="text-xs text-slate-500">${escapeHtml(bookingItemPeriodText(it))} ${it.participants ? '· ' + it.participants + ' peserta' : ''}</p>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="grid grid-cols-2 gap-y-3 text-sm">
+        <div><p class="text-xs text-slate-400">Nomor Referensi</p><p class="font-display font-bold navy-text">${escapeHtml(data.ref)}</p></div>
+        <div><p class="text-xs text-slate-400">Total Estimasi Biaya</p><p class="font-semibold navy-text">${priceFmt(totalAmount)}</p></div>
+        <div><p class="text-xs text-slate-400">Penanggung Jawab</p><p class="font-medium navy-text">${escapeHtml(name)}</p></div>
+        <div><p class="text-xs text-slate-400">Penyelenggara</p><p class="font-medium navy-text">${escapeHtml(org)}</p></div>
+        <div><p class="text-xs text-slate-400">Jumlah Peserta</p><p class="font-medium navy-text">${participants} orang</p></div>
+        <div><p class="text-xs text-slate-400">Metode Pembayaran</p><p class="font-medium navy-text">Transfer Bank</p></div>
+        <div class="col-span-2"><p class="text-xs text-slate-400">Status</p><p>${statusBadge('belum_konfirmasi')}</p></div>
+      </div>`;
+    toast('Pemesanan berhasil dikirim dan menunggu konfirmasi. Email konfirmasi telah dikirim ke ' + escapeHtml(email) + '.');
+    resetBookingCart();
+    go('success');
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda dan coba lagi.', 'error');
+  }finally{
+    bookingSubmitInFlight = false;
+    if(submitBtn){ submitBtn.disabled = false; submitBtn.textContent = 'Kirim Pemesanan'; }
+  }
+}
+
+/* ===================== HISTORY PAGE ===================== */
+function groupItemsSummary(b){
+  return (b.items || []).map(bookingItemPeriodText).join(' · ');
+}
+function groupRoomNamesSummary(b){
+  const items = b.items || [];
+  if(!items.length) return '-';
+  if(items.length === 1){ const r = findRoom(items[0].roomId); return r ? r.name : items[0].roomName; }
+  return `${items.length} Ruangan (${items.map(it => { const r = findRoom(it.roomId); return r ? r.name : it.roomName; }).join(', ')})`;
+}
+function statusBadge(status){
+  const map = {
+    belum_konfirmasi: { cls: 'badge-pending', icon: 'clock' },
+    konfirmasi: { cls: 'badge-confirmed', icon: 'check-circle-2' },
+    menunggu_pembayaran: { cls: 'badge-payment', icon: 'wallet' },
+    pembayaran_selesai: { cls: 'badge-paid', icon: 'badge-check' },
+    ditolak: { cls: 'badge-cancelled', icon: 'x-circle' },
+    dibatalkan: { cls: 'badge-cancelled', icon: 'ban' }
+  };
+  const m = map[status] || map.belum_konfirmasi;
+  return `<span class="badge ${m.cls}"><i data-lucide="${m.icon}" class="w-3 h-3"></i>${escapeHtml(statusLabel(status))}</span>`;
+}
+
+let historyFilterStatus = '';
+function setHistoryFilter(status){
+  historyFilterStatus = status;
+  renderHistory();
+}
+function renderHistoryFilterBar(all){
+  const counts = { '': all.length };
+  STATUS_ORDER.forEach(s => { counts[s] = 0; });
+  all.forEach(b => { if(counts[b.status] !== undefined) counts[b.status]++; });
+  const tabs = [{ key: '', label: 'Semua' }].concat(STATUS_ORDER.map(s => ({ key: s, label: statusLabel(s) })));
+  document.getElementById('history-filter').innerHTML = tabs.map(t =>
+    `<button onclick="setHistoryFilter('${t.key}')" class="admin-tab ${historyFilterStatus === t.key ? 'active' : ''}" style="border:1px solid #e2e8f0;">${escapeHtml(t.label)} <span class="opacity-70">(${counts[t.key]})</span></button>`
+  ).join('');
+}
+
+function renderHistory(){
+  const user = getUser();
+  const list = document.getElementById('history-list');
+  const filterBar = document.getElementById('history-filter');
+  if(!user){ list.innerHTML = ''; filterBar.innerHTML = ''; return; }
+
+  const allBookings = getBookings();
+  renderHistoryFilterBar(allBookings);
+  const bookings = historyFilterStatus ? allBookings.filter(b => b.status === historyFilterStatus) : allBookings;
+
+  if(!allBookings.length){
+    list.innerHTML = `
+      <div class="text-center py-20 border border-dashed border-slate-200 rounded-xl">
+        <i data-lucide="calendar-x" class="w-10 h-10 mx-auto text-slate-300 mb-3"></i>
+        <p class="text-slate-400 text-sm mb-4">Belum ada pemesanan yang diajukan.</p>
+        <button onclick="go('rooms')" class="btn-primary px-5 py-2.5 rounded-md text-sm font-semibold">Cari Ruangan</button>
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
+  if(!bookings.length){
+    list.innerHTML = `<div class="text-center py-16 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Tidak ada pemesanan dengan status ini.</div>`;
+    lucide.createIcons();
+    return;
+  }
+
+  list.innerHTML = bookings.map(b => `
+    <div class="border border-slate-200 rounded-xl p-5 flex flex-col md:flex-row md:items-center gap-4 card-shadow cursor-pointer" onclick="openBookingModal('${b.groupId}', false)">
+      <div class="flex-1">
+        <div class="flex items-center gap-2 flex-wrap mb-1">
+          <p class="font-display font-bold navy-text">${escapeHtml(groupRoomNamesSummary(b))}</p>
+          ${statusBadge(b.status)}
+        </div>
+        <p class="text-xs text-slate-500">${escapeHtml(groupItemsSummary(b))} · ${b.participants} peserta</p>
+        <p class="text-xs text-slate-400 mt-1">Ref: ${escapeHtml(b.ref)} · ${priceFmt(b.amount || 0)}</p>
+      </div>
+      <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+        <button onclick="openBookingModal('${b.groupId}', false)" class="text-xs font-semibold text-slate-500 border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-md">Lihat Detail</button>
+        ${b.status === 'belum_konfirmasi' ? `<button onclick="cancelBooking('${b.groupId}')" class="text-xs font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-3 py-2 rounded-md">Batalkan</button>` : ''}
+      </div>
+    </div>`).join('');
+  lucide.createIcons();
+}
+
+async function cancelBooking(id){
+  if(!confirm('Batalkan pemesanan ini? Tindakan ini tidak dapat diurungkan.')) return;
+  try{
+    const u = getUser();
+    const payload = { id };
+    if(u && u.isInternal && getUserToken()) payload.userToken = getUserToken();
+    else if(u && u.email) payload.email = u.email;
+    const data = await apiPost('cancelOwnBooking', payload);
+    if(!data.ok){
+      toast(escapeHtml(data.error || 'Gagal membatalkan pemesanan.'), 'error');
+      return;
+    }
+    toast('Pemesanan berhasil dibatalkan.');
+    await refreshBookings();
+    renderHistory();
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }
+}
+
+/* ===================== ADMIN DASHBOARD ===================== */
+async function adminSetStatus(id){
+  const bookings = getBookings();
+  const target = bookings.find(b => b.groupId === id);
+  if(!target) return;
+  const sel = document.getElementById('modal-status-select');
+  const status = sel ? sel.value : null;
+  if(!status) return;
+  const noteInput = document.getElementById('modal-admin-note');
+  const note = noteInput ? noteInput.value.trim() : '';
+  if((status === 'ditolak' || status === 'dibatalkan') && !note){
+    toast('Catatan admin wajib diisi untuk penolakan/pembatalan.', 'error');
+    if(noteInput) noteInput.classList.add('input-error');
+    return;
+  }
+  const finalNote = note || target.adminNote;
+  try{
+    const data = await apiPost('updateBookingStatus', { token: getAdminToken(), id, status, adminNote: finalNote });
+    if(!data.ok){
+      if(data.error && data.error.indexOf('Sesi admin') !== -1){
+        toast(escapeHtml(data.error), 'error'); logout(); go('admin-login'); return;
+      }
+      toast(escapeHtml(data.error || 'Gagal memperbarui status.'), 'error');
+      return;
+    }
+    toast(`Pemesanan ${escapeHtml(target.ref)} berhasil diubah ke status "${escapeHtml(statusLabel(status))}".`);
+    closeBookingModal();
+    await refreshBookings();
+    renderAdmin();
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }
+}
+
+let adminActiveTab = 'ringkasan';
+function setAdminTab(tab){
+  adminActiveTab = tab;
+  document.getElementById('admin-tab-ringkasan').classList.toggle('active', tab === 'ringkasan');
+  document.getElementById('admin-tab-pemesanan').classList.toggle('active', tab === 'pemesanan');
+  document.getElementById('admin-tab-pendaftar').classList.toggle('active', tab === 'pendaftar');
+  document.getElementById('admin-panel-ringkasan').classList.toggle('hidden', tab !== 'ringkasan');
+  document.getElementById('admin-panel-pemesanan').classList.toggle('hidden', tab !== 'pemesanan');
+  document.getElementById('admin-panel-pendaftar').classList.toggle('hidden', tab !== 'pendaftar');
+  if(tab === 'pemesanan') renderAdminTable();
+  if(tab === 'pendaftar') renderAdminPendaftarList();
+}
+
+function renderAdmin(){
+  if(!isAdmin()) return;
+  setAdminTab(adminActiveTab);
+  renderAdminKpis();
+  renderAdminPendingList();
+  renderAdminRoomStats();
+  const roomSelect = document.getElementById('admin-filter-room');
+  if(roomSelect.options.length <= 1){
+    roomSelect.innerHTML += ROOMS.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
+  }
+  renderAdminTable();
+  refreshAdminPendaftarCount();
+  lucide.createIcons();
+}
+
+function renderAdminKpis(){
+  const all = getBookings();
+  const belumKonfirmasi = all.filter(b => b.status === 'belum_konfirmasi').length;
+  const konfirmasi = all.filter(b => b.status === 'konfirmasi').length;
+  const menungguPembayaran = all.filter(b => b.status === 'menunggu_pembayaran').length;
+  const revenue = all.filter(b => b.status === 'pembayaran_selesai').reduce((sum,b) => sum + (b.amount || 0), 0);
+
+  const cards = [
+    { label: 'Belum Konfirmasi', value: belumKonfirmasi, icon: 'clock', color: 'var(--warn)' },
+    { label: 'Konfirmasi', value: konfirmasi, icon: 'check-circle-2', color: 'var(--ok)' },
+    { label: 'Menunggu Pembayaran', value: menungguPembayaran, icon: 'wallet', color: 'var(--navy-900)' },
+    { label: 'Pendapatan Terbayar', value: priceFmt(revenue), icon: 'badge-check', color: '#116638' }
+  ];
+  document.getElementById('admin-kpi-grid').innerHTML = cards.map(c => `
+    <div class="kpi-card">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-xs font-medium text-slate-500">${escapeHtml(c.label)}</p>
+        <i data-lucide="${c.icon}" class="w-4 h-4" style="color:${c.color}"></i>
+      </div>
+      <p class="font-display text-2xl font-bold navy-text">${c.value}</p>
+    </div>`).join('');
+}
+
+function renderAdminPendingList(){
+  const pending = getBookings().filter(b => b.status === 'belum_konfirmasi').slice(0, 5);
+  const el = document.getElementById('admin-pending-list');
+  if(!pending.length){
+    el.innerHTML = `<div class="text-center py-10 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Tidak ada pemesanan yang menunggu konfirmasi.</div>`;
+    return;
+  }
+  el.innerHTML = pending.map(b => `
+    <div class="border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50" onclick="openBookingModal('${b.groupId}', true)">
+      <div class="min-w-0">
+        <p class="font-semibold navy-text text-sm truncate">${escapeHtml(groupRoomNamesSummary(b))}</p>
+        <p class="text-xs text-slate-500 truncate">${escapeHtml(b.org)} · ${escapeHtml(groupItemsSummary(b))}</p>
+      </div>
+      <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 flex-shrink-0"></i>
+    </div>`).join('');
+}
+
+function renderAdminRoomStats(){
+  const items = activeItems();
+  const max = Math.max(1, ...ROOMS.map(r => items.filter(it => it.roomId === r.id).length));
+  document.getElementById('admin-room-stats').innerHTML = ROOMS.map(r => {
+    const count = items.filter(it => it.roomId === r.id).length;
+    const pct = Math.round((count / max) * 100);
+    return `
+    <div>
+      <div class="flex items-center justify-between text-xs mb-1">
+        <span class="font-medium navy-text">${escapeHtml(r.name)}</span>
+        <span class="text-slate-400">${count} pemesanan</span>
+      </div>
+      <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+        <div class="h-full rounded-full" style="width:${pct}%;background:var(--blue-accent);"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function getAdminFilteredBookings(){
+  const q = (document.getElementById('admin-search').value || '').toLowerCase();
+  const status = document.getElementById('admin-filter-status').value;
+  const roomId = document.getElementById('admin-filter-room').value;
+  const date = document.getElementById('admin-filter-date').value;
+  return getBookings().filter(b => {
+    const items = b.items || [];
+    const matchQ = !q || [b.ref, b.name, b.org, b.purpose, b.email].join(' ').toLowerCase().includes(q);
+    const matchStatus = !status || b.status === status;
+    const matchRoom = !roomId || items.some(it => it.roomId === roomId);
+    const matchDate = !date || items.some(it => it.date === date || (it.endDate && it.date <= date && it.endDate >= date));
+    return matchQ && matchStatus && matchRoom && matchDate;
+  });
+}
+
+let adminFilteredCache = [];
+function renderAdminTable(){
+  const list = getAdminFilteredBookings();
+  adminFilteredCache = list;
+  document.getElementById('admin-result-count').textContent = `${list.length} pemesanan ditemukan`;
+  const body = document.getElementById('admin-table-body');
+  if(!list.length){
+    body.innerHTML = `<tr><td colspan="10" class="text-center py-14 text-slate-400">Tidak ada pemesanan yang cocok dengan filter.</td></tr>`;
+    return;
+  }
+  body.innerHTML = list.map(b => `
+    <tr onclick="openBookingModal('${b.groupId}', true)">
+      <td class="font-semibold navy-text">${escapeHtml(b.ref)}</td>
+      <td>${escapeHtml(b.org)}</td>
+      <td>${escapeHtml(b.purpose)}</td>
+      <td>${escapeHtml(groupRoomNamesSummary(b))}</td>
+      <td>${escapeHtml(groupItemsSummary(b))}</td>
+      <td>${escapeHtml(b.name)}</td>
+      <td>${b.participants}</td>
+      <td>${priceFmt(b.amount || 0)}</td>
+      <td>${statusBadge(b.status)}</td>
+      <td onclick="event.stopPropagation()">
+        ${b.status === 'belum_konfirmasi' ? `
+          <div class="flex gap-1.5">
+            <button onclick="quickAdminAction('${b.groupId}','konfirmasi')" class="icon-btn-sm" title="Konfirmasi"><i data-lucide="check" class="w-4 h-4" style="color:var(--ok)"></i></button>
+            <button onclick="openBookingModal('${b.groupId}', true)" class="icon-btn-sm" title="Tolak / Detail"><i data-lucide="x" class="w-4 h-4" style="color:var(--danger)"></i></button>
+          </div>` : `<button onclick="openBookingModal('${b.groupId}', true)" class="text-xs font-semibold text-[var(--blue-accent)] hover:underline">Detail</button>`}
+      </td>
+    </tr>`).join('');
+}
+
+async function quickAdminAction(id, status){
+  const bookings = getBookings();
+  const target = bookings.find(b => b.groupId === id);
+  if(!target) return;
+  try{
+    const data = await apiPost('updateBookingStatus', { token: getAdminToken(), id, status, adminNote: 'Dikonfirmasi oleh pengelola.' });
+    if(!data.ok){ toast(escapeHtml(data.error || 'Gagal memperbarui status.'), 'error'); return; }
+    toast(`Pemesanan ${escapeHtml(target.ref)} berhasil diubah ke status "${escapeHtml(statusLabel(status))}".`);
+    await refreshBookings();
+    renderAdmin();
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }
+}
+
+function resetAdminFilters(){
+  document.getElementById('admin-search').value = '';
+  document.getElementById('admin-filter-status').value = '';
+  document.getElementById('admin-filter-room').value = '';
+  document.getElementById('admin-filter-date').value = '';
+  renderAdminTable();
+}
+
+function exportAdminCSV(){
+  const list = adminFilteredCache.length ? adminFilteredCache : getAdminFilteredBookings();
+  if(!list.length){ toast('Tidak ada data untuk diunduh.', 'error'); return; }
+  const headers = ['Referensi','Penyelenggara','Kegiatan','Ruangan','Tanggal & Jam','Nama','Email','Telepon','Peserta','Estimasi Biaya','Metode Pembayaran','Status','Catatan Tambahan','Catatan Pengelola','Diajukan'];
+  const rows = list.map(b => [
+    b.ref, b.org, b.purpose, groupRoomNamesSummary(b), groupItemsSummary(b),
+    b.name, b.email, b.phone, b.participants, b.amount || 0,
+    'Transfer Bank', statusLabel(b.status), b.notes || '', b.adminNote || '', b.createdAt
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `pemesanan-kpp-${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Data pemesanan berhasil diunduh.');
+}
+
+/* ===================== PENDAFTAR MENUNGGU ===================== */
+let adminPendaftarCache = [];
+
+async function refreshAdminPendaftarCount(){
+  if(!isAdmin()) return;
+  try{
+    const data = await apiGet('pendingUsers', { token: getAdminToken() });
+    if(data.ok){
+      adminPendaftarCache = data.users;
+      const badge = document.getElementById('admin-pendaftar-count-badge');
+      if(badge) badge.textContent = data.users.length ? `(${data.users.length})` : '';
+    }
+  }catch(err){ /* diamkan — badge cukup tampil kosong bila gagal */ }
+}
+
+async function renderAdminPendaftarList(){
+  const el = document.getElementById('admin-pendaftar-list');
+  el.innerHTML = `<div class="skeleton h-20 rounded-xl"></div>`;
+  try{
+    const data = await apiGet('pendingUsers', { token: getAdminToken() });
+    if(!data.ok){
+      if(data.error && data.error.indexOf('Sesi admin') !== -1){ toast(escapeHtml(data.error), 'error'); logout(); go('admin-login'); return; }
+      el.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">${escapeHtml(data.error || 'Gagal memuat data.')}</div>`;
+      return;
+    }
+    adminPendaftarCache = data.users;
+    const badge = document.getElementById('admin-pendaftar-count-badge');
+    if(badge) badge.textContent = data.users.length ? `(${data.users.length})` : '';
+    if(!data.users.length){
+      el.innerHTML = `<div class="text-center py-16 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Tidak ada pendaftar yang menunggu persetujuan.</div>`;
+      lucide.createIcons();
+      return;
+    }
+    el.innerHTML = data.users.map(u => `
+      <div class="border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center gap-3 card-shadow">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap mb-1">
+            <p class="font-display font-bold navy-text">${escapeHtml(u.name || '(tanpa nama)')}</p>
+            <span class="badge" style="background:${u.org === 'Internal (Staf @bi.go.id)' ? '#eef4ff' : '#fdf1e0'};color:${u.org === 'Internal (Staf @bi.go.id)' ? 'var(--navy-900)' : '#8a5a12'}">${u.org === 'Internal (Staf @bi.go.id)' ? 'Staf Internal' : 'Tamu Eksternal'}</span>
+          </div>
+          <p class="text-xs text-slate-500">${escapeHtml(u.email)}</p>
+          <p class="text-xs text-slate-400 mt-0.5">${escapeHtml(u.org || '-')} · Daftar: ${u.createdAt ? new Date(u.createdAt).toLocaleString('id-ID') : '-'}</p>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <button onclick="adminDecideUser('${escapeHtml(u.email)}','disetujui')" class="btn-primary text-xs font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5"></i>Setujui</button>
+          <button onclick="adminDecideUser('${escapeHtml(u.email)}','ditolak')" class="text-xs font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="x" class="w-3.5 h-3.5"></i>Tolak</button>
+        </div>
+      </div>`).join('');
+    lucide.createIcons();
+  }catch(err){
+    el.innerHTML = `<div class="text-center py-10 text-slate-400 text-sm">Gagal menghubungi server. Periksa koneksi Anda.</div>`;
+  }
+}
+
+async function adminDecideUser(email, status){
+  if(status === 'ditolak' && !confirm(`Tolak pendaftaran ${email}? Pengguna ini tidak akan bisa mengirim pemesanan.`)) return;
+  try{
+    const data = await apiPost('updateUserApproval', { token: getAdminToken(), email, status });
+    if(!data.ok){
+      if(data.error && data.error.indexOf('Sesi admin') !== -1){ toast(escapeHtml(data.error), 'error'); logout(); go('admin-login'); return; }
+      toast(escapeHtml(data.error || 'Gagal memperbarui status akun.'), 'error');
+      return;
+    }
+    toast(`Akun ${escapeHtml(email)} berhasil ${status === 'disetujui' ? 'disetujui' : 'ditolak'}.`);
+    renderAdminPendaftarList();
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }
+}
+
+/* ===================== INIT ===================== */
+renderFeatured();
+renderRoomsGrid();
+renderAuthArea();
+setAuthTab('masuk');
+refreshBookings('public').then(renderHomeCalendarWidget); // beranda sudah aktif duluan sebelum go() pernah dipanggil
+lucide.createIcons();
+window.addEventListener('load', initGoogleSignIn); // jaga-jaga bila skrip GIS baru siap belakangan
+
+if(API_URL.indexOf('PASTE_URL') !== -1){
+  console.warn('API_URL belum dikonfigurasi. Tempel URL Web App Apps Script pada konstanta API_URL di js/config.js.');
+  toast('Backend belum terhubung (API_URL kosong). Lihat SETUP.md untuk menyambungkannya.', 'error');
+}
+
+/* ===================== EXPOSE KE WINDOW (untuk onclick/onchange/onsubmit di HTML) =====================
+ * WAJIB — module ini tidak otomatis membuat fungsi jadi global. Daftar di
+ * bawah dikumpulkan dengan menyisir SEMUA atribut onclick/onchange/onsubmit
+ * di index.html (termasuk yang dibuat dinamis lewat template string di
+ * file ini sendiri, mis. tombol pada kartu ruangan / baris tabel admin).
+ * Kalau menambah fungsi baru yang dipanggil dari onclick="..." di HTML,
+ * TAMBAHKAN juga di sini — kalau lupa, browser akan error
+ * "X is not defined" saat tombolnya diklik.
+ */
+Object.assign(window, {
+  adminDecideUser, adminSetStatus, cancelBooking, closeBookingModal, closeFloorPlanModal,
+  exportAdminCSV, go, goAdminEntry, handleDetailBookingClick, logout,
+  onAttachmentsSelected, openBookingModal, openFloorPlanModal,
+  printBookingProof, quickAdminAction, removeAttachment, removeCartItem,
+  renderAdminTable, renderRoomsGrid, requireAuth, resetAdminFilters, selectDay,
+  setAdminTab, setAuthTab, setHistoryFilter, shiftMonth, shiftFullCalendarMonth,
+  showCalendarCellInfo, submitAdminLogin,
+  submitBooking, submitLogin, submitRegister, toggleMobileMenu, updateCartItemField
+});
