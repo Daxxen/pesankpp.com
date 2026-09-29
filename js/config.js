@@ -9,10 +9,13 @@
 // =====================================================================
 // BACKEND CONFIGURATION
 // =====================================================================
+// PENTING (pindah ke akun Google khusus KPP): setelah project Apps Script
+// dan spreadsheet baru selesai dibuat, GANTI kedua nilai di bawah dengan
+// URL Web App baru dan OAuth Client ID baru. Client ID yang sama juga
+// harus dipasang di GOOGLE_CLIENT_ID pada Code.gs.
 
 /**
  * URL endpoint Google Apps Script Web App
- * Ganti dengan URL dari deployment Google Apps Script Anda
  * Lihat SETUP.md untuk instruksi lengkap
  */
 export const API_URL = 'https://script.google.com/macros/s/AKfycbxQWbno_AH6Koy5cNsDgm5AX4ssF00CHhHwsTkpixxsGp1hTJtCXSqbMUOWitFgvI6aSA/exec';
@@ -60,68 +63,33 @@ export const STATUS_LABELS = {
 export const STATUS_TIDAK_MENGUNCI_RUANGAN = ['ditolak', 'dibatalkan'];
 
 // =====================================================================
-// PRIORITY TIER CONSTANTS
-// =====================================================================
-
-/**
- * Label untuk kategori instansi/prioritas — konteks penjadwalan untuk admin,
- * BUKAN syarat keberhasilan pemesanan. Harus sinkron dengan
- * PRIORITY_TIER_LABELS_ di Code.gs
- */
-export const PRIORITY_TIER_LABELS = {
-  pidi: 'PIDI',
-  bins: 'BINS',
-  satker_uker: 'Satker/Uker (Internal BI)',
-  eksternal_lppi: 'Eksternal (LPPI)'
-};
-
-// =====================================================================
 // FEATURED ROOMS (di halaman beranda)
 // =====================================================================
-// PERBAIKAN (sesi ini): 'steering-committee' dan 'sync-pods' sudah TIDAK
-// ADA lagi di rooms.js (dihapus saat database dirapikan ke 12 ruang kelas
-// resmi + 7 Wisma) — sebelumnya ini membuat "Pilihan Fasilitas Unggulan"
-// di beranda dan widget kalender 7-hari cuma menampilkan 1 dari 3 slot.
-// Diganti ke 3 ruangan yang benar-benar ada, mewakili tiap kategori:
-// Auditorium (Vision Hall), Ruang Pelatihan (Catalyst), dan Wisma
-// (Wisma Anggrek Lt.1). Ganti ID di sini kapan saja sesuai ruangan mana
-// yang ingin ditonjolkan.
+// Ganti ID di sini kapan saja sesuai ruangan mana yang ingin ditonjolkan.
 export const FEATURED_IDS = ['vision-hall', 'catalyst', 'wisma-anggrek-lt1'];
+
+// =====================================================================
+// WARNA KALENDER
+// =====================================================================
+// Kategori instansi (PIDI/BINS/dst.) sudah DIHAPUS dari situs. Sel kalender
+// yang terpesan sekarang menampilkan kode referensi pemesanan (A01, A02, ...)
+// dan diwarnai menurut STATUS: kuning = Belum Konfirmasi, biru = sudah
+// dikonfirmasi (termasuk menunggu/selesai pembayaran).
+export const BOOKING_COLORS = {
+  pending:   { bg: '#fde9c8', border: '#e2b45f', text: '#7a4e08' },
+  confirmed: { bg: '#c7dafa', border: '#7fa4ea', text: '#12356f' }
+};
+
+export function bookingColor(status) {
+  return status === 'belum_konfirmasi' ? BOOKING_COLORS.pending : BOOKING_COLORS.confirmed;
+}
 
 // =====================================================================
 // HELPER FUNCTIONS
 // =====================================================================
 
-// =====================================================================
-// WARNA & SINGKATAN KATEGORI INSTANSI — dipakai untuk mewarnai kalender
-// (badge per tanggal terpesan) supaya kategori pemesan langsung terlihat
-// sekilas tanpa perlu hover/klik. Warna dipilih pastel-tapi-menonjol,
-// masing-masing beda hue supaya gampang dibedakan mata, tapi tetap sepadan
-// dengan palet navy/biru situs (lihat --navy-900/--blue-accent di style.css).
-// =====================================================================
-export const PRIORITY_TIER_COLORS = {
-  pidi:            { bg: '#f7c59f', border: '#e2935a', text: '#7c3a10' },
-  bins:            { bg: '#9bd8de', border: '#4fb0b8', text: '#0b4a4f' },
-  satker_uker:     { bg: '#a9dfbf', border: '#5cb583', text: '#14532d' },
-  eksternal_lppi:  { bg: '#c9b6ea', border: '#9c78d6', text: '#4c1d78' }
-};
-export const PRIORITY_TIER_SHORT = {
-  pidi: 'PIDI', bins: 'BINS', satker_uker: 'INT', eksternal_lppi: 'EKS'
-};
-
-export function priorityTierColor(tier){
-  return PRIORITY_TIER_COLORS[tier] || { bg: '#e2e8f0', border: '#94a3b8', text: '#334155' };
-}
-export function priorityTierShort(tier){
-  return PRIORITY_TIER_SHORT[tier] || '?';
-}
-
 export function statusLabel(status) {
   return STATUS_LABELS[status] || status;
-}
-
-export function priorityTierLabel(tier) {
-  return PRIORITY_TIER_LABELS[tier] || '-';
 }
 
 export function statusLockingRoom(status) {

@@ -20,30 +20,14 @@
   --danger: #b3455c;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-body {
-  font-family: 'Inter', sans-serif;
-  color: var(--slate-600);
-}
+body { font-family: 'Inter', sans-serif; color: var(--slate-600); }
 
-.font-display {
-  font-family: 'Playfair Display', serif;
-}
-
-.navy-bg {
-  background-color: var(--navy-900);
-}
-
-.navy-950 {
-  background-color: var(--navy-950);
-}
-
-.navy-text {
-  color: var(--navy-900);
-}
+.font-display { font-family: 'Playfair Display', serif; }
+.navy-bg { background-color: var(--navy-900); }
+.navy-950 { background-color: var(--navy-950); }
+.navy-text { color: var(--navy-900); }
 
 /* ===== BUTTONS ===== */
 .btn-primary {
@@ -57,19 +41,9 @@ body {
   font-size: 0.875rem;
   font-weight: 600;
 }
-
-.btn-primary:hover {
-  background-color: var(--navy-700);
-}
-
-.btn-primary:active {
-  transform: scale(0.98);
-}
-
-.btn-primary:disabled {
-  background-color: #a8b3c2;
-  cursor: not-allowed;
-}
+.btn-primary:hover { background-color: var(--navy-700); }
+.btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { background-color: #a8b3c2; cursor: not-allowed; }
 
 .btn-outline {
   border: 1px solid var(--navy-900);
@@ -80,35 +54,17 @@ body {
   border-radius: 0.375rem;
   padding: 0.625rem 1.25rem;
 }
-
-.btn-outline:hover {
-  background-color: var(--navy-900);
-  color: #fff;
-}
+.btn-outline:hover { background-color: var(--navy-900); color: #fff; }
 
 /* ===== CARDS ===== */
-.card-shadow {
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
-}
-
-.card-shadow:hover {
-  box-shadow: 0 4px 8px rgba(15, 23, 42, 0.06), 0 20px 40px -16px rgba(15, 23, 42, 0.18);
-}
+.card-shadow { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12); }
+.card-shadow:hover { box-shadow: 0 4px 8px rgba(15, 23, 42, 0.06), 0 20px 40px -16px rgba(15, 23, 42, 0.18); }
 
 /* ===== ANIMATIONS ===== */
-.fade-in {
-  animation: fadeIn 0.4s ease both;
-}
-
+.fade-in { animation: fadeIn 0.4s ease both; }
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== HERO SECTION ===== */
@@ -124,13 +80,8 @@ body {
 }
 
 /* ===== PAGE VISIBILITY ===== */
-.page {
-  display: none;
-}
-
-.page.active {
-  display: block;
-}
+.page { display: none; }
+.page.active { display: block; }
 
 /* ===== NAVIGATION LINKS ===== */
 .nav-link {
@@ -140,16 +91,8 @@ body {
   text-decoration: none;
   transition: color 0.2s ease;
 }
-
-.nav-link:hover {
-  color: var(--navy-900);
-}
-
-.nav-link.active {
-  color: var(--navy-900);
-  font-weight: 600;
-}
-
+.nav-link:hover { color: var(--navy-900); }
+.nav-link.active { color: var(--navy-900); font-weight: 600; }
 .nav-link.active::after {
   content: '';
   position: absolute;
@@ -172,61 +115,55 @@ body {
   border: 1px solid transparent;
   transition: transform 0.12s ease, background 0.15s ease;
 }
-
 .cal-available {
   background: #ecfdf5;
   border-color: #a7f3d0;
   color: #047857;
   cursor: pointer;
 }
-
-.cal-available:hover {
-  background: #d1fae5;
-  border-color: #6ee7b7;
-  transform: scale(1.06);
-}
-
+.cal-available:hover { background: #d1fae5; border-color: #6ee7b7; transform: scale(1.06); }
 .cal-booked {
-  /* Warna sesungguhnya (per kategori instansi pemesan — PIDI/BINS/Internal/
-     Eksternal) di-set lewat inline style oleh renderCalendar() di events.js,
-     lihat priorityTierColor(). Ini cuma fallback kalau tidak ada tier. */
-  background: #fbe3e6;
-  color: var(--danger);
-  cursor: not-allowed;
+  /* Warna sesungguhnya (menurut status pemesanan) di-set lewat inline style
+     oleh renderCalendar() di events.js, lihat bookingColor(). Ini cuma
+     fallback. Bisa diklik untuk melihat "Penyelenggara - Kegiatan". */
+  background: #c7dafa;
+  color: #12356f;
+  cursor: pointer;
   font-weight: 700;
 }
-
-.cal-today {
-  box-shadow: inset 0 0 0 2px var(--blue-accent);
-}
-
-.cal-empty {
-  background: transparent;
-}
-
+.cal-today { box-shadow: inset 0 0 0 2px var(--blue-accent); }
+.cal-empty { background: transparent; }
 .cal-selected {
   background: var(--navy-900) !important;
   border-color: var(--navy-900) !important;
   color: #fff !important;
 }
+.cal-past { background: transparent; color: #cbd5e1; }
 
-.cal-past {
-  background: transparent;
-  color: #cbd5e1;
+/* ===== FREEZE PANES: KALENDER LENGKAP =====
+ * Baris tanggal (atas) dan kolom nama ruangan (kiri) tetap terlihat saat
+ * kalender digulir ke bawah/samping. */
+.cal-scroll { max-height: 70vh; overflow: auto; }
+.cal-head { position: sticky; top: 0; z-index: 20; background: var(--paper); }
+.cal-sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: #fff;
+  box-shadow: 1px 0 0 #e2e8f0;
 }
+.cal-head .cal-sticky-col { z-index: 30; background: var(--paper); }
+.cal-section-row { background: #fff; }
+.cal-section-text { position: sticky; left: 0; display: inline-block; background: #fff; }
 
 /* ===== FORM INPUTS ===== */
-input:focus,
-select:focus,
-textarea:focus {
+input:focus, select:focus, textarea:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(59, 111, 214, 0.15);
   border-color: var(--blue-accent);
 }
-
-.input-error {
-  border-color: var(--danger) !important;
-}
+input:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+.input-error { border-color: var(--danger) !important; }
 
 /* ===== BADGES ===== */
 .badge {
@@ -238,34 +175,11 @@ textarea:focus {
   padding: 3px 10px;
   border-radius: 999px;
 }
-
-.badge-pending {
-  background: #fdf2e2;
-  color: var(--warn);
-}
-
-.badge-confirmed {
-  background: #e5f4ec;
-  color: var(--ok);
-}
-
-.badge-cancelled {
-  background: #fbe3e6;
-  color: var(--danger);
-}
-
-/* Dipakai di JS (statusBadge()) untuk status "Menunggu Pembayaran" dan
-   "Pembayaran Selesai", tapi sebelumnya tidak pernah didefinisikan di sini
-   sehingga badge tampil tanpa warna latar. Ditambahkan saat modularisasi. */
-.badge-payment {
-  background: #fdeee0;
-  color: #a15c1f;
-}
-
-.badge-paid {
-  background: #e0f0e8;
-  color: #116638;
-}
+.badge-pending { background: #fdf2e2; color: var(--warn); }
+.badge-confirmed { background: #e5f4ec; color: var(--ok); }
+.badge-cancelled { background: #fbe3e6; color: var(--danger); }
+.badge-payment { background: #fdeee0; color: #a15c1f; }
+.badge-paid { background: #e0f0e8; color: #116638; }
 
 /* ===== TOAST NOTIFICATIONS ===== */
 #toast-container {
@@ -277,7 +191,6 @@ textarea:focus {
   flex-direction: column;
   gap: 10px;
 }
-
 .toast {
   min-width: 280px;
   max-width: 360px;
@@ -291,51 +204,25 @@ textarea:focus {
   align-items: center;
   animation: toastIn 0.3s ease both;
 }
-
-.toast.error {
-  border-left-color: var(--danger);
-}
-
+.toast.error { border-left-color: var(--danger); }
 @keyframes toastIn {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* ===== MOBILE MENU ===== */
-.mobile-menu {
-  transform: translateX(100%);
-  transition: transform 0.25s ease;
-}
-
-.mobile-menu.open {
-  transform: translateX(0);
-}
+.mobile-menu { transform: translateX(100%); transition: transform 0.25s ease; }
+.mobile-menu.open { transform: translateX(0); }
 
 /* ===== SKELETON LOADING ===== */
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    #eef1f5 25%,
-    #f7f9fb 37%,
-    #eef1f5 63%
-  );
+  background: linear-gradient(90deg, #eef1f5 25%, #f7f9fb 37%, #eef1f5 63%);
   background-size: 400% 100%;
   animation: shimmer 1.4s ease infinite;
 }
-
 @keyframes shimmer {
-  0% {
-    background-position: 100% 0;
-  }
-  100% {
-    background-position: 0 0;
-  }
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
 }
 
 /* ===== MODAL ===== */
@@ -350,7 +237,6 @@ textarea:focus {
   padding: 16px;
   animation: fadeIn 0.2s ease both;
 }
-
 .modal-box {
   background: #fff;
   border-radius: 14px;
@@ -374,28 +260,12 @@ textarea:focus {
   background: transparent;
   border: none;
 }
+.admin-tab.active { background: var(--navy-900); color: #fff; }
+.admin-tab:not(.active):hover { background: #eef2f7; }
 
-.admin-tab.active {
-  background: var(--navy-900);
-  color: #fff;
-}
+.kpi-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; background: #fff; }
 
-.admin-tab:not(.active):hover {
-  background: #eef2f7;
-}
-
-.kpi-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 18px;
-  background: #fff;
-}
-
-.admin-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
+.admin-table { width: 100%; border-collapse: collapse; }
 .admin-table th {
   font-size: 10.5px;
   text-transform: uppercase;
@@ -406,22 +276,23 @@ textarea:focus {
   border-bottom: 1px solid #e2e8f0;
   white-space: nowrap;
 }
-
 .admin-table td {
   padding: 13px 14px;
   font-size: 13px;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
 }
+.admin-table tbody tr { cursor: pointer; transition: background 0.15s ease; }
+.admin-table tbody td:first-child { background: #fff; }
+.admin-table tbody tr:hover td { background: #f8fafc; }
 
-.admin-table tbody tr {
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.admin-table tbody tr:hover td {
-  background: #f8fafc;
-}
+/* ===== FREEZE PANES: TABEL ADMIN =====
+ * Header kolom (atas) dan kolom Referensi (kiri) tetap terlihat saat tabel
+ * digulir. */
+.admin-scroll { max-height: 70vh; overflow: auto; }
+.admin-table thead th { position: sticky; top: 0; z-index: 5; background: #fff; }
+.admin-table th:first-child, .admin-table td:first-child { position: sticky; left: 0; z-index: 4; box-shadow: 1px 0 0 #e2e8f0; }
+.admin-table thead th:first-child { z-index: 6; }
 
 .admin-link-topbar {
   display: flex;
@@ -435,10 +306,7 @@ textarea:focus {
   font-size: 0.75rem;
   font-weight: 500;
 }
-
-.admin-link-topbar:hover {
-  color: #fff;
-}
+.admin-link-topbar:hover { color: #fff; }
 
 .icon-btn-sm {
   width: 30px;
@@ -452,16 +320,9 @@ textarea:focus {
   background: transparent;
   cursor: pointer;
 }
+.icon-btn-sm:hover { background: #f1f5f9; }
 
-.icon-btn-sm:hover {
-  background: #f1f5f9;
-}
-
-.status-pill-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.status-pill-row { display: flex; align-items: center; gap: 8px; }
 
 .pay-option {
   border: 1.5px solid #e2e8f0;
@@ -471,16 +332,8 @@ textarea:focus {
   transition: all 0.15s ease;
   background: transparent;
 }
-
-.pay-option:hover {
-  border-color: #cbd5e1;
-}
-
-.pay-option.selected {
-  border-color: var(--blue-accent);
-  background: #eef4fc;
-}
-
+.pay-option:hover { border-color: #cbd5e1; }
+.pay-option.selected { border-color: var(--blue-accent); background: #eef4fc; }
 .pay-option-icon {
   width: 34px;
   height: 34px;
@@ -493,20 +346,11 @@ textarea:focus {
 }
 
 /* ===== PRINT STYLES (BUKTI PEMESANAN) ===== */
-.print-letterhead {
-  display: none;
-}
+.print-letterhead { display: none; }
 
 @media print {
-  body * {
-    visibility: hidden;
-  }
-
-  .print-area,
-  .print-area * {
-    visibility: visible;
-  }
-
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
   .print-area {
     position: absolute;
     left: 0;
@@ -517,11 +361,7 @@ textarea:focus {
     border: none !important;
     box-shadow: none !important;
   }
-
-  .no-print {
-    display: none !important;
-  }
-
+  .no-print { display: none !important; }
   .print-letterhead {
     display: block;
     text-align: center;
@@ -529,7 +369,6 @@ textarea:focus {
     padding-bottom: 14px;
     margin-bottom: 18px;
   }
-
   .print-footer-note {
     display: block;
     margin-top: 24px;
@@ -542,7 +381,5 @@ textarea:focus {
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  .hidden {
-    display: none !important;
-  }
+  .hidden { display: none !important; }
 }
