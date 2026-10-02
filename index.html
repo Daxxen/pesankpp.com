@@ -48,7 +48,7 @@
     </nav>
     <div class="flex items-center gap-3">
       <div id="nav-auth-area" class="hidden sm:flex items-center gap-3"></div>
-      <button onclick="go('rooms')" class="btn-primary text-sm font-semibold px-5 py-2.5 rounded-md">Pesan Ruangan</button>
+      <button onclick="requireAuth('bookingform')" class="btn-primary text-sm font-semibold px-5 py-2.5 rounded-md">Pesan Ruangan</button>
       <button onclick="toggleMobileMenu(true)" class="md:hidden w-9 h-9 flex items-center justify-center rounded-md border border-slate-200"><i data-lucide="menu" class="w-4.5 h-4.5"></i></button>
     </div>
   </div>
@@ -265,9 +265,12 @@
 
           <!-- 2. Pilih ruangan & tanggal (di bawah data pemesan) -->
           <div>
-            <div class="flex items-center justify-between mb-3">
-              <p class="text-sm font-semibold navy-text">Ruangan Dipesan</p>
-              <button type="button" onclick="go('rooms')" class="text-xs font-semibold text-[var(--blue-accent)] hover:underline flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i>Tambah Ruangan Lain</button>
+            <p class="text-sm font-semibold navy-text mb-3">Ruangan Dipesan</p>
+            <div class="flex flex-col sm:flex-row gap-2 mb-4">
+              <select id="bk-add-room" class="flex-1 border border-slate-300 rounded-md px-3 py-2.5 text-sm bg-white">
+                <option value="">Pilih ruangan untuk ditambahkan</option>
+              </select>
+              <button type="button" onclick="addRoomFromPicker()" class="btn-outline text-sm font-semibold rounded-md flex items-center justify-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Ruangan</button>
             </div>
             <div id="cart-items-list" class="space-y-4"></div>
           </div>
@@ -353,7 +356,7 @@
   <div class="max-w-6xl mx-auto px-6 py-12">
     <div class="flex items-center justify-between mb-2 flex-wrap gap-3">
       <h1 class="font-display text-3xl font-bold navy-text">Riwayat Pemesanan</h1>
-      <button onclick="go('rooms')" class="btn-primary text-sm font-semibold px-5 py-2.5 rounded-md">+ Pesan Ruangan Baru</button>
+      <button onclick="requireAuth('bookingform')" class="btn-primary text-sm font-semibold px-5 py-2.5 rounded-md">+ Pesan Ruangan Baru</button>
     </div>
     <p class="text-sm text-slate-500 mb-6">Daftar pemesanan yang diajukan menggunakan akun ini.</p>
     <div id="history-filter" class="flex items-center gap-2 mb-6 flex-wrap"></div>

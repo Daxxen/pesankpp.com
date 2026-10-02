@@ -188,6 +188,7 @@ function requireAuth(destination, payload){
   if(user){
     if(destination === 'history'){ go('history'); return; }
     if(destination === 'booking'){ openBookingForm(payload.roomId, payload.date); return; }
+    if(destination === 'bookingform'){ startBooking(); return; }
     return;
   }
   pendingAction = { type: destination, ...payload };
@@ -374,6 +375,7 @@ function resolvePendingOrGo(fallback){
     const p = pendingAction; pendingAction = null;
     if(p.type === 'history'){ go('history'); return; }
     if(p.type === 'booking'){ openBookingForm(p.roomId, p.date); return; }
+    if(p.type === 'bookingform'){ startBooking(); return; }
   }
   go(fallback);
 }
@@ -426,6 +428,7 @@ function go(page, roomId){
   if(page === 'home') { refreshBookings('public').then(renderHomeCalendarWidget); }
   if(page === 'calendar') { refreshBookings('public').then(renderFullCalendarPage); }
   if(page === 'detail' && roomId) { renderDetail(roomId); refreshBookings('public').then(renderCalendar); }
+  if(page === 'booking') { refreshBookings('public').then(() => { renderCartList(); renderCartSummarySidebar(); }); }
   if(page === 'history') { document.getElementById('history-list').innerHTML = historySkeletonHTML(); refreshBookings().then(renderHistory); }
   if(page === 'admin') { refreshBookings().then(renderAdmin); }
   window.scrollTo({top:0, behavior:'smooth'});
@@ -859,8 +862,6 @@ function renderDetail(roomId){
           ${calendarLegendHtml('w-3 h-3')}
         </div>
         <p class="flex items-center gap-2 text-sm mb-4"><i data-lucide="users" class="w-4 h-4" style="color:var(--navy-900)"></i>Maksimal ${room.capacity} peserta</p>
-        <p id="detail-booking-hint" class="text-xs text-slate-400 mb-3"></p>
-        <button id="detail-booking-btn" onclick="handleDetailBookingClick()" disabled class="btn-primary w-full py-3 rounded-md font-semibold text-sm">Lanjut ke Pemesanan</button>
       </div>
     </div>
   `;
@@ -884,9 +885,8 @@ let groupFieldsInitialized = false;
 
 function timeToMinutes(t){ const [h,m] = (t||'0:0').split(':').map(Number); return h*60+m; }
 
-function openBookingForm(roomId, date){
+function makeCartItem(roomId, date){
   const room = findRoom(roomId);
-  if(!room) return;
   const item = {
     cartId: 'c' + Date.now() + '_' + Math.floor(Math.random()*1000),
     roomId,
@@ -898,10 +898,53 @@ function openBookingForm(roomId, date){
     participants: '' // diisi per ruangan
   };
   recomputeCartItem(item);
-  bookingCart.push(item);
+  return item;
+}
+
+// Dipakai bila ada jalur lain yang sudah tahu ruangan & tanggalnya.
+function openBookingForm(roomId, date){
+  const room = findRoom(roomId);
+  if(!room) return;
+  bookingCart.push(makeCartItem(roomId, date));
   renderBookingPage();
   go('booking');
   toast(`${escapeHtml(room.name)} ditambahkan ke pemesanan.`);
+}
+
+// Tombol "Pesan Ruangan": langsung ke formulir. Ruangan dipilih di dalam formulir.
+function startBooking(){
+  renderBookingPage();
+  go('booking');
+}
+
+function todayKey(){
+  const d = new Date();
+  return dateKey(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+// Mengisi dropdown pemilih ruangan di formulir (sekali saja), dikelompokkan per kategori.
+function renderRoomPicker(){
+  const sel = document.getElementById('bk-add-room');
+  if(!sel || sel.options.length > 1) return;
+  const byCat = {};
+  ROOMS.forEach(r => { (byCat[r.category] = byCat[r.category] || []).push(r); });
+  sel.innerHTML = '<option value="">Pilih ruangan untuk ditambahkan</option>' +
+    Object.keys(byCat).map(cat =>
+      `<optgroup label="${escapeHtml(cat)}">${byCat[cat].map(r => `<option value="${r.id}">${escapeHtml(r.name)} (maks ${r.capacity} orang)</option>`).join('')}</optgroup>`
+    ).join('');
+}
+
+function addRoomFromPicker(){
+  const sel = document.getElementById('bk-add-room');
+  const roomId = sel ? sel.value : '';
+  const room = findRoom(roomId);
+  if(!room){ toast('Pilih ruangan terlebih dahulu.', 'error'); return; }
+  bookingCart.push(makeCartItem(roomId, todayKey()));
+  sel.value = '';
+  document.getElementById('booking-room-subtitle').textContent = `${bookingCart.length} ruangan dipilih untuk 1 pemesanan`;
+  renderCartList();
+  renderCartSummarySidebar();
+  toast(`${escapeHtml(room.name)} ditambahkan. Atur tanggal & jumlah peserta di kartu ruangan.`);
 }
 
 // Jenis tarif tergantung apakah ruangan internal (Per jam / Per hari, bisa
@@ -994,7 +1037,7 @@ function itemConflictsWithStored(item){
 function renderCartList(){
   const wrap = document.getElementById('cart-items-list');
   if(!bookingCart.length){
-    wrap.innerHTML = `<div class="text-center py-10 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Belum ada ruangan dipilih. Klik "Tambah Ruangan Lain" untuk memilih ruangan.</div>`;
+    wrap.innerHTML = `<div class="text-center py-10 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Belum ada ruangan dipilih. Pilih ruangan pada daftar di atas, lalu klik "Tambah Ruangan".</div>`;
     lucide.createIcons();
     return;
   }
@@ -1125,6 +1168,7 @@ function renderBookingPage(){
   document.getElementById('booking-back-btn').onclick = () => go('rooms');
   document.getElementById('booking-room-title').textContent = 'Formulir Pemesanan';
   document.getElementById('booking-room-subtitle').textContent = bookingCart.length ? `${bookingCart.length} ruangan dipilih untuk 1 pemesanan` : 'Pilih ruangan untuk mulai memesan.';
+  renderRoomPicker();
   renderCartList();
   renderCartSummarySidebar();
   refreshMyApprovalLock();
@@ -1893,7 +1937,7 @@ if(API_URL.indexOf('PASTE_URL') !== -1){
 Object.assign(window, {
   adminDecideUser, adminSetStatus, cancelBooking, closeBookingModal, closeFloorPlanModal,
   exportAdminCSV, go, goAdminEntry, handleDetailBookingClick, logout,
-  onAttachmentsSelected, onTierChange, openBookingModal, openFloorPlanModal,
+  addRoomFromPicker, onAttachmentsSelected, onTierChange, openBookingModal, openFloorPlanModal,
   printBookingProof, quickAdminAction, removeAttachment, removeCartItem,
   renderAdminTable, renderRoomsGrid, requireAuth, resetAdminFilters, selectDay,
   setAdminTab, setAuthTab, setHistoryFilter, shiftMonth, shiftFullCalendarMonth,
