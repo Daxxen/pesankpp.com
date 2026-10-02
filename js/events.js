@@ -482,6 +482,8 @@ function onTierChange(){
   });
   const note = document.getElementById('payment-note');
   if(note) note.classList.toggle('hidden', !priced);
+  const tariffNote = document.getElementById('tariff-note');
+  if(tariffNote) tariffNote.classList.toggle('hidden', !priced);
   setFieldError('bk-tier', null);
   renderCartList();
   renderCartSummarySidebar();
@@ -1137,6 +1139,7 @@ function renderBookingPage(){
     document.getElementById('bk-email').value = user ? user.email : '';
     document.getElementById('bk-tier').value = '';
     const payNote = document.getElementById('payment-note'); if(payNote) payNote.classList.add('hidden');
+    const tariffNoteEl = document.getElementById('tariff-note'); if(tariffNoteEl) tariffNoteEl.classList.add('hidden');
     document.getElementById('bk-phone').value = '';
     document.getElementById('bk-purpose').value = '';
     document.getElementById('bk-notes').value = '';
@@ -1150,6 +1153,7 @@ function renderBookingPage(){
 }
 
 function resetBookingCart(){
+  const tierEl = document.getElementById('bk-tier'); if(tierEl) tierEl.value = '';
   bookingCart = [];
   groupFieldsInitialized = false;
   resetAttachments();
