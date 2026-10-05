@@ -974,9 +974,10 @@ function addDays(dateStr, n){
 // endDate (bukan lagi selalu 1 hari) — supaya ruangan eksternal yang dipesan
 // beberapa hari sekaligus terhitung benar, dan ruangan 'hari' (internal,
 // multi-tanggal) tetap Rp0 berapa pun jumlah harinya.
-function recomputeCartItem(item){
+function recomputeCartItem(item, tierOverride){
   const room = findRoom(item.roomId);
   if(!room) return;
+  const priced = isPricedTier(tierOverride !== undefined ? tierOverride : currentTier());
   if(item.tariffType === 'jam'){
     item.endDate = item.date; // per jam selalu 1 hari
     item.amount = 0;
@@ -987,11 +988,11 @@ function recomputeCartItem(item){
     item.amount = 0;
   } else if(item.tariffType === 'mingguan'){
     item.endDate = addDays(item.date, 6);
-    item.amount = isPricedTier(currentTier()) ? (room.priceWeek || 0) : 0;
+    item.amount = priced ? (room.priceWeek || 0) : 0;
   } else { // 'harian' — eksternal, bisa multi-tanggal, dihitung per hari
     if(!item.endDate || item.endDate < item.date) item.endDate = item.date;
     const nDays = daysBetweenInclusive(item.date, item.endDate);
-    item.amount = isPricedTier(currentTier()) ? (room.priceDay || 0) * nDays : 0;
+    item.amount = priced ? (room.priceDay || 0) * nDays : 0;
   }
 }
 
@@ -1278,6 +1279,10 @@ function openBookingModal(groupId, adminMode){
           ${!adminMode ? `<div class="no-print"><button onclick="printBookingProof()" class="btn-outline text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="printer" class="w-4 h-4"></i>Cetak Bukti</button></div>` : ''}
           ${canAct ? `
           <div class="border-t border-slate-100 pt-5 no-print">
+            <div class="mb-5">
+              <button onclick="openEditBooking('${b.groupId}')" class="btn-outline text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="pencil" class="w-4 h-4"></i>Ubah Pemesanan</button>
+              <p class="text-xs text-slate-400 mt-1.5">Ubah ruangan, tanggal, peserta, atau data pemesan tanpa memesan ulang. Nomor referensi tidak berubah.</p>
+            </div>
             <label class="block text-xs font-semibold navy-text mb-1.5">Catatan admin (wajib diisi bila menolak / membatalkan)</label>
             <textarea id="modal-admin-note" rows="2" placeholder="Contoh: Ruangan sedang dalam perawatan pada tanggal tersebut." class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm mb-4">${escapeHtml(b.adminNote || '')}</textarea>
             <div class="flex flex-wrap items-center gap-2">
@@ -1841,6 +1846,314 @@ function exportAdminCSV(){
   toast('Data pemesanan berhasil diunduh.');
 }
 
+/* ===================== UBAH PEMESANAN (ADMIN) ===================== */
+// Admin mengubah pemesanan yang sudah masuk tanpa memesan ulang. Nomor
+// referensi, status, dan waktu pengajuan tidak berubah. Simpan lewat
+// aksi 'updateBooking' (EditBooking.gs); perubahan dicatat di sheet AuditLog.
+let editState = null;
+
+function roomOptionsGroupedHtml(){
+  const byCat = {};
+  ROOMS.forEach(r => { (byCat[r.category] = byCat[r.category] || []).push(r); });
+  return Object.keys(byCat).map(cat =>
+    `<optgroup label="${escapeHtml(cat)}">${byCat[cat].map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('')}</optgroup>`
+  ).join('');
+}
+
+function editTierValue(){
+  const el = document.getElementById('edit-tier');
+  return el ? el.value : (editState ? editState.tier : '');
+}
+function recomputeEditItem(item){ recomputeCartItem(item, editTierValue()); }
+
+function editTariffOptionsHtml(room, selected){
+  const priced = isPricedTier(editTierValue());
+  let opts;
+  if(priced){ opts = [['harian','Harian']]; if(room && room.priceWeek) opts.push(['mingguan','Mingguan']); }
+  else if(room && room.isExternal){ opts = [['harian','Harian'],['mingguan','Mingguan']]; }
+  else { opts = [['jam','Per jam (1 hari)'],['hari','Per hari (bisa multi-tanggal)']]; }
+  if(!opts.some(o => o[0] === selected)) opts.push([selected, selected]);
+  return opts.map(([v,label]) => `<option value="${v}" ${v === selected ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('');
+}
+
+function editItemConflicts(item){
+  if(!editState || STATUS_TIDAK_MENGUNCI_RUANGAN_.indexOf(editState.status) !== -1) return false;
+  const cand = { date: item.date, endDate: item.endDate || item.date, startTime: item.startTime, endTime: item.endTime, tariffType: item.tariffType };
+  const stored = activeItems().filter(b => b.roomId === item.roomId && b.groupId !== editState.groupId);
+  if(stored.some(b => bookingsConflict(cand, b))) return true;
+  return editState.items.some(o => o.cid !== item.cid && o.roomId === item.roomId &&
+    bookingsConflict(cand, { date: o.date, endDate: o.endDate || o.date, startTime: o.startTime, endTime: o.endTime, tariffType: o.tariffType }));
+}
+
+function openEditBooking(groupId){
+  const b = getBookings().find(x => x.groupId === groupId);
+  if(!b || !isAdmin()) return;
+  editState = {
+    groupId, status: b.status, ref: b.ref, tier: b.priorityTier || '',
+    items: (b.items || []).map((it, i) => ({
+      cid: 'e' + Date.now() + '_' + i,
+      roomId: it.roomId, roomName: it.roomName,
+      date: it.date, endDate: it.endDate || it.date,
+      tariffType: it.tariffType || 'hari',
+      startTime: it.startTime || '00:00', endTime: it.endTime || '23:59',
+      participants: it.participants || '', amount: Number(it.amount) || 0
+    }))
+  };
+  const tierOpts = [['', '(belum dipilih)']].concat(Object.keys(TIER_LABELS).map(k => [k, TIER_LABELS[k]]));
+  document.getElementById('booking-modal-root').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this) closeEditBooking()">
+      <div class="modal-box" style="max-width:760px;">
+        <div class="p-6 border-b border-slate-100 flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Ubah Pemesanan</p>
+            <p class="font-display text-xl font-bold navy-text">${escapeHtml(b.ref)} ${statusBadge(b.status)}</p>
+          </div>
+          <button onclick="closeEditBooking()" class="icon-btn-sm flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="p-6 space-y-5">
+          <div class="grid md:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-semibold navy-text mb-1">Penyelenggara</label>
+              <input id="edit-org" type="text" value="${escapeHtml(b.org)}" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
+            <div><label class="block text-xs font-semibold navy-text mb-1">Kategori Pemesan</label>
+              <select id="edit-tier" onchange="onEditTierChange()" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white">
+                ${tierOpts.map(([v,l]) => `<option value="${v}" ${v === (b.priorityTier || '') ? 'selected' : ''}>${escapeHtml(l)}</option>`).join('')}
+              </select></div>
+            <div><label class="block text-xs font-semibold navy-text mb-1">Penanggung jawab</label>
+              <input id="edit-name" type="text" value="${escapeHtml(b.name)}" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
+            <div><label class="block text-xs font-semibold navy-text mb-1">Telepon</label>
+              <input id="edit-phone" type="text" value="${escapeHtml(b.phone || '')}" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
+            <div><label class="block text-xs font-semibold navy-text mb-1">Email</label>
+              <input id="edit-email" type="email" value="${escapeHtml(b.email || '')}" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
+            <div><label class="block text-xs font-semibold navy-text mb-1">Total peserta</label>
+              <input id="edit-participants" type="number" min="0" value="${escapeHtml(b.participants || '')}" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
+          </div>
+          <div><label class="block text-xs font-semibold navy-text mb-1">Kegiatan</label>
+            <textarea id="edit-purpose" rows="2" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">${escapeHtml(b.purpose || '')}</textarea></div>
+          <div><label class="block text-xs font-semibold navy-text mb-1">Catatan tambahan</label>
+            <textarea id="edit-notes" rows="2" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">${escapeHtml(b.notes || '')}</textarea></div>
+
+          <div class="border-t border-slate-100 pt-5">
+            <p class="text-sm font-semibold navy-text mb-3">Ruangan</p>
+            <div class="flex flex-col sm:flex-row gap-2 mb-4">
+              <select id="edit-add-room" class="flex-1 border border-slate-300 rounded-md px-3 py-2.5 text-sm bg-white">
+                <option value="">Pilih ruangan untuk ditambahkan</option>${roomOptionsGroupedHtml()}
+              </select>
+              <button type="button" onclick="addEditRoom()" class="btn-outline text-sm font-semibold rounded-md flex items-center justify-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Ruangan</button>
+            </div>
+            <div id="edit-items-list" class="space-y-3"></div>
+            <p id="edit-total" class="text-sm font-semibold navy-text mt-3"></p>
+          </div>
+
+          <label class="flex items-start gap-2.5 text-xs text-slate-500 leading-relaxed">
+            <input id="edit-notify" type="checkbox" class="mt-0.5 rounded border-slate-300">
+            Kirim email pemberitahuan perubahan ke pemesan (hanya terkirim bila alamat email terisi).
+          </label>
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <button type="button" onclick="closeEditBooking()" class="text-sm font-semibold text-slate-500 hover:text-navy-900 px-4 py-2.5">Batal</button>
+            <button type="button" id="edit-save-btn" onclick="saveBookingEdit()" class="btn-primary text-sm font-semibold px-5 py-2.5 rounded-md">Simpan Perubahan</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  renderEditItems();
+  lucide.createIcons();
+}
+
+function closeEditBooking(){
+  const gid = editState && editState.groupId;
+  editState = null;
+  if(gid) openBookingModal(gid, true); else closeBookingModal();
+}
+
+function renderEditItems(){
+  const wrap = document.getElementById('edit-items-list');
+  if(!wrap || !editState) return;
+  const priced = isPricedTier(editTierValue());
+  if(!editState.items.length){
+    wrap.innerHTML = `<div class="text-center py-8 border border-dashed border-slate-200 rounded-xl text-slate-400 text-sm">Belum ada ruangan. Pilih ruangan pada daftar di atas, lalu klik "Tambah Ruangan".</div>`;
+  } else {
+    wrap.innerHTML = editState.items.map(item => {
+      const room = findRoom(item.roomId);
+      const multi = item.tariffType === 'hari' || item.tariffType === 'harian';
+      const conflict = editItemConflicts(item);
+      const hasTariff = room && (item.tariffType === 'mingguan' ? !!room.priceWeek : !!room.priceDay);
+      return `
+      <div class="border border-slate-200 rounded-xl p-4">
+        <div class="grid md:grid-cols-2 gap-3 mb-3">
+          <div><label class="block text-xs font-semibold navy-text mb-1">Ruangan</label>
+            <select onchange="updateEditItem('${item.cid}','roomId',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white">
+              ${ROOMS.map(r => `<option value="${r.id}" ${r.id === item.roomId ? 'selected' : ''}>${escapeHtml(r.name)}</option>`).join('')}
+              ${room ? '' : `<option value="${escapeHtml(item.roomId)}" selected>${escapeHtml(item.roomName || item.roomId)}</option>`}
+            </select></div>
+          <div><label class="block text-xs font-semibold navy-text mb-1">Jenis tarif</label>
+            <select onchange="updateEditItem('${item.cid}','tariffType',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white">
+              ${editTariffOptionsHtml(room, item.tariffType)}
+            </select></div>
+          <div><label class="block text-xs font-semibold navy-text mb-1">${multi ? 'Tanggal mulai' : 'Tanggal pemakaian'}</label>
+            <input type="date" value="${item.date}" onchange="updateEditItem('${item.cid}','date',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
+          <div><label class="block text-xs font-semibold navy-text mb-1">Jumlah peserta</label>
+            <input type="number" min="0" value="${item.participants || ''}" placeholder="${room ? 'Maks ' + room.capacity : ''}" oninput="updateEditItem('${item.cid}','participants',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
+        </div>
+        ${item.tariffType === 'jam' ? `
+        <div class="grid md:grid-cols-2 gap-3 mb-3">
+          <div><label class="block text-xs font-semibold navy-text mb-1">Jam mulai</label>
+            <input type="time" step="900" value="${item.startTime}" onchange="updateEditItem('${item.cid}','startTime',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
+          <div><label class="block text-xs font-semibold navy-text mb-1">Jam selesai</label>
+            <input type="time" step="900" value="${item.endTime}" onchange="updateEditItem('${item.cid}','endTime',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
+        </div>` : (multi ? `
+        <div class="grid md:grid-cols-2 gap-3 mb-3">
+          <div><label class="block text-xs font-semibold navy-text mb-1">Tanggal selesai</label>
+            <input type="date" min="${item.date}" value="${item.endDate}" onchange="updateEditItem('${item.cid}','endDate',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
+          <div class="flex items-end"><p class="text-xs text-slate-400 pb-2.5">${daysBetweenInclusive(item.date, item.endDate)} hari</p></div>
+        </div>` : `<p class="text-xs text-slate-400 mb-3">Check-out: ${formatDateLong(item.endDate)} (7 hari)</p>`)}
+        <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
+          ${conflict
+            ? `<span class="flex items-center gap-1.5" style="color:var(--danger)"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>Bentrok dengan pemesanan lain</span>`
+            : `<span class="flex items-center gap-1.5" style="color:var(--ok)"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Tidak bentrok</span>`}
+          <span class="flex items-center gap-3">
+            ${priced ? `<span class="font-semibold navy-text">${hasTariff ? priceFmt(item.amount) : 'Tarif belum ditetapkan'}</span>` : ''}
+            <button type="button" onclick="removeEditItem('${item.cid}')" class="icon-btn-sm" title="Hapus ruangan ini"><i data-lucide="trash-2" class="w-4 h-4" style="color:var(--danger)"></i></button>
+          </span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  const total = editState.items.reduce((s, it) => s + (Number(it.amount) || 0), 0);
+  const totalEl = document.getElementById('edit-total');
+  if(totalEl) totalEl.textContent = priced ? `Total Biaya: ${priceFmt(total)}` : '';
+  lucide.createIcons();
+}
+
+function onEditTierChange(){
+  if(!editState) return;
+  const priced = isPricedTier(editTierValue());
+  editState.items.forEach(item => {
+    const room = findRoom(item.roomId);
+    if(!room) return;
+    if(priced){
+      if(item.tariffType === 'jam' || item.tariffType === 'hari') item.tariffType = 'harian';
+      if(item.tariffType === 'mingguan' && !room.priceWeek) item.tariffType = 'harian';
+    } else if(!room.isExternal && (item.tariffType === 'harian' || item.tariffType === 'mingguan')){
+      item.tariffType = 'hari';
+    }
+    recomputeEditItem(item);
+  });
+  renderEditItems();
+}
+
+function updateEditItem(cid, field, value){
+  if(!editState) return;
+  const item = editState.items.find(i => i.cid === cid);
+  if(!item) return;
+  item[field] = value;
+  if(field === 'participants') return; // diketik per karakter — jangan render ulang (fokus input)
+  const priced = isPricedTier(editTierValue());
+  if(field === 'roomId'){
+    const room = findRoom(value);
+    if(priced){
+      if(item.tariffType === 'jam' || item.tariffType === 'hari') item.tariffType = 'harian';
+      if(item.tariffType === 'mingguan' && room && !room.priceWeek) item.tariffType = 'harian';
+    } else if(room && !room.isExternal && (item.tariffType === 'harian' || item.tariffType === 'mingguan')){
+      item.tariffType = 'hari';
+    }
+    item.roomName = room ? room.name : item.roomName;
+  }
+  if(field === 'date' && (!item.endDate || item.endDate < item.date)) item.endDate = item.date;
+  if(field === 'tariffType' && item.tariffType === 'jam'){
+    if(!item.startTime || item.startTime === '00:00') item.startTime = '09:00';
+    if(!item.endTime || item.endTime === '23:59') item.endTime = '11:00';
+  }
+  recomputeEditItem(item);
+  renderEditItems();
+}
+
+function removeEditItem(cid){
+  if(!editState) return;
+  editState.items = editState.items.filter(i => i.cid !== cid);
+  renderEditItems();
+}
+
+function addEditRoom(){
+  if(!editState) return;
+  const sel = document.getElementById('edit-add-room');
+  const room = findRoom(sel ? sel.value : '');
+  if(!room){ toast('Pilih ruangan terlebih dahulu.', 'error'); return; }
+  const priced = isPricedTier(editTierValue());
+  const item = {
+    cid: 'e' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+    roomId: room.id, roomName: room.name,
+    date: todayKey(), endDate: todayKey(),
+    tariffType: priced ? 'harian' : (room.isExternal ? 'harian' : 'hari'),
+    startTime: '09:00', endTime: '11:00', participants: '', amount: 0
+  };
+  recomputeEditItem(item);
+  editState.items.push(item);
+  sel.value = '';
+  renderEditItems();
+}
+
+async function saveBookingEdit(){
+  if(!editState) return;
+  const val = id => (document.getElementById(id).value || '').trim();
+  const name = val('edit-name'), org = val('edit-org');
+  if(!org){ toast('Penyelenggara wajib diisi.', 'error'); return; }
+  if(!name){ toast('Nama penanggung jawab wajib diisi.', 'error'); return; }
+  const tier = document.getElementById('edit-tier').value;
+  const priced = isPricedTier(tier);
+
+  for(const it of editState.items){
+    const room = findRoom(it.roomId);
+    const label = room ? room.name : (it.roomName || it.roomId);
+    if(!it.date){ toast(`Tanggal ${escapeHtml(label)} belum diisi.`, 'error'); return; }
+    if(it.endDate && it.endDate < it.date){ toast(`Tanggal selesai ${escapeHtml(label)} sebelum tanggal mulai.`, 'error'); return; }
+    if(it.tariffType === 'jam' && (!it.startTime || !it.endTime || it.startTime >= it.endTime)){
+      toast(`Jam selesai ${escapeHtml(label)} harus setelah jam mulai.`, 'error'); return;
+    }
+  }
+  if(editState.items.some(editItemConflicts)){ toast('Ada ruangan yang bentrok jadwal — perbaiki sebelum menyimpan.', 'error'); return; }
+  if(editState.status === 'pembayaran_selesai' &&
+     !confirm('Pemesanan ini berstatus "Pembayaran Selesai". Mengubahnya dapat mengubah rincian yang sudah dibayar. Lanjutkan?')) return;
+
+  const payload = {
+    token: getAdminToken(), id: editState.groupId,
+    name, org, email: val('edit-email'), phone: val('edit-phone'),
+    participants: parseInt(val('edit-participants')) || '',
+    purpose: val('edit-purpose'), notes: val('edit-notes'), priorityTier: tier,
+    notifyUser: document.getElementById('edit-notify').checked,
+    items: editState.items.map(it => {
+      const room = findRoom(it.roomId);
+      return {
+        roomId: it.roomId, roomName: room ? room.name : (it.roomName || it.roomId),
+        date: it.date, endDate: it.endDate || it.date,
+        startTime: it.tariffType === 'jam' ? it.startTime : '00:00',
+        endTime: it.tariffType === 'jam' ? it.endTime : '23:59',
+        tariffType: it.tariffType, amount: priced ? (Number(it.amount) || 0) : 0,
+        participants: parseInt(it.participants) || 0
+      };
+    })
+  };
+
+  const btn = document.getElementById('edit-save-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Menyimpan...'; }
+  try{
+    const data = await apiPost('updateBooking', payload);
+    if(!data.ok){
+      if(data.error && data.error.indexOf('Sesi admin') !== -1){ toast(escapeHtml(data.error), 'error'); logout(); go('admin-login'); return; }
+      toast(escapeHtml(data.error || 'Gagal menyimpan perubahan.'), 'error');
+      return;
+    }
+    toast(data.unchanged ? 'Tidak ada perubahan untuk disimpan.' : `Pemesanan ${escapeHtml(data.ref)} berhasil diperbarui.`);
+    editState = null;
+    closeBookingModal();
+    await refreshBookings();
+    renderAdmin();
+  }catch(err){
+    toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = 'Simpan Perubahan'; }
+  }
+}
+
 /* ===================== PENDAFTAR MENUNGGU ===================== */
 let adminPendaftarCache = [];
 
@@ -1937,7 +2250,7 @@ if(API_URL.indexOf('PASTE_URL') !== -1){
 Object.assign(window, {
   adminDecideUser, adminSetStatus, cancelBooking, closeBookingModal, closeFloorPlanModal,
   exportAdminCSV, go, goAdminEntry, handleDetailBookingClick, logout,
-  addRoomFromPicker, onAttachmentsSelected, onTierChange, openBookingModal, openFloorPlanModal,
+  addRoomFromPicker, addEditRoom, closeEditBooking, onEditTierChange, openEditBooking, removeEditItem, saveBookingEdit, updateEditItem, onAttachmentsSelected, onTierChange, openBookingModal, openFloorPlanModal,
   printBookingProof, quickAdminAction, removeAttachment, removeCartItem,
   renderAdminTable, renderRoomsGrid, requireAuth, resetAdminFilters, selectDay,
   setAdminTab, setAuthTab, setHistoryFilter, shiftMonth, shiftFullCalendarMonth,
