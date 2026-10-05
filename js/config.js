@@ -66,7 +66,8 @@ export const STATUS_TIDAK_MENGUNCI_RUANGAN = ['ditolak', 'dibatalkan'];
 // FEATURED ROOMS (di halaman beranda)
 // =====================================================================
 // Ganti ID di sini kapan saja sesuai ruangan mana yang ingin ditonjolkan.
-export const FEATURED_IDS = ['vision-hall', 'catalyst', 'wisma-anggrek-lt1'];
+// Wisma kini dipesan per unit kamar (id: wisma-anggrek-1-1 = Wisma Anggrek 1.1).
+export const FEATURED_IDS = ['vision-hall', 'catalyst', 'wisma-anggrek-1-1'];
 
 // =====================================================================
 // WARNA KALENDER

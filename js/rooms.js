@@ -10,6 +10,9 @@
  * PERKIRAAN kasar dari luas ruangan — lihat catatan di dekat definisi
  * ROOMS untuk detail sumber dan yang wajib dikonfirmasi.
  *
+ * UNIT WISMA (sesi ini): wisma kini dipesan per unit kamar (Anggrek 1.1 - 3.4,
+ * Cempaka 1-4, Bougenville 1-10, Dahlia 1-4, Edelweis 1-6) — lihat WISMA_BUILDINGS.
+ *
  * TAMBAHAN (sesi ini): Aula dan 12 ruang rapat tipe Capstone (Axis, Orbit,
  * Helix, Radius, Origin, Flux, Apex, Vertex, Vector, Nexus, Matrix, Prism)
  * ditambahkan karena dipakai di data pemesanan asli (Excel "Penggunaan
@@ -39,6 +42,72 @@
 //   - img: Spark/Muse/Genesis dipakaikan foto yang sama dengan Ignite.
 //     Quantum/Pioneer/Ideation/Inspire Hall belum ada foto asli.
 // =====================================================================
+// =====================================================================
+// UNIT WISMA (RUANGAN EKSTERNAL) — satu unit kamar = satu ruangan yang bisa
+// dipesan. Dibangkitkan otomatis dari konfigurasi di bawah, jadi menambah/
+// mengurangi unit cukup mengubah angka di WISMA_BUILDINGS.
+//
+//   Anggrek    : 3 lantai x 4 unit  -> kode 1.1 ... 1.4, 2.1 ... 2.4, 3.1 ... 3.4
+//                (angka pertama = lantai, angka kedua = nomor unit di lantai itu)
+//   Cempaka    : 4 unit   -> kode 1 ... 4
+//   Bougenville: 10 unit  -> kode 1 ... 10
+//   Dahlia     : 4 unit   -> kode 1 ... 4
+//   Edelweis   : 6 unit   -> kode 1 ... 6
+//
+// SUMBER: tarif (priceDay/priceWeek) diambil dari tabel resmi "Tarif Sewa Ruang
+// Penggunaan Waktu Tertentu" bagian A. Wisma. Tabel itu mencantumkan satu
+// tarif per jenis wisma (bukan per unit), sehingga tarif yang sama DIPAKAI
+// UNTUK SETIAP UNIT. WAJIB dikonfirmasi — bila tarif per unit berbeda, ubah
+// priceDay/priceWeek di WISMA_BUILDINGS di bawah.
+// YANG MASIH PERKIRAAN/PLACEHOLDER:
+//   - capacity per unit: dibagi rata dari perkiraan kapasitas satu wisma/lantai
+//     (asumsi 2 orang per kamar tidur), dibulatkan ke atas.
+//   - luas (area) per unit tidak tersedia, sengaja dikosongkan.
+//   - facilities dikosongkan (tidak ditebak); situs menyembunyikan bagiannya.
+//   - kondisi "unRF" dari tabel asli disimpan apa adanya di field `kondisi`.
+// =====================================================================
+const WISMA_KONDISI = "unRF";
+const WISMA_BUILDINGS = [
+  { key: "anggrek", label: "Anggrek", floors: [1, 2, 3], unitsPerFloor: 4, capacity: 4, priceDay: 170000, priceWeek: 940000,
+    buildingFloor: "Gedung Wisma Anggrek", imgOf: f => `images/wisma-anggrek-lt${f}.jpg` },
+  { key: "cempaka", label: "Cempaka", units: 4, capacity: 3, priceDay: 70000, priceWeek: 360000,
+    buildingFloor: "Gedung Wisma Cempaka, Lantai 2", imgOf: () => "images/wisma-cempaka.jpg" },
+  { key: "bougenville", label: "Bougenville", units: 10, capacity: 2, priceDay: 130000, priceWeek: 690000,
+    buildingFloor: "Gedung Wisma Bougenville, Lantai 1–2", imgOf: () => "images/wisma-bougenville.jpg" },
+  { key: "dahlia", label: "Dahlia", units: 4, capacity: 4, priceDay: 130000, priceWeek: 690000,
+    buildingFloor: "Gedung Wisma Dahlia, Lantai 1–2", imgOf: () => "images/wisma-dahlia.jpg" },
+  { key: "edelweis", label: "Edelweis", units: 6, capacity: 2, priceDay: 20000, priceWeek: 110000,
+    buildingFloor: "Gedung Wisma Edelweis, Lantai 1", imgOf: () => "images/wisma-edelweis.jpg" }
+];
+
+function wismaUnits(b) {
+  const make = (code, floorNo, unitNo) => ({
+    id: `wisma-${b.key}-${code.replace(".", "-")}`,
+    isExternal: true,
+    name: `Wisma ${b.label} ${code}`,
+    category: "Wisma / Penginapan",
+    unitCode: code,
+    kondisi: WISMA_KONDISI,
+    capacity: b.capacity,
+    floor: floorNo ? `${b.buildingFloor}, Lantai ${floorNo} · Unit ${unitNo}` : `${b.buildingFloor} · Unit ${unitNo}`,
+    priceDay: b.priceDay,
+    priceWeek: b.priceWeek,
+    desc: floorNo
+      ? `Unit kamar ${unitNo} di Lantai ${floorNo} Gedung Wisma ${b.label} (kode ${code}) — cocok untuk peserta diklat yang menginap.`
+      : `Unit kamar ${unitNo} Gedung Wisma ${b.label} (kode ${code}) — cocok untuk peserta diklat yang menginap.`,
+    facilities: [],
+    img: b.imgOf(floorNo)
+  });
+  const out = [];
+  if (b.floors) {
+    b.floors.forEach(f => { for (let u = 1; u <= b.unitsPerFloor; u++) out.push(make(`${f}.${u}`, f, u)); });
+  } else {
+    for (let u = 1; u <= b.units; u++) out.push(make(String(u), null, u));
+  }
+  return out;
+}
+const WISMA_UNITS = WISMA_BUILDINGS.flatMap(wismaUnits);
+
 export const ROOMS = [
   { id: "vision-hall", isExternal: false, name: "Vision Hall", category: "Auditorium", roomClass: "Ampitheater", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 1", priceDay: 3130000, priceWeek: 17580000,
     desc: "Ruang auditorium bertingkat dengan meja lengkung mengikuti kontur ruangan, cocok untuk seminar, kuliah umum, dan pelatihan skala besar.",
@@ -143,52 +212,8 @@ export const ROOMS = [
     facilities: [],
     img: "images/illustration-placeholder.svg", placeholderImg: true },
 
-  // =====================================================================
-  // RUANGAN EKSTERNAL (Wisma) — sumber: tabel resmi "Tarif Sewa Ruang
-  // Penggunaan Waktu Tertentu — Kawasan Pendidikan dan Pelatihan"
-  // (bagian A. Wisma, 7 baris). Tarif (priceDay/priceWeek), luas (area), dan
-  // kode ruang (roomCode) diambil PERSIS dari tabel Wisma tsb.
-  // YANG MASIH PERKIRAAN/PLACEHOLDER:
-  //   - capacity: dihitung kasar dari jumlah kamar tidur (asumsi 2 orang/kamar).
-  //   - facilities & desc: masih generik berdasarkan jenis ruangan (Wisma).
-  //   - kondisi "unRF" pada tabel asli disimpan di field `kondisi` apa
-  //     adanya karena maknanya belum dikonfirmasi.
-  // =====================================================================
-  { id: "wisma-anggrek-lt1", isExternal: true, name: "Wisma Anggrek — Lantai 1", category: "Wisma / Penginapan", roomCode: "W.A 7BR-7KM", kondisi: "unRF",
-    capacity: 14, area: 134.9, floor: "Gedung Wisma Anggrek, Lantai 1", priceDay: 170000, priceWeek: 940000,
-    desc: "Unit wisma 7 kamar tidur dengan 7 kamar mandi di lantai 1 Gedung Anggrek — cocok untuk rombongan peserta diklat yang menginap.",
-    facilities: ["7 kamar tidur", "7 kamar mandi dalam", "AC per kamar", "Area istirahat bersama"],
-    img: "images/wisma-anggrek-lt1.jpg" },
-  { id: "wisma-anggrek-lt2", isExternal: true, name: "Wisma Anggrek — Lantai 2", category: "Wisma / Penginapan", roomCode: "W.A 7BR-7KM", kondisi: "unRF",
-    capacity: 14, area: 134.9, floor: "Gedung Wisma Anggrek, Lantai 2", priceDay: 170000, priceWeek: 940000,
-    desc: "Unit wisma 7 kamar tidur dengan 7 kamar mandi di lantai 2 Gedung Anggrek — cocok untuk rombongan peserta diklat yang menginap.",
-    facilities: ["7 kamar tidur", "7 kamar mandi dalam", "AC per kamar", "Area istirahat bersama"],
-    img: "images/wisma-anggrek-lt2.jpg" },
-  { id: "wisma-anggrek-lt3", isExternal: true, name: "Wisma Anggrek — Lantai 3", category: "Wisma / Penginapan", roomCode: "W.A 7BR-7KM", kondisi: "unRF",
-    capacity: 14, area: 134.9, floor: "Gedung Wisma Anggrek, Lantai 3", priceDay: 170000, priceWeek: 940000,
-    desc: "Unit wisma 7 kamar tidur dengan 7 kamar mandi di lantai 3 Gedung Anggrek — cocok untuk rombongan peserta diklat yang menginap.",
-    facilities: ["7 kamar tidur", "7 kamar mandi dalam", "AC per kamar", "Area istirahat bersama"],
-    img: "images/wisma-anggrek-lt3.jpg" },
-  { id: "wisma-bougenville", isExternal: true, name: "Wisma Bougenville", category: "Wisma / Penginapan", roomCode: "W.B 8BR-4KM", kondisi: "unRF",
-    capacity: 16, area: 196.8, floor: "Gedung Wisma Bougenville, Lantai 1–2", priceDay: 130000, priceWeek: 690000,
-    desc: "Unit wisma 8 kamar tidur dengan 4 kamar mandi mencakup lantai 1 dan 2 Gedung Bougenville — cocok untuk rombongan peserta diklat yang menginap.",
-    facilities: ["8 kamar tidur", "4 kamar mandi", "AC per kamar", "Area istirahat bersama"],
-    img: "images/wisma-bougenville.jpg" },
-  { id: "wisma-cempaka", isExternal: true, name: "Wisma Cempaka", category: "Wisma / Penginapan", roomCode: "W.C 6BR-2KM", kondisi: "unRF",
-    capacity: 12, area: 102.1, floor: "Gedung Wisma Cempaka, Lantai 2", priceDay: 70000, priceWeek: 360000,
-    desc: "Unit wisma 6 kamar tidur dengan 2 kamar mandi di lantai 2 Gedung Cempaka — cocok untuk rombongan peserta diklat yang menginap.",
-    facilities: ["6 kamar tidur", "2 kamar mandi", "AC per kamar", "Area istirahat bersama"],
-    img: "images/wisma-cempaka.jpg" },
-  { id: "wisma-dahlia", isExternal: true, name: "Wisma Dahlia", category: "Wisma / Penginapan", roomCode: "W.D 8BR-4KM", kondisi: "unRF",
-    capacity: 16, area: 196.8, floor: "Gedung Wisma Dahlia, Lantai 1–2", priceDay: 130000, priceWeek: 690000,
-    desc: "Unit wisma 8 kamar tidur dengan 4 kamar mandi mencakup lantai 1 dan 2 Gedung Dahlia — cocok untuk rombongan peserta diklat yang menginap.",
-    facilities: ["8 kamar tidur", "4 kamar mandi", "AC per kamar", "Area istirahat bersama"],
-    img: "images/wisma-dahlia.jpg" },
-  { id: "wisma-edelweis", isExternal: true, name: "Wisma Edelweis", category: "Wisma / Penginapan", roomCode: "W.E 1BR-1KM", kondisi: "unRF",
-    capacity: 2, area: 29.2, floor: "Gedung Wisma Edelweis, Lantai 1", priceDay: 20000, priceWeek: 110000,
-    desc: "Unit wisma studio 1 kamar tidur dengan 1 kamar mandi di lantai 1 Gedung Edelweis — cocok untuk tamu perorangan atau pasangan.",
-    facilities: ["1 kamar tidur", "1 kamar mandi dalam", "AC", "Area istirahat"],
-    img: "images/wisma-edelweis.jpg" }
+  // Unit Wisma (Anggrek 1.1 ... Edelweis 6) dibangkitkan oleh wismaUnits() di atas.
+  ...WISMA_UNITS
 ];
 
 // =====================================================================
