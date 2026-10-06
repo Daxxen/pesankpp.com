@@ -1274,9 +1274,21 @@ function openBookingModal(groupId, adminMode){
               `).join('')}
             </div>
           </div>` : ''}
+          ${proofCount(b) ? `
+          <div class="border-t border-slate-100 pt-4 no-print">
+            <p class="text-xs font-semibold navy-text mb-2 flex items-center gap-1.5"><i data-lucide="receipt" class="w-3.5 h-3.5"></i>Bukti Pembayaran${b.paymentProofAt ? ` <span class="font-normal text-slate-400">(terakhir diunggah ${new Date(b.paymentProofAt).toLocaleString('id-ID')})</span>` : ''}</p>
+            <div class="space-y-1.5">
+              ${String(b.paymentProofUrls).split(',').filter(Boolean).map((url, i) => `
+                <a href="${escapeHtml(url.trim())}" target="_blank" rel="noopener" class="flex items-center gap-2 text-sm text-[var(--blue-accent)] hover:underline"><i data-lucide="file-check" class="w-4 h-4 flex-shrink-0"></i>Bukti ${i+1}</a>
+              `).join('')}
+            </div>
+          </div>` : ''}
           ${b.adminNote ? `<div class="bg-[var(--paper)] border border-slate-200 rounded-md p-4 text-sm"><p class="text-xs font-semibold navy-text mb-1">Catatan Pengelola</p><p class="text-slate-600">${escapeHtml(b.adminNote)}</p></div>` : ''}
           <p class="print-footer-note">Dokumen ini adalah bukti pemesanan ruangan. Status pada dokumen ini adalah status terkini saat dicetak dan dapat berubah.</p>
-          ${!adminMode ? `<div class="no-print"><button onclick="printBookingProof()" class="btn-outline text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="printer" class="w-4 h-4"></i>Cetak Bukti</button></div>` : ''}
+          ${!adminMode ? `<div class="no-print flex flex-wrap gap-2">
+            <button onclick="printBookingProof()" class="btn-outline text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="printer" class="w-4 h-4"></i>Cetak Bukti</button>
+            ${canUploadProof(b) ? `<button onclick="openPaymentProofModal('${b.groupId}')" class="btn-primary text-sm font-semibold px-4 py-2.5 rounded-md flex items-center gap-1.5"><i data-lucide="upload" class="w-4 h-4"></i>${proofCount(b) ? 'Unggah Ulang Bukti' : 'Unggah Bukti Transfer'}</button>` : ''}
+          </div>` : ''}
           ${canAct ? `
           <div class="border-t border-slate-100 pt-5 no-print">
             <div class="mb-5">
@@ -1607,9 +1619,10 @@ function renderHistory(){
           ${statusBadge(b.status)}
         </div>
         <p class="text-xs text-slate-500">${escapeHtml(groupItemsSummary(b))} · ${b.participants} peserta</p>
-        <p class="text-xs text-slate-400 mt-1">Ref: ${escapeHtml(b.ref)}${b.priorityTier ? ' · ' + escapeHtml(tierLabel(b.priorityTier)) : ''}${isPricedTier(b.priorityTier) ? ' · ' + priceFmt(b.amount || 0) : ''}</p>
+        <p class="text-xs text-slate-400 mt-1">Ref: ${escapeHtml(b.ref)}${b.priorityTier ? ' · ' + escapeHtml(tierLabel(b.priorityTier)) : ''}${isPricedTier(b.priorityTier) ? ' · ' + priceFmt(b.amount || 0) : ''}${proofCount(b) ? ` · <span style="color:var(--ok)" class="font-semibold">Bukti transfer terkirim</span>` : ''}</p>
       </div>
       <div class="flex items-center gap-2" onclick="event.stopPropagation()">
+        ${canUploadProof(b) ? `<button onclick="openPaymentProofModal('${b.groupId}')" class="btn-primary text-xs font-semibold px-3 py-2 rounded-md flex items-center gap-1.5"><i data-lucide="upload" class="w-3.5 h-3.5"></i>${proofCount(b) ? 'Unggah Ulang Bukti' : 'Unggah Bukti Transfer'}</button>` : ''}
         <button onclick="openBookingModal('${b.groupId}', false)" class="text-xs font-semibold text-slate-500 border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-md">Lihat Detail</button>
         ${b.status === 'belum_konfirmasi' ? `<button onclick="cancelBooking('${b.groupId}')" class="text-xs font-semibold text-[var(--danger)] border border-red-200 hover:bg-red-50 px-3 py-2 rounded-md">Batalkan</button>` : ''}
       </div>
@@ -1634,6 +1647,126 @@ async function cancelBooking(id){
     renderHistory();
   }catch(err){
     toast('Gagal menghubungi server. Periksa koneksi Anda.', 'error');
+  }
+}
+
+/* ===================== UNGGAH BUKTI TRANSFER (PEMESAN LPPI) ===================== */
+// Hanya untuk pemesanan LPPI (Eksternal) berstatus "Menunggu Pembayaran".
+// File dikirim ke server (aksi 'uploadPaymentProof', PaymentProof.gs) dan
+// disimpan di Drive; admin yang memverifikasi lalu mengubah status.
+const MAX_PROOF_FILES = 3;
+const MAX_PROOF_MB = 5;
+const ALLOWED_PROOF_EXT = ['pdf','jpg','jpeg','png'];
+let proofTargetId = null;
+let pendingProofFiles = []; // [{file, name, sizeLabel}]
+
+function proofCount(b){ return String((b && b.paymentProofUrls) || '').split(',').filter(Boolean).length; }
+function canUploadProof(b){ return !!b && isPricedTier(b.priorityTier) && b.status === 'menunggu_pembayaran'; }
+
+function openPaymentProofModal(groupId){
+  const b = getBookings().find(x => x.groupId === groupId);
+  if(!b || !canUploadProof(b)) return;
+  proofTargetId = groupId;
+  pendingProofFiles = [];
+  document.getElementById('booking-modal-root').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this) closeBookingModal()">
+      <div class="modal-box">
+        <div class="p-6 border-b border-slate-100 flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Unggah Bukti Transfer</p>
+            <p class="font-display text-xl font-bold navy-text">${escapeHtml(b.ref)}</p>
+          </div>
+          <button onclick="closeBookingModal()" class="icon-btn-sm flex-shrink-0"><i data-lucide="x" class="w-4 h-4"></i></button>
+        </div>
+        <div class="p-6 space-y-5">
+          <div class="bg-[#eef4ff] border border-[#c7d9f5] rounded-md p-4 text-sm" style="color:var(--navy-900)">
+            <p class="mb-2">Total yang dibayarkan: <strong>${priceFmt(b.amount || 0)}</strong></p>
+            <table class="text-sm" cellpadding="2">
+              <tr><td class="pr-3 text-slate-500">Bank</td><td>${escapeHtml(b.bankName || '-')}</td></tr>
+              <tr><td class="pr-3 text-slate-500">No. Rekening</td><td><strong>${escapeHtml(b.bankAccountNumber || '-')}</strong></td></tr>
+              <tr><td class="pr-3 text-slate-500">a.n.</td><td>${escapeHtml(b.bankAccountName || '-')}</td></tr>
+            </table>
+          </div>
+          ${proofCount(b) ? `<p class="text-xs" style="color:var(--ok)">Anda sudah mengirim ${proofCount(b)} file bukti. Unggahan baru akan ditambahkan, bukan menggantikan.</p>` : ''}
+          <div>
+            <label for="proof-files" class="flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 rounded-md px-4 py-6 text-sm text-slate-500 cursor-pointer hover:border-[var(--blue-accent)] hover:text-[var(--blue-accent)] transition">
+              <i data-lucide="upload" class="w-4 h-4"></i>Klik untuk pilih file bukti transfer
+            </label>
+            <input id="proof-files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png" onchange="onProofFilesSelected(event)" class="hidden">
+            <p class="text-xs text-slate-400 mt-1.5">Format PDF/JPG/PNG, maksimal ${MAX_PROOF_FILES} file, masing-masing maksimal ${MAX_PROOF_MB} MB.</p>
+            <div id="proof-file-list" class="mt-3 space-y-2"></div>
+            <p id="proof-error" class="text-xs mt-1" style="color:var(--danger)"></p>
+          </div>
+          <div class="flex items-center justify-end gap-2">
+            <button type="button" onclick="closeBookingModal()" class="text-sm font-semibold text-slate-500 hover:text-navy-900 px-4 py-2.5">Batal</button>
+            <button type="button" id="proof-submit-btn" onclick="submitPaymentProof()" class="btn-primary text-sm font-semibold px-5 py-2.5 rounded-md">Kirim Bukti</button>
+          </div>
+          <p class="text-xs text-slate-400">Pengelola akan memverifikasi bukti Anda. Status berubah menjadi "Pembayaran Selesai" setelah diverifikasi.</p>
+        </div>
+      </div>
+    </div>`;
+  lucide.createIcons();
+}
+
+function onProofFilesSelected(e){
+  const errEl = document.getElementById('proof-error');
+  errEl.textContent = '';
+  const incoming = Array.from(e.target.files || []);
+  e.target.value = '';
+  for(const file of incoming){
+    if(pendingProofFiles.length >= MAX_PROOF_FILES){ errEl.textContent = `Maksimal ${MAX_PROOF_FILES} file.`; break; }
+    if(!ALLOWED_PROOF_EXT.includes(fileExt(file.name))){ errEl.textContent = `Format "${file.name}" tidak didukung. Gunakan PDF/JPG/PNG.`; continue; }
+    if(file.size > MAX_PROOF_MB * 1024 * 1024){ errEl.textContent = `File "${file.name}" melebihi ${MAX_PROOF_MB} MB.`; continue; }
+    pendingProofFiles.push({ file, name: file.name, sizeLabel: fileSizeLabel(file.size) });
+  }
+  renderProofFileList();
+}
+
+function removeProofFile(idx){
+  pendingProofFiles.splice(idx, 1);
+  document.getElementById('proof-error').textContent = '';
+  renderProofFileList();
+}
+
+function renderProofFileList(){
+  const wrap = document.getElementById('proof-file-list');
+  if(!wrap) return;
+  wrap.innerHTML = pendingProofFiles.map((a, idx) => `
+    <div class="flex items-center justify-between gap-2 border border-slate-200 rounded-md px-3 py-2 text-sm">
+      <span class="flex items-center gap-2 min-w-0"><i data-lucide="file-text" class="w-4 h-4 text-slate-400 flex-shrink-0"></i><span class="truncate">${escapeHtml(a.name)}</span><span class="text-xs text-slate-400 flex-shrink-0">(${a.sizeLabel})</span></span>
+      <button type="button" onclick="removeProofFile(${idx})" class="icon-btn-sm flex-shrink-0" title="Hapus"><i data-lucide="x" class="w-3.5 h-3.5" style="color:var(--danger)"></i></button>
+    </div>`).join('');
+  lucide.createIcons();
+}
+
+async function submitPaymentProof(){
+  const errEl = document.getElementById('proof-error');
+  if(!proofTargetId) return;
+  if(!pendingProofFiles.length){ errEl.textContent = 'Pilih minimal 1 file bukti transfer.'; return; }
+  const btn = document.getElementById('proof-submit-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Mengunggah...'; }
+  try{
+    const files = await Promise.all(pendingProofFiles.map(async a => ({
+      name: a.name, mimeType: a.file.type || 'application/octet-stream', base64: await fileToBase64(a.file)
+    })));
+    const u = getUser();
+    const payload = { id: proofTargetId, files };
+    if(u && u.isInternal && getUserToken()) payload.userToken = getUserToken();
+    else if(u && u.email) payload.email = u.email;
+    const data = await apiPost('uploadPaymentProof', payload);
+    if(!data.ok){
+      errEl.textContent = data.error || 'Gagal mengunggah bukti transfer.';
+      return;
+    }
+    toast('Bukti transfer berhasil dikirim. Pengelola akan memverifikasinya.');
+    proofTargetId = null; pendingProofFiles = [];
+    closeBookingModal();
+    await refreshBookings();
+    renderHistory();
+  }catch(err){
+    errEl.textContent = 'Gagal menghubungi server. Periksa koneksi Anda dan coba lagi.';
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = 'Kirim Bukti'; }
   }
 }
 
@@ -1793,7 +1926,7 @@ function renderAdminTable(){
       <td>${escapeHtml(b.name)}</td>
       <td>${b.participants}</td>
       <td>${isPricedTier(b.priorityTier) ? priceFmt(b.amount || 0) : '-'}</td>
-      <td>${statusBadge(b.status)}</td>
+      <td>${statusBadge(b.status)}${proofCount(b) ? `<span class="block text-[10px] font-semibold mt-1" style="color:var(--ok)">Bukti transfer diunggah</span>` : ''}</td>
       <td onclick="event.stopPropagation()">
         ${b.status === 'belum_konfirmasi' ? `
           <div class="flex gap-1.5">
@@ -2250,7 +2383,7 @@ if(API_URL.indexOf('PASTE_URL') !== -1){
 Object.assign(window, {
   adminDecideUser, adminSetStatus, cancelBooking, closeBookingModal, closeFloorPlanModal,
   exportAdminCSV, go, goAdminEntry, handleDetailBookingClick, logout,
-  addRoomFromPicker, addEditRoom, closeEditBooking, onEditTierChange, openEditBooking, removeEditItem, saveBookingEdit, updateEditItem, onAttachmentsSelected, onTierChange, openBookingModal, openFloorPlanModal,
+  addRoomFromPicker, addEditRoom, openPaymentProofModal, onProofFilesSelected, removeProofFile, submitPaymentProof, closeEditBooking, onEditTierChange, openEditBooking, removeEditItem, saveBookingEdit, updateEditItem, onAttachmentsSelected, onTierChange, openBookingModal, openFloorPlanModal,
   printBookingProof, quickAdminAction, removeAttachment, removeCartItem,
   renderAdminTable, renderRoomsGrid, requireAuth, resetAdminFilters, selectDay,
   setAdminTab, setAuthTab, setHistoryFilter, shiftMonth, shiftFullCalendarMonth,
