@@ -1463,9 +1463,7 @@ async function submitBooking(e){
   let ok = true;
   if(!name){ setFieldError('bk-name','Nama penanggung jawab wajib diisi.'); ok = false; } else setFieldError('bk-name', null);
   if(!org){ setFieldError('bk-org','Penyelenggara wajib diisi.'); ok = false; } else setFieldError('bk-org', null);
-  if(!tier){ setFieldError('bk-tier','Pilih kategori pemesan.'); ok = false; }
-  else if(tier === 'pidi' && !(getUser() && getUser().isInternal)){ setFieldError('bk-tier','Kategori PIDI hanya untuk akun internal (@bi.go.id) yang masuk dengan Google.'); ok = false; }
-  else setFieldError('bk-tier', null);
+  if(!tier){ setFieldError('bk-tier','Pilih kategori pemesan.'); ok = false; } else setFieldError('bk-tier', null);
   if(!email || !email.includes('@')){ setFieldError('bk-email','Masukkan email yang valid.'); ok = false; } else setFieldError('bk-email', null);
   if(!phone || phone.length < 8){ setFieldError('bk-phone','Masukkan nomor telepon yang valid.'); ok = false; } else setFieldError('bk-phone', null);
 
@@ -1823,6 +1821,15 @@ async function adminSetStatus(id){
     toast('Catatan admin wajib diisi untuk penolakan/pembatalan.', 'error');
     if(noteInput) noteInput.classList.add('input-error');
     return;
+  }
+  // Status pembayaran hanya masuk akal setelah pemakaian ruangan selesai. Admin tetap
+  // boleh melanjutkan, tetapi diminta konfirmasi bila tanggal pakai terakhir belum lewat.
+  if(status !== target.status && (status === 'menunggu_pembayaran' || status === 'pembayaran_selesai')){
+    const ends = (target.items || []).map(it => it.endDate || it.date).filter(Boolean).sort();
+    const lastEnd = ends.length ? ends[ends.length - 1] : '';
+    if(lastEnd && lastEnd >= todayKey()){
+      if(!confirm(`Pemakaian ruangan belum selesai (hingga ${formatDateLong(lastEnd)}).\n\nStatus "${statusLabel(status)}" biasanya baru dipakai setelah acara selesai. Tetap ubah status?`)) return;
+    }
   }
   const finalNote = note || target.adminNote;
   try{
