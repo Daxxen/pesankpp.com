@@ -130,7 +130,7 @@ function flattenBookingItems(list){
   const out = [];
   (list || []).forEach(g => {
     if(Array.isArray(g.items)){
-      g.items.forEach(it => out.push(Object.assign({}, it, { status: g.status, groupId: g.groupId, ref: g.ref, org: g.org, purpose: g.purpose })));
+      g.items.forEach(it => out.push(Object.assign({}, it, { status: g.status, groupId: g.groupId, ref: g.ref, org: g.org, purpose: g.purpose, priorityTier: g.priorityTier })));
     } else if(g.roomId){
       out.push(g); // sudah rata (tampilan publik dari server)
     }
@@ -831,7 +831,7 @@ function renderDetail(roomId){
         <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Kapasitas</p><p class="font-semibold navy-text">${room.capacity} orang</p></div>
         <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Luas</p><p class="font-semibold navy-text">${room.area ? room.area + ' m²' : '-'}</p></div>
         <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Lokasi</p><p class="font-semibold navy-text">${room.floor}</p></div>
-        <div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">${room.isExternal ? 'Tarif Harian' : 'Status'}</p><p class="font-semibold navy-text">${room.isExternal ? priceFmt(room.priceDay) : 'Fasilitas Internal (gratis)'}</p></div>
+        ${room.isExternal ? `<div><p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Tarif Harian</p><p class="font-semibold navy-text">${priceFmt(room.priceDay)}</p></div>` : ''}
       </div>
       ${hasFacilities ? `
       <h3 class="font-display text-xl font-bold navy-text mb-4">Fasilitas</h3>
@@ -844,9 +844,7 @@ function renderDetail(roomId){
       <div class="border border-slate-200 rounded-xl p-6 sticky top-24 card-shadow">
         ${room.isExternal ? `
         <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Mulai dari</p>
-        <p class="font-display text-3xl font-bold navy-text mb-6">${priceFmt(room.priceDay)} <span class="text-sm font-sans font-normal text-slate-500">/ hari</span></p>` : `
-        <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Status</p>
-        <p class="font-display text-2xl font-bold navy-text mb-6">Fasilitas Internal <span class="text-sm font-sans font-normal text-slate-500">(tanpa biaya)</span></p>`}
+        <p class="font-display text-3xl font-bold navy-text mb-6">${priceFmt(room.priceDay)} <span class="text-sm font-sans font-normal text-slate-500">/ hari</span></p>` : ''}
 
         <div class="flex items-center justify-between mb-3">
           <button onclick="shiftMonth(-1)" class="w-8 h-8 rounded-md border border-slate-200 flex items-center justify-center hover:bg-slate-50"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
@@ -1027,13 +1025,42 @@ function updateCartItemField(cartId, field, value){
 // Bentrok terhadap data tersimpan di server MAUPUN terhadap item lain di
 // keranjang yang sama (mis. ruangan yang sama dipilih dua kali dengan
 // jadwal beririsan).
-function itemConflictsWithStored(item){
-  const candidate = { date: item.date, endDate: item.endDate || item.date, startTime: item.startTime, endTime: item.endTime, tariffType: item.tariffType };
-  const stored = activeItems().filter(b => b.roomId === item.roomId);
-  if(stored.some(b => bookingsConflict(candidate, b))) return true;
-  return bookingCart.some(other => other.cartId !== item.cartId && other.roomId === item.roomId &&
-    bookingsConflict(candidate, { date: other.date, endDate: other.endDate || other.date, startTime: other.startTime, endTime: other.endTime, tariffType: other.tariffType }));
+// Prioritas PIDI: pemesanan PIDI boleh menempati ruangan/jadwal yang sudah dipesan
+// pemesan NON-PIDI berstatus Belum Konfirmasi / Konfirmasi (pemesanan itu akan
+// dibatalkan otomatis oleh server). Bentrok dengan pemesanan PIDI lain, atau yang
+// sudah Menunggu Pembayaran / Pembayaran Selesai, tetap dianggap bentrok (keras).
+const BUMPABLE_STATUSES = ['belum_konfirmasi','konfirmasi'];
+
+function conflictInfoFor(item, isPidi, excludeGroupId, siblings){
+  const cand = { date: item.date, endDate: item.endDate || item.date, startTime: item.startTime, endTime: item.endTime, tariffType: item.tariffType };
+  let hard = false;
+  const bumps = [];
+  activeItems().filter(b => b.roomId === item.roomId && b.groupId !== excludeGroupId).forEach(b => {
+    if(!bookingsConflict(cand, b)) return;
+    if(isPidi && b.priorityTier !== 'pidi' && BUMPABLE_STATUSES.indexOf(b.status) !== -1){
+      if(!bumps.some(x => x.ref === b.ref)) bumps.push({ ref: b.ref, org: b.org });
+    } else {
+      hard = true;
+    }
+  });
+  if((siblings || []).some(o => o !== item && o.roomId === item.roomId &&
+      bookingsConflict(cand, { date: o.date, endDate: o.endDate || o.date, startTime: o.startTime, endTime: o.endTime, tariffType: o.tariffType }))){
+    hard = true;
+  }
+  return { hard, bumps };
 }
+
+// Bentrok KERAS (tidak boleh dikirim): terhadap data tersimpan maupun item lain di keranjang.
+function itemConflictsWithStored(item){
+  return conflictInfoFor(item, currentTier() === 'pidi', null, bookingCart).hard;
+}
+// Pemesanan lain yang akan dibatalkan otomatis bila item ini dikirim sebagai PIDI.
+function itemBumps(item){
+  if(currentTier() !== 'pidi') return [];
+  const info = conflictInfoFor(item, true, null, bookingCart);
+  return info.hard ? [] : info.bumps;
+}
+function bumpText(bumps){ return bumps.map(x => `${x.ref}${x.org ? ' (' + x.org + ')' : ''}`).join(', '); }
 
 function renderCartList(){
   const wrap = document.getElementById('cart-items-list');
@@ -1046,6 +1073,7 @@ function renderCartList(){
     const room = findRoom(item.roomId);
     if(!room) return '';
     const conflict = itemConflictsWithStored(item);
+    const bumps = itemBumps(item);
     const multiDate = item.tariffType === 'hari' || item.tariffType === 'harian';
     return `
     <div class="border border-slate-200 rounded-xl p-4" data-cart-id="${item.cartId}">
@@ -1099,7 +1127,9 @@ function renderCartList(){
       <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
         ${conflict
           ? `<span class="flex items-center gap-1.5" style="color:var(--danger)"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>Ruangan telah terpesan pada jadwal ini</span>`
-          : `<span class="flex items-center gap-1.5" style="color:var(--ok)"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Ruangan tersedia pada jadwal ini</span>`}
+          : (bumps.length
+            ? `<span class="flex items-center gap-1.5" style="color:var(--warn)"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>Prioritas PIDI: pemesanan ${escapeHtml(bumpText(bumps))} pada jadwal ini akan dibatalkan otomatis</span>`
+            : `<span class="flex items-center gap-1.5" style="color:var(--ok)"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Ruangan tersedia pada jadwal ini</span>`)}
         <span class="font-semibold navy-text">${escapeHtml(itemPriceText(room, item))}</span>
       </div>
     </div>`;
@@ -1129,6 +1159,7 @@ function renderCartSummarySidebar(){
       <span class="font-display text-lg font-bold navy-text">${priceFmt(total)}</span>
     </div>` : ''}
     ${hasConflictAny ? `<p class="text-xs mt-1" style="color:var(--danger)">Ada ruangan yang bentrok jadwal — perbaiki sebelum mengirim.</p>` : ''}
+    ${(() => { const refs = []; bookingCart.forEach(it => itemBumps(it).forEach(x => { if(refs.indexOf(x.ref) === -1) refs.push(x.ref); })); return refs.length ? `<p class="text-xs mt-1" style="color:var(--warn)">Prioritas PIDI: pemesanan ${escapeHtml(refs.join(', '))} akan dibatalkan otomatis dan pemesannya diberi tahu lewat email.</p>` : ''; })()}
   ` : `<p class="text-slate-400">Belum ada ruangan dipilih.</p>`;
 }
 
@@ -1432,7 +1463,9 @@ async function submitBooking(e){
   let ok = true;
   if(!name){ setFieldError('bk-name','Nama penanggung jawab wajib diisi.'); ok = false; } else setFieldError('bk-name', null);
   if(!org){ setFieldError('bk-org','Penyelenggara wajib diisi.'); ok = false; } else setFieldError('bk-org', null);
-  if(!tier){ setFieldError('bk-tier','Pilih kategori pemesan.'); ok = false; } else setFieldError('bk-tier', null);
+  if(!tier){ setFieldError('bk-tier','Pilih kategori pemesan.'); ok = false; }
+  else if(tier === 'pidi' && !(getUser() && getUser().isInternal)){ setFieldError('bk-tier','Kategori PIDI hanya untuk akun internal (@bi.go.id) yang masuk dengan Google.'); ok = false; }
+  else setFieldError('bk-tier', null);
   if(!email || !email.includes('@')){ setFieldError('bk-email','Masukkan email yang valid.'); ok = false; } else setFieldError('bk-email', null);
   if(!phone || phone.length < 8){ setFieldError('bk-phone','Masukkan nomor telepon yang valid.'); ok = false; } else setFieldError('bk-phone', null);
 
@@ -1457,6 +1490,11 @@ async function submitBooking(e){
 
   document.getElementById('conflict-warning').classList.add('hidden');
   if(!ok){ toast('Periksa kembali data yang belum lengkap.', 'error'); return; }
+
+  // Prioritas PIDI: konfirmasi bila ada pemesanan lain yang akan dibatalkan otomatis.
+  const bumpedRefs = [];
+  bookingCart.forEach(it => itemBumps(it).forEach(x => { if(bumpedRefs.indexOf(x.ref) === -1) bumpedRefs.push(x.ref); }));
+  if(bumpedRefs.length && !confirm(`Kategori PIDI diprioritaskan. Pemesanan berikut pada ruangan/jadwal yang sama akan DIBATALKAN OTOMATIS dan pemesannya diberi tahu lewat email:\n\n${bumpedRefs.join(', ')}\n\nLanjutkan?`)) return;
 
   const user = getUser();
   const items = bookingCart.map(it => {
@@ -1536,7 +1574,8 @@ async function submitBooking(e){
         ${isPricedTier(tier) ? `<div><p class="text-xs text-slate-400">Metode Pembayaran</p><p class="font-medium navy-text">Transfer Bank</p></div>` : `<div><p class="text-xs text-slate-400">Jumlah Ruangan</p><p class="font-medium navy-text">${items.length} ruangan</p></div>`}
         <div class="col-span-2"><p class="text-xs text-slate-400">Status</p><p>${statusBadge('belum_konfirmasi')}</p></div>
       </div>`;
-    toast('Pemesanan berhasil dikirim dan menunggu konfirmasi. Email konfirmasi telah dikirim ke ' + escapeHtml(email) + '.');
+    toast('Pemesanan berhasil dikirim dan menunggu konfirmasi. Email konfirmasi telah dikirim ke ' + escapeHtml(email) + '.' +
+      ((data.bumped && data.bumped.length) ? ' Pemesanan ' + escapeHtml(data.bumped.join(', ')) + ' dibatalkan otomatis (prioritas PIDI).' : ''));
     resetBookingCart();
     go('success');
   }catch(err){
@@ -2009,14 +2048,12 @@ function editTariffOptionsHtml(room, selected){
   return opts.map(([v,label]) => `<option value="${v}" ${v === selected ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('');
 }
 
-function editItemConflicts(item){
-  if(!editState || STATUS_TIDAK_MENGUNCI_RUANGAN_.indexOf(editState.status) !== -1) return false;
-  const cand = { date: item.date, endDate: item.endDate || item.date, startTime: item.startTime, endTime: item.endTime, tariffType: item.tariffType };
-  const stored = activeItems().filter(b => b.roomId === item.roomId && b.groupId !== editState.groupId);
-  if(stored.some(b => bookingsConflict(cand, b))) return true;
-  return editState.items.some(o => o.cid !== item.cid && o.roomId === item.roomId &&
-    bookingsConflict(cand, { date: o.date, endDate: o.endDate || o.date, startTime: o.startTime, endTime: o.endTime, tariffType: o.tariffType }));
+function editItemInfo(item){
+  if(!editState || STATUS_TIDAK_MENGUNCI_RUANGAN_.indexOf(editState.status) !== -1) return { hard: false, bumps: [] };
+  return conflictInfoFor(item, editTierValue() === 'pidi', editState.groupId, editState.items);
 }
+function editItemConflicts(item){ return editItemInfo(item).hard; }
+function editItemBumps(item){ const i = editItemInfo(item); return i.hard ? [] : i.bumps; }
 
 function openEditBooking(groupId){
   const b = getBookings().find(x => x.groupId === groupId);
@@ -2109,6 +2146,7 @@ function renderEditItems(){
       const room = findRoom(item.roomId);
       const multi = item.tariffType === 'hari' || item.tariffType === 'harian';
       const conflict = editItemConflicts(item);
+      const bumps = editItemBumps(item);
       const hasTariff = room && (item.tariffType === 'mingguan' ? !!room.priceWeek : !!room.priceDay);
       return `
       <div class="border border-slate-200 rounded-xl p-4">
@@ -2142,7 +2180,9 @@ function renderEditItems(){
         <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
           ${conflict
             ? `<span class="flex items-center gap-1.5" style="color:var(--danger)"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>Bentrok dengan pemesanan lain</span>`
-            : `<span class="flex items-center gap-1.5" style="color:var(--ok)"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Tidak bentrok</span>`}
+            : (bumps.length
+              ? `<span class="flex items-center gap-1.5" style="color:var(--warn)"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>Prioritas PIDI: ${escapeHtml(bumpText(bumps))} akan dibatalkan otomatis</span>`
+              : `<span class="flex items-center gap-1.5" style="color:var(--ok)"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Tidak bentrok</span>`)}
           <span class="flex items-center gap-3">
             ${priced ? `<span class="font-semibold navy-text">${hasTariff ? priceFmt(item.amount) : 'Tarif belum ditetapkan'}</span>` : ''}
             <button type="button" onclick="removeEditItem('${item.cid}')" class="icon-btn-sm" title="Hapus ruangan ini"><i data-lucide="trash-2" class="w-4 h-4" style="color:var(--danger)"></i></button>
@@ -2244,6 +2284,9 @@ async function saveBookingEdit(){
     }
   }
   if(editState.items.some(editItemConflicts)){ toast('Ada ruangan yang bentrok jadwal — perbaiki sebelum menyimpan.', 'error'); return; }
+  const editBumped = [];
+  editState.items.forEach(it => editItemBumps(it).forEach(x => { if(editBumped.indexOf(x.ref) === -1) editBumped.push(x.ref); }));
+  if(editBumped.length && !confirm(`Kategori PIDI diprioritaskan. Pemesanan berikut akan DIBATALKAN OTOMATIS dan pemesannya diberi tahu lewat email:\n\n${editBumped.join(', ')}\n\nLanjutkan?`)) return;
   if(editState.status === 'pembayaran_selesai' &&
      !confirm('Pemesanan ini berstatus "Pembayaran Selesai". Mengubahnya dapat mengubah rincian yang sudah dibayar. Lanjutkan?')) return;
 
@@ -2275,7 +2318,7 @@ async function saveBookingEdit(){
       toast(escapeHtml(data.error || 'Gagal menyimpan perubahan.'), 'error');
       return;
     }
-    toast(data.unchanged ? 'Tidak ada perubahan untuk disimpan.' : `Pemesanan ${escapeHtml(data.ref)} berhasil diperbarui.`);
+    toast(data.unchanged ? 'Tidak ada perubahan untuk disimpan.' : `Pemesanan ${escapeHtml(data.ref)} berhasil diperbarui.${(data.bumped && data.bumped.length) ? ' Dibatalkan otomatis (prioritas PIDI): ' + escapeHtml(data.bumped.join(', ')) + '.' : ''}`);
     editState = null;
     closeBookingModal();
     await refreshBookings();
