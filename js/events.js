@@ -460,13 +460,12 @@ function currentTier(){ const el = document.getElementById('bk-tier'); return el
 // Teks harga satu item di keranjang (hanya untuk kategori berharga).
 function itemPriceText(room, item){
   if(!isPricedTier(currentTier())) return '';
-  const hasTariff = item.tariffType === 'mingguan' ? !!room.priceWeek : !!room.priceDay;
+  const hasTariff = !!room.priceDay;
   return hasTariff ? priceFmt(item.amount) : 'Tarif belum ditetapkan';
 }
 // Jenis tarif bawaan sesuai kategori & ruangan.
 function defaultTariffFor(room){
-  if(isPricedTier(currentTier())) return 'harian';
-  return room.isExternal ? 'harian' : 'jam';
+  return 'harian'; // aturan kantor: penyewaan hanya harian
 }
 // Dipanggil saat dropdown Kategori Pemesan berubah: sesuaikan jenis tarif
 // tiap item keranjang, hitung ulang harga, lalu render ulang.
@@ -475,12 +474,6 @@ function onTierChange(){
   bookingCart.forEach(item => {
     const room = findRoom(item.roomId);
     if(!room) return;
-    if(priced){
-      if(item.tariffType === 'jam' || item.tariffType === 'hari') item.tariffType = 'harian';
-      if(item.tariffType === 'mingguan' && !room.priceWeek) item.tariffType = 'harian';
-    } else if(!room.isExternal && (item.tariffType === 'harian' || item.tariffType === 'mingguan')){
-      item.tariffType = 'jam'; item.startTime = item.startTime || '09:00'; item.endTime = item.endTime || '11:00';
-    }
     recomputeCartItem(item);
   });
   const note = document.getElementById('payment-note');
@@ -945,22 +938,6 @@ function addRoomFromPicker(){
   toast(`${escapeHtml(room.name)} ditambahkan. Atur tanggal & jumlah peserta di kartu ruangan.`);
 }
 
-// Jenis tarif tergantung apakah ruangan internal (Per jam / Per hari, bisa
-// multi-tanggal) atau eksternal (Harian / Mingguan).
-function tariffOptionsHtml(room, selected){
-  let opts;
-  if(isPricedTier(currentTier())){
-    opts = [['harian','Harian']];
-    if(room.priceWeek) opts.push(['mingguan','Mingguan']);
-  } else if(room.isExternal){
-    opts = [['harian','Harian']];
-    if(room.priceWeek) opts.push(['mingguan','Mingguan']);
-  } else {
-    opts = [['jam','Per jam (1 hari)'], ['hari','Per hari (bisa multi-tanggal)']];
-  }
-  return opts.map(([v,label]) => `<option value="${v}" ${v === selected ? 'selected' : ''}>${label}</option>`).join('');
-}
-
 function addDays(dateStr, n){
   const [y,m,d] = dateStr.split('-').map(Number);
   const dt = new Date(y, m-1, d);
@@ -968,30 +945,16 @@ function addDays(dateStr, n){
   return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
 }
 
-// Menghitung ulang amount berdasarkan JUMLAH HARI aktual antara date dan
-// endDate (bukan lagi selalu 1 hari) — supaya ruangan eksternal yang dipesan
-// beberapa hari sekaligus terhitung benar, dan ruangan 'hari' (internal,
-// multi-tanggal) tetap Rp0 berapa pun jumlah harinya.
+// Aturan kantor: penyewaan HANYA harian. Biaya = tarif harian x jumlah hari
+// (date s.d. endDate, inklusif), hanya untuk kategori berharga (LPPI).
 function recomputeCartItem(item, tierOverride){
   const room = findRoom(item.roomId);
   if(!room) return;
   const priced = isPricedTier(tierOverride !== undefined ? tierOverride : currentTier());
-  if(item.tariffType === 'jam'){
-    item.endDate = item.date; // per jam selalu 1 hari
-    item.amount = 0;
-  } else if(item.tariffType === 'hari'){
-    // Internal, per hari — endDate diambil dari input pengguna sendiri
-    // (bisa multi-tanggal), tidak dihitung ulang di sini. Selalu gratis.
-    if(!item.endDate || item.endDate < item.date) item.endDate = item.date;
-    item.amount = 0;
-  } else if(item.tariffType === 'mingguan'){
-    item.endDate = addDays(item.date, 6);
-    item.amount = priced ? (room.priceWeek || 0) : 0;
-  } else { // 'harian' — eksternal, bisa multi-tanggal, dihitung per hari
-    if(!item.endDate || item.endDate < item.date) item.endDate = item.date;
-    const nDays = daysBetweenInclusive(item.date, item.endDate);
-    item.amount = priced ? (room.priceDay || 0) * nDays : 0;
-  }
+  item.tariffType = 'harian'; item.startTime = '00:00'; item.endTime = '23:59';
+  if(!item.date){ item.amount = 0; return; }
+  if(!item.endDate || item.endDate < item.date) item.endDate = item.date;
+  item.amount = priced ? (room.priceDay || 0) * daysBetweenInclusive(item.date, item.endDate) : 0;
 }
 
 function removeCartItem(cartId){
@@ -1014,9 +977,6 @@ function updateCartItemField(cartId, field, value){
     return;
   }
   if(field === 'date' && (!item.endDate || item.endDate < item.date)) item.endDate = item.date;
-  if(field === 'tariffType' && item.tariffType === 'jam'){
-    item.startTime = item.startTime || '09:00'; item.endTime = item.endTime || '11:00';
-  }
   recomputeCartItem(item);
   renderCartList();
   renderCartSummarySidebar();
@@ -1093,7 +1053,6 @@ function renderCartList(){
     if(!room) return '';
     const conflict = itemConflictsWithStored(item);
     const bumps = itemBumps(item);
-    const multiDate = item.tariffType === 'hari' || item.tariffType === 'harian';
     return `
     <div class="border border-slate-200 rounded-xl p-4" data-cart-id="${item.cartId}">
       <div class="flex items-center justify-between gap-3 mb-3">
@@ -1108,14 +1067,13 @@ function renderCartList(){
       </div>
       <div class="grid md:grid-cols-3 gap-3 mb-3">
         <div>
-          <label class="block text-xs font-semibold navy-text mb-1">${multiDate ? 'Tanggal mulai' : 'Tanggal pemakaian'}</label>
+          <label class="block text-xs font-semibold navy-text mb-1">Tanggal mulai</label>
           <input type="date" value="${item.date}" onchange="updateCartItemField('${item.cartId}','date',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
         </div>
         <div>
-          <label class="block text-xs font-semibold navy-text mb-1">Jenis tarif</label>
-          <select onchange="updateCartItemField('${item.cartId}','tariffType',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white">
-            ${tariffOptionsHtml(room, item.tariffType)}
-          </select>
+          <label class="block text-xs font-semibold navy-text mb-1">Tanggal selesai</label>
+          <input type="date" min="${item.date}" value="${item.endDate}" onchange="updateCartItemField('${item.cartId}','endDate',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+          <p class="text-xs text-slate-400 mt-1">${daysBetweenInclusive(item.date, item.endDate)} hari</p>
         </div>
         <div>
           <label class="block text-xs font-semibold navy-text mb-1">Jumlah peserta</label>
@@ -1123,26 +1081,6 @@ function renderCartList(){
           <p class="text-xs mt-1" style="color:var(--danger)" id="cart-participants-error-${item.cartId}"></p>
         </div>
       </div>
-      ${item.tariffType === 'jam' ? `
-      <div class="grid md:grid-cols-2 gap-3 mb-3">
-        <div>
-          <label class="block text-xs font-semibold navy-text mb-1">Jam mulai</label>
-          <input type="time" step="900" value="${item.startTime}" onchange="updateCartItemField('${item.cartId}','startTime',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold navy-text mb-1">Jam selesai</label>
-          <input type="time" step="900" value="${item.endTime}" onchange="updateCartItemField('${item.cartId}','endTime',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
-        </div>
-      </div>` : (multiDate ? `
-      <div class="grid md:grid-cols-2 gap-3 mb-3">
-        <div>
-          <label class="block text-xs font-semibold navy-text mb-1">Tanggal selesai</label>
-          <input type="date" min="${item.date}" value="${item.endDate}" onchange="updateCartItemField('${item.cartId}','endDate',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
-        </div>
-        <div class="flex items-end">
-          <p class="text-xs text-slate-400 pb-2.5">${daysBetweenInclusive(item.date, item.endDate)} hari (${formatDateLong(item.date)} – ${formatDateLong(item.endDate)})</p>
-        </div>
-      </div>` : (item.tariffType === 'mingguan' ? `<p class="text-xs text-slate-400 mb-3">Check-out: ${formatDateLong(item.endDate)} (7 hari)</p>` : ''))}
       <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
         ${conflict
           ? `<span class="flex items-center gap-1.5" style="color:var(--danger)"><i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0"></i>Ruangan telah terpesan pada jadwal ini${escapeHtml(itemConflictReason(item))}</span>`
@@ -1264,7 +1202,6 @@ function bookingItemPeriodText(it){
   const room = findRoom(it.roomId);
   const label = room ? room.name : (it.roomName || '');
   const endDate = it.endDate || it.date;
-  if(it.tariffType === 'jam') return `${label}: ${formatDateLong(it.date)} · ${it.startTime}–${it.endTime}`;
   if(endDate && endDate !== it.date) return `${label}: ${formatDateLong(it.date)} – ${formatDateLong(endDate)}`;
   return `${label}: ${formatDateLong(it.date)}`;
 }
@@ -1361,14 +1298,6 @@ function openBookingModal(groupId, adminMode){
   lucide.createIcons();
 }
 
-// Sebuah item booking dianggap "per jam" (hanya mengunci rentang jam pada
-// SATU tanggal) hanya bila tariffType === 'jam'. Selain itu ('hari' untuk
-// internal — bisa multi-tanggal, 'harian'/'mingguan' untuk eksternal)
-// dianggap mengunci PENUH dari date s.d. endDate.
-function isHourlyBooking(b){
-  return b.tariffType === 'jam';
-}
-
 function dateRangesOverlap(aStart, aEnd, bStart, bEnd){
   return aStart <= bEnd && aEnd >= bStart; // format YYYY-MM-DD, aman dibandingkan sebagai string
 }
@@ -1376,11 +1305,8 @@ function dateRangesOverlap(aStart, aEnd, bStart, bEnd){
 function bookingsConflict(a, b){
   const aEnd = a.endDate || a.date;
   const bEnd = b.endDate || b.date;
-  if(!dateRangesOverlap(a.date, aEnd, b.date, bEnd)) return false;
-  if(isHourlyBooking(a) && isHourlyBooking(b) && a.date === b.date){
-    return a.startTime < b.endTime && a.endTime > b.startTime;
-  }
-  return true;
+  // Penyewaan hanya harian: bentrok bila rentang tanggal beririsan.
+  return dateRangesOverlap(a.date, aEnd, b.date, bEnd);
 }
 
 /* ===================== DOKUMEN PERSURATAN (multi-file) ===================== */
@@ -1518,9 +1444,8 @@ async function submitBooking(e){
     const room = findRoom(it.roomId);
     return {
       roomId: it.roomId, roomName: room.name, date: it.date, endDate: it.endDate || it.date,
-      startTime: it.tariffType === 'jam' ? it.startTime : '00:00',
-      endTime: it.tariffType === 'jam' ? it.endTime : '23:59',
-      tariffType: it.tariffType, amount: isPricedTier(tier) ? (it.amount || 0) : 0, participants: parseInt(it.participants) || 0
+      startTime: '00:00', endTime: '23:59',
+      tariffType: 'harian', amount: isPricedTier(tier) ? (it.amount || 0) : 0, participants: parseInt(it.participants) || 0
     };
   });
   const totalAmount = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
@@ -2064,16 +1989,6 @@ function editTierValue(){
 }
 function recomputeEditItem(item){ recomputeCartItem(item, editTierValue()); }
 
-function editTariffOptionsHtml(room, selected){
-  const priced = isPricedTier(editTierValue());
-  let opts;
-  if(priced){ opts = [['harian','Harian']]; if(room && room.priceWeek) opts.push(['mingguan','Mingguan']); }
-  else if(room && room.isExternal){ opts = [['harian','Harian'],['mingguan','Mingguan']]; }
-  else { opts = [['jam','Per jam (1 hari)'],['hari','Per hari (bisa multi-tanggal)']]; }
-  if(!opts.some(o => o[0] === selected)) opts.push([selected, selected]);
-  return opts.map(([v,label]) => `<option value="${v}" ${v === selected ? 'selected' : ''}>${escapeHtml(label)}</option>`).join('');
-}
-
 function editItemInfo(item){
   if(!editState || STATUS_TIDAK_MENGUNCI_RUANGAN_.indexOf(editState.status) !== -1) return { hard: false, bumps: [] };
   return conflictInfoFor(item, editTierValue() === 'pidi', editState.groupId, editState.items);
@@ -2090,8 +2005,7 @@ function openEditBooking(groupId){
       cid: 'e' + Date.now() + '_' + i,
       roomId: it.roomId, roomName: it.roomName,
       date: it.date, endDate: it.endDate || it.date,
-      tariffType: it.tariffType || 'hari',
-      startTime: it.startTime || '00:00', endTime: it.endTime || '23:59',
+      tariffType: 'harian', startTime: '00:00', endTime: '23:59',
       participants: it.participants || '', amount: Number(it.amount) || 0
     }))
   };
@@ -2170,10 +2084,9 @@ function renderEditItems(){
   } else {
     wrap.innerHTML = editState.items.map(item => {
       const room = findRoom(item.roomId);
-      const multi = item.tariffType === 'hari' || item.tariffType === 'harian';
       const conflict = editItemConflicts(item);
       const bumps = editItemBumps(item);
-      const hasTariff = room && (item.tariffType === 'mingguan' ? !!room.priceWeek : !!room.priceDay);
+      const hasTariff = !!(room && room.priceDay);
       return `
       <div class="border border-slate-200 rounded-xl p-4">
         <div class="grid md:grid-cols-2 gap-3 mb-3">
@@ -2182,27 +2095,14 @@ function renderEditItems(){
               ${ROOMS.map(r => `<option value="${r.id}" ${r.id === item.roomId ? 'selected' : ''}>${escapeHtml(r.name)}</option>`).join('')}
               ${room ? '' : `<option value="${escapeHtml(item.roomId)}" selected>${escapeHtml(item.roomName || item.roomId)}</option>`}
             </select></div>
-          <div><label class="block text-xs font-semibold navy-text mb-1">Jenis tarif</label>
-            <select onchange="updateEditItem('${item.cid}','tariffType',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm bg-white">
-              ${editTariffOptionsHtml(room, item.tariffType)}
-            </select></div>
-          <div><label class="block text-xs font-semibold navy-text mb-1">${multi ? 'Tanggal mulai' : 'Tanggal pemakaian'}</label>
-            <input type="date" value="${item.date}" onchange="updateEditItem('${item.cid}','date',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
           <div><label class="block text-xs font-semibold navy-text mb-1">Jumlah peserta</label>
             <input type="number" min="0" value="${item.participants || ''}" placeholder="${room ? 'Maks ' + room.capacity : ''}" oninput="updateEditItem('${item.cid}','participants',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
-        </div>
-        ${item.tariffType === 'jam' ? `
-        <div class="grid md:grid-cols-2 gap-3 mb-3">
-          <div><label class="block text-xs font-semibold navy-text mb-1">Jam mulai</label>
-            <input type="time" step="900" value="${item.startTime}" onchange="updateEditItem('${item.cid}','startTime',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
-          <div><label class="block text-xs font-semibold navy-text mb-1">Jam selesai</label>
-            <input type="time" step="900" value="${item.endTime}" onchange="updateEditItem('${item.cid}','endTime',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
-        </div>` : (multi ? `
-        <div class="grid md:grid-cols-2 gap-3 mb-3">
+          <div><label class="block text-xs font-semibold navy-text mb-1">Tanggal mulai</label>
+            <input type="date" value="${item.date}" onchange="updateEditItem('${item.cid}','date',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
           <div><label class="block text-xs font-semibold navy-text mb-1">Tanggal selesai</label>
-            <input type="date" min="${item.date}" value="${item.endDate}" onchange="updateEditItem('${item.cid}','endDate',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
-          <div class="flex items-end"><p class="text-xs text-slate-400 pb-2.5">${daysBetweenInclusive(item.date, item.endDate)} hari</p></div>
-        </div>` : `<p class="text-xs text-slate-400 mb-3">Check-out: ${formatDateLong(item.endDate)} (7 hari)</p>`)}
+            <input type="date" min="${item.date}" value="${item.endDate}" onchange="updateEditItem('${item.cid}','endDate',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+            <p class="text-xs text-slate-400 mt-1">${daysBetweenInclusive(item.date, item.endDate)} hari</p></div>
+        </div>
         <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
           ${conflict
             ? `<span class="flex items-center gap-1.5" style="color:var(--danger)"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>Bentrok dengan pemesanan lain</span>`
@@ -2229,12 +2129,6 @@ function onEditTierChange(){
   editState.items.forEach(item => {
     const room = findRoom(item.roomId);
     if(!room) return;
-    if(priced){
-      if(item.tariffType === 'jam' || item.tariffType === 'hari') item.tariffType = 'harian';
-      if(item.tariffType === 'mingguan' && !room.priceWeek) item.tariffType = 'harian';
-    } else if(!room.isExternal && (item.tariffType === 'harian' || item.tariffType === 'mingguan')){
-      item.tariffType = 'hari';
-    }
     recomputeEditItem(item);
   });
   renderEditItems();
@@ -2249,19 +2143,9 @@ function updateEditItem(cid, field, value){
   const priced = isPricedTier(editTierValue());
   if(field === 'roomId'){
     const room = findRoom(value);
-    if(priced){
-      if(item.tariffType === 'jam' || item.tariffType === 'hari') item.tariffType = 'harian';
-      if(item.tariffType === 'mingguan' && room && !room.priceWeek) item.tariffType = 'harian';
-    } else if(room && !room.isExternal && (item.tariffType === 'harian' || item.tariffType === 'mingguan')){
-      item.tariffType = 'hari';
-    }
     item.roomName = room ? room.name : item.roomName;
   }
   if(field === 'date' && (!item.endDate || item.endDate < item.date)) item.endDate = item.date;
-  if(field === 'tariffType' && item.tariffType === 'jam'){
-    if(!item.startTime || item.startTime === '00:00') item.startTime = '09:00';
-    if(!item.endTime || item.endTime === '23:59') item.endTime = '11:00';
-  }
   recomputeEditItem(item);
   renderEditItems();
 }
@@ -2282,8 +2166,7 @@ function addEditRoom(){
     cid: 'e' + Date.now() + '_' + Math.floor(Math.random() * 1000),
     roomId: room.id, roomName: room.name,
     date: todayKey(), endDate: todayKey(),
-    tariffType: priced ? 'harian' : (room.isExternal ? 'harian' : 'hari'),
-    startTime: '09:00', endTime: '11:00', participants: '', amount: 0
+    tariffType: 'harian', startTime: '00:00', endTime: '23:59', participants: '', amount: 0
   };
   recomputeEditItem(item);
   editState.items.push(item);
@@ -2305,9 +2188,6 @@ async function saveBookingEdit(){
     const label = room ? room.name : (it.roomName || it.roomId);
     if(!it.date){ toast(`Tanggal ${escapeHtml(label)} belum diisi.`, 'error'); return; }
     if(it.endDate && it.endDate < it.date){ toast(`Tanggal selesai ${escapeHtml(label)} sebelum tanggal mulai.`, 'error'); return; }
-    if(it.tariffType === 'jam' && (!it.startTime || !it.endTime || it.startTime >= it.endTime)){
-      toast(`Jam selesai ${escapeHtml(label)} harus setelah jam mulai.`, 'error'); return;
-    }
   }
   if(editState.items.some(editItemConflicts)){ toast('Ada ruangan yang bentrok jadwal — perbaiki sebelum menyimpan.', 'error'); return; }
   const editBumped = [];
@@ -2327,9 +2207,8 @@ async function saveBookingEdit(){
       return {
         roomId: it.roomId, roomName: room ? room.name : (it.roomName || it.roomId),
         date: it.date, endDate: it.endDate || it.date,
-        startTime: it.tariffType === 'jam' ? it.startTime : '00:00',
-        endTime: it.tariffType === 'jam' ? it.endTime : '23:59',
-        tariffType: it.tariffType, amount: priced ? (Number(it.amount) || 0) : 0,
+        startTime: '00:00', endTime: '23:59',
+        tariffType: 'harian', amount: priced ? (Number(it.amount) || 0) : 0,
         participants: parseInt(it.participants) || 0
       };
     })

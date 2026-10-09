@@ -33,6 +33,8 @@
 // Kawasan Edukasi dan Digitalisasi Bank Indonesia Kemang" (tabel 8 baris).
 // Luas (area), lantai (floor), Tarif Harian (priceDay), dan Tarif
 // Mingguan (priceWeek) diambil PERSIS dari tabel tsb — TIDAK diperkirakan.
+// CATATAN: sejak aturan kantor "penyewaan hanya harian", priceWeek TIDAK dipakai lagi
+// oleh situs (biaya = priceDay x jumlah hari). Datanya dibiarkan sebagai arsip.
 // Surat ini TIDAK mencantumkan tarif per jam sama sekali untuk ruang-ruang
 // ini, jadi field priceHour sengaja DIHAPUS (bukan 0).
 // YANG MASIH PERKIRAAN/PLACEHOLDER dan WAJIB dikonfirmasi:
