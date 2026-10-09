@@ -549,7 +549,7 @@ function calendarLegendHtml(sizeCls){
   return `
     <span class="flex items-center gap-1.5"><span class="${box}" style="background:#ecfdf5;border:1px solid #a7f3d0"></span>Tersedia</span>
     <span class="flex items-center gap-1.5"><span class="${box}" style="background:${c1.bg};border:1px solid ${c1.border}"></span>Terpesan (Konfirmasi)</span>
-    <span class="flex items-center gap-1.5"><span class="${box}" style="background:${c0.bg};border:1px solid ${c0.border}"></span>Belum Konfirmasi</span>`;
+    <span class="flex items-center gap-1.5"><span class="${box}" style="background:${c0.bg};border:1px solid ${c0.border}"></span>Menunggu Konfirmasi</span>`;
 }
 
 /* ===================== WIDGET KALENDER KETERSEDIAAN (Beranda) ===================== */
@@ -1026,7 +1026,7 @@ function updateCartItemField(cartId, field, value){
 // keranjang yang sama (mis. ruangan yang sama dipilih dua kali dengan
 // jadwal beririsan).
 // Prioritas PIDI: pemesanan PIDI boleh menempati ruangan/jadwal yang sudah dipesan
-// pemesan NON-PIDI berstatus Belum Konfirmasi / Konfirmasi (pemesanan itu akan
+// pemesan NON-PIDI berstatus Menunggu Konfirmasi / Konfirmasi (pemesanan itu akan
 // dibatalkan otomatis oleh server). Bentrok dengan pemesanan PIDI lain, atau yang
 // sudah Menunggu Pembayaran / Pembayaran Selesai, tetap dianggap bentrok (keras).
 const BUMPABLE_STATUSES = ['belum_konfirmasi','konfirmasi'];
@@ -1034,6 +1034,7 @@ const BUMPABLE_STATUSES = ['belum_konfirmasi','konfirmasi'];
 function conflictInfoFor(item, isPidi, excludeGroupId, siblings){
   const cand = { date: item.date, endDate: item.endDate || item.date, startTime: item.startTime, endTime: item.endTime, tariffType: item.tariffType };
   let hard = false;
+  let hardWith = null; // pemesanan penyebab bentrok keras (untuk penjelasan ke pengguna)
   const bumps = [];
   activeItems().filter(b => b.roomId === item.roomId && b.groupId !== excludeGroupId).forEach(b => {
     if(!bookingsConflict(cand, b)) return;
@@ -1041,13 +1042,15 @@ function conflictInfoFor(item, isPidi, excludeGroupId, siblings){
       if(!bumps.some(x => x.ref === b.ref)) bumps.push({ ref: b.ref, org: b.org });
     } else {
       hard = true;
+      if(!hardWith) hardWith = { ref: b.ref, org: b.org, status: b.status, tier: b.priorityTier };
     }
   });
   if((siblings || []).some(o => o !== item && o.roomId === item.roomId &&
       bookingsConflict(cand, { date: o.date, endDate: o.endDate || o.date, startTime: o.startTime, endTime: o.endTime, tariffType: o.tariffType }))){
     hard = true;
+    if(!hardWith) hardWith = { sibling: true };
   }
-  return { hard, bumps };
+  return { hard, bumps, hardWith };
 }
 
 // Bentrok KERAS (tidak boleh dikirim): terhadap data tersimpan maupun item lain di keranjang.
@@ -1059,6 +1062,22 @@ function itemBumps(item){
   if(currentTier() !== 'pidi') return [];
   const info = conflictInfoFor(item, true, null, bookingCart);
   return info.hard ? [] : info.bumps;
+}
+// Penjelasan singkat MENGAPA sebuah item bentrok keras (pemesanan mana & statusnya).
+function itemConflictReason(item){
+  const isPidi = currentTier() === 'pidi';
+  const w = conflictInfoFor(item, isPidi, null, bookingCart).hardWith;
+  if(!w) return '';
+  if(w.sibling) return ' — bentrok dengan ruangan yang sama di keranjang ini';
+  const bumpable = BUMPABLE_STATUSES.indexOf(w.status) !== -1;
+  let t = ` — ${w.ref || ''}${w.org ? ' (' + w.org + ')' : ''}, status ${statusLabel(w.status)}`;
+  if(isPidi){
+    if(w.tier === 'pidi') t += ': pemesanan PIDI lain tidak dapat ditimpa';
+    else if(!bumpable) t += ': pemesanan yang sudah Menunggu Pembayaran / Pembayaran Selesai tidak dapat ditimpa';
+  } else if(w.tier !== 'pidi' && bumpable){
+    t += '. Pilih kategori PIDI bila ini kegiatan prioritas';
+  }
+  return t;
 }
 function bumpText(bumps){ return bumps.map(x => `${x.ref}${x.org ? ' (' + x.org + ')' : ''}`).join(', '); }
 
@@ -1126,7 +1145,7 @@ function renderCartList(){
       </div>` : (item.tariffType === 'mingguan' ? `<p class="text-xs text-slate-400 mb-3">Check-out: ${formatDateLong(item.endDate)} (7 hari)</p>` : ''))}
       <div class="flex items-center justify-between text-xs pt-2 border-t border-slate-100">
         ${conflict
-          ? `<span class="flex items-center gap-1.5" style="color:var(--danger)"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>Ruangan telah terpesan pada jadwal ini</span>`
+          ? `<span class="flex items-center gap-1.5" style="color:var(--danger)"><i data-lucide="alert-circle" class="w-3.5 h-3.5 flex-shrink-0"></i>Ruangan telah terpesan pada jadwal ini${escapeHtml(itemConflictReason(item))}</span>`
           : (bumps.length
             ? `<span class="flex items-center gap-1.5" style="color:var(--warn)"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>Prioritas PIDI: pemesanan ${escapeHtml(bumpText(bumps))} pada jadwal ini akan dibatalkan otomatis</span>`
             : `<span class="flex items-center gap-1.5" style="color:var(--ok)"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>Ruangan tersedia pada jadwal ini</span>`)}
@@ -1886,7 +1905,7 @@ function renderAdminKpis(){
   const revenue = all.filter(b => b.status === 'pembayaran_selesai').reduce((sum,b) => sum + (b.amount || 0), 0);
 
   const cards = [
-    { label: 'Belum Konfirmasi', value: belumKonfirmasi, icon: 'clock', color: 'var(--warn)' },
+    { label: 'Menunggu Konfirmasi', value: belumKonfirmasi, icon: 'clock', color: 'var(--warn)' },
     { label: 'Konfirmasi', value: konfirmasi, icon: 'check-circle-2', color: 'var(--ok)' },
     { label: 'Menunggu Pembayaran', value: menungguPembayaran, icon: 'wallet', color: 'var(--navy-900)' },
     { label: 'Pendapatan Terbayar', value: priceFmt(revenue), icon: 'badge-check', color: '#116638' }

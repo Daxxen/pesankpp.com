@@ -48,7 +48,7 @@ export const STATUS_ORDER = ['belum_konfirmasi','konfirmasi','menunggu_pembayara
  * Label untuk setiap status. Harus sinkron dengan STATUS_LABELS_ di Code.gs
  */
 export const STATUS_LABELS = {
-  belum_konfirmasi: 'Belum Konfirmasi',
+  belum_konfirmasi: 'Menunggu Konfirmasi',
   konfirmasi: 'Konfirmasi',
   menunggu_pembayaran: 'Menunggu Pembayaran',
   pembayaran_selesai: 'Pembayaran Selesai',
@@ -74,7 +74,7 @@ export const FEATURED_IDS = ['vision-hall', 'catalyst', 'wisma-anggrek-1-1'];
 // =====================================================================
 // Kategori instansi (PIDI/BINS/dst.) sudah DIHAPUS dari situs. Sel kalender
 // yang terpesan sekarang menampilkan kode referensi pemesanan (A01, A02, ...)
-// dan diwarnai menurut STATUS: kuning = Belum Konfirmasi, biru = sudah
+// dan diwarnai menurut STATUS: kuning = Menunggu Konfirmasi, biru = sudah
 // dikonfirmasi (termasuk menunggu/selesai pembayaran).
 export const BOOKING_COLORS = {
   pending:   { bg: '#fde9c8', border: '#e2b45f', text: '#7a4e08' },
