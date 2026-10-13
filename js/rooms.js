@@ -118,7 +118,7 @@ export const ROOMS = [
   { id: "catalyst", isExternal: false, name: "Catalyst Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 1", priceDay: 3130000, priceWeek: 17580000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV", "Meja fasilitator adjustable"],
-    img: "images/illustration-catalyst.svg", placeholderImg: true },
+    img: "images/catalyst", placeholderImg: true },
   { id: "frontier", isExternal: false, name: "Frontier Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 1", priceDay: 3130000, priceWeek: 17580000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV", "Meja fasilitator adjustable"],
