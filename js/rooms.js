@@ -19,7 +19,7 @@
  * Kelas BI Kemang"). Kapasitas keduanya diambil dari sheet RUANGAN di Excel
  * itu (Aula 200 orang, tiap Capstone 10 orang). Luas (area) dan daftar
  * fasilitas belum ada datanya, jadi sengaja dikosongkan (bukan ditebak) dan
- * situs menyembunyikan bagian tsb. Fotonya masih ilustrasi sementara.
+ * situs menyembunyikan bagian tsb. Foto Aula dan Matrix sudah asli; Capstone lain masih ilustrasi.
  *
  * REKOMENDASI JANGKA PANJANG: pindahkan data ini ke API backend supaya
  * bisa diubah tanpa deploy ulang dan tersinkron real-time dengan sistem
@@ -41,8 +41,8 @@
 //   - capacity: dihitung kasar dari luas ruangan, BUKAN dari tabel resmi.
 //     (Sheet RUANGAN di Excel memuat angka kapasitas yang berbeda — lihat
 //     laporan perbandingan; belum dipakai di sini karena belum dikonfirmasi.)
-//   - img: Spark/Muse/Genesis dipakaikan foto yang sama dengan Ignite.
-//     Quantum/Pioneer/Ideation/Inspire Hall belum ada foto asli.
+//   - img: Muse masih memakai foto bersama (ignite-spark-muse-genesis.jpg).
+//     Pioneer dan 11 ruang Capstone (kecuali Matrix) belum ada foto asli.
 // =====================================================================
 // =====================================================================
 // UNIT WISMA (RUANGAN EKSTERNAL) — satu unit kamar = satu ruangan yang bisa
@@ -118,19 +118,19 @@ export const ROOMS = [
   { id: "catalyst", isExternal: false, name: "Catalyst Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 1", priceDay: 3130000, priceWeek: 17580000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV", "Meja fasilitator adjustable"],
-    img: "images/catalyst.jpeg", placeholderImg: true },
+    img: "images/catalyst.jpeg" },
   { id: "frontier", isExternal: false, name: "Frontier Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 1", priceDay: 3130000, priceWeek: 17580000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV", "Meja fasilitator adjustable"],
-    img: "images/frontier.jpeg", placeholderImg: true },
+    img: "images/frontier.jpeg" },
   { id: "momentum", isExternal: false, name: "Momentum Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 90, area: 171.6, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 1", priceDay: 2830000, priceWeek: 15850000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV", "Meja fasilitator adjustable"],
-    img: "images/momentum.jpg", placeholderImg: true },
+    img: "images/momentum.jpg" },
   { id: "quantum", isExternal: false, name: "Quantum Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 2", priceDay: 3130000, priceWeek: 17580000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV", "Meja fasilitator adjustable"],
-    img: "images/quantum.jpg", placeholderImg: true },
+    img: "images/quantum.jpg" },
   { id: "pioneer", isExternal: false, name: "Pioneer Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 90, area: 171.6, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 2", priceDay: 2830000, priceWeek: 15850000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV", "Meja fasilitator adjustable"],
@@ -138,11 +138,11 @@ export const ROOMS = [
   { id: "ideation", isExternal: false, name: "Ideation Room", category: "Ruang Pelatihan", roomClass: "Kelas Besar", capacity: 55, area: 103.8, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 2", priceDay: 1710000, priceWeek: 9590000,
     desc: "Ruang pelatihan dengan kursi meja lipat yang bisa disusun ulang, layar interaktif, dan TV — fleksibel untuk berbagai format kelas.",
     facilities: ["Kursi meja lipat (movable)", "Layar interaktif BenQ", "TV", "Meja fasilitator adjustable"],
-    img: "images/ideation.jpeg", placeholderImg: true },
+    img: "images/ideation.jpeg" },
   { id: "inspire-hall", isExternal: false, name: "Inspire Hall", category: "Auditorium", roomClass: "Ampitheater", capacity: 100, area: 190.4, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 2", priceDay: 3130000, priceWeek: 17580000,
     desc: "Ruang auditorium bertingkat dengan meja lengkung mengikuti kontur ruangan, cocok untuk seminar, kuliah umum, dan pelatihan skala besar.",
     facilities: ["Kursi bertingkat", "Proyektor & layar besar", "Sistem tata suara", "Pencahayaan panggung"],
-    img: "images/inspire-hall.jpeg", placeholderImg: true },
+    img: "images/inspire-hall.jpeg" },
   { id: "ignite", isExternal: false, name: "Ignite Room", category: "Ruang Pelatihan", roomClass: "Kelas Sedang", capacity: 35, area: 72.5, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 1", priceDay: 1200000, priceWeek: 6700000,
     desc: "Ruang pelatihan berukuran sedang dengan kursi meja lipat yang fleksibel disusun ulang dan TV presentasi.",
     facilities: ["Kursi meja lipat (movable)", "TV presentasi", "Pencahayaan alami"],
@@ -164,7 +164,7 @@ export const ROOMS = [
   { id: "aula", isExternal: false, name: "Aula", category: "Aula Serbaguna", roomClass: "Aula", capacity: 200, floor: "Gedung Serbaguna, Lantai 1",
     desc: "Aula serbaguna Kawasan Pendidikan dan Pelatihan untuk kegiatan berskala besar.",
     facilities: [],
-    img: "images/aula-pendidikan.jpeg", placeholderImg: true },
+    img: "images/aula-pendidikan.jpeg" },
   { id: "axis", isExternal: false, name: "Axis", category: "Ruang Rapat (Capstone)", roomClass: "Capstone", capacity: 10, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 2",
     desc: "Ruang rapat kecil tipe Capstone untuk diskusi kelompok atau rapat tim.",
     facilities: [],
@@ -208,7 +208,7 @@ export const ROOMS = [
   { id: "matrix", isExternal: false, name: "Matrix", category: "Ruang Rapat (Capstone)", roomClass: "Capstone", capacity: 10, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 2",
     desc: "Ruang rapat kecil tipe Capstone untuk diskusi kelompok atau rapat tim.",
     facilities: [],
-    img: "images/matrix.jpeg", placeholderImg: true },
+    img: "images/matrix.jpeg" },
   { id: "prism", isExternal: false, name: "Prism", category: "Ruang Rapat (Capstone)", roomClass: "Capstone", capacity: 10, floor: "Gedung Utama Kawasan Pendidikan dan Pelatihan, Lantai 2",
     desc: "Ruang rapat kecil tipe Capstone untuk diskusi kelompok atau rapat tim.",
     facilities: [],
