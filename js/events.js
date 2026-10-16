@@ -224,6 +224,9 @@ function renderAuthArea(){
 
 function logout(){
   clearUser();
+  // Bersihkan keranjang & isian formulir agar email akun sebelumnya tidak terbawa
+  // ke akun berikutnya (email kontak kini mengikuti akun dan bersifat hanya-baca).
+  try{ resetBookingCart(); }catch(err){ /* formulir belum pernah dibuka */ }
   renderAuthArea();
   try{ if(window.google && google.accounts && google.accounts.id) google.accounts.id.disableAutoSelect(); }catch(e){}
   toast('Anda telah keluar dari akun.');
@@ -874,8 +877,6 @@ function handleDetailBookingClick(){
 let bookingCart = [];
 let groupFieldsInitialized = false;
 
-function timeToMinutes(t){ const [h,m] = (t||'0:0').split(':').map(Number); return h*60+m; }
-
 function makeCartItem(roomId, date){
   const room = findRoom(roomId);
   const item = {
@@ -936,13 +937,6 @@ function addRoomFromPicker(){
   renderCartList();
   renderCartSummarySidebar();
   toast(`${escapeHtml(room.name)} ditambahkan. Atur tanggal & jumlah peserta di kartu ruangan.`);
-}
-
-function addDays(dateStr, n){
-  const [y,m,d] = dateStr.split('-').map(Number);
-  const dt = new Date(y, m-1, d);
-  dt.setDate(dt.getDate() + n);
-  return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
 }
 
 // Aturan kantor: penyewaan HANYA harian. Biaya = tarif harian x jumlah hari
@@ -1068,7 +1062,7 @@ function renderCartList(){
       <div class="grid md:grid-cols-3 gap-3 mb-3">
         <div>
           <label class="block text-xs font-semibold navy-text mb-1">Tanggal mulai</label>
-          <input type="date" value="${item.date}" onchange="updateCartItemField('${item.cartId}','date',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
+          <input type="date" min="${todayKey()}" value="${item.date}" onchange="updateCartItemField('${item.cartId}','date',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm">
         </div>
         <div>
           <label class="block text-xs font-semibold navy-text mb-1">Tanggal selesai</label>
@@ -1077,7 +1071,7 @@ function renderCartList(){
         </div>
         <div>
           <label class="block text-xs font-semibold navy-text mb-1">Jumlah peserta</label>
-          <input type="number" min="1" max="${room.capacity}" value="${item.participants || ''}" placeholder="Maks ${room.capacity} orang" oninput="updateCartItemField('${item.cartId}','participants',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm" id="cart-participants-${item.cartId}">
+          <input type="number" min="1" max="${room.capacity}" value="${escapeHtml(item.participants || '')}" placeholder="Maks ${room.capacity} orang" oninput="updateCartItemField('${item.cartId}','participants',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm" id="cart-participants-${item.cartId}">
           <p class="text-xs mt-1" style="color:var(--danger)" id="cart-participants-error-${item.cartId}"></p>
         </div>
       </div>
@@ -1235,7 +1229,7 @@ function openBookingModal(groupId, adminMode){
                 <img src="${room ? room.img : ''}" class="w-14 h-11 rounded-md object-cover flex-shrink-0 no-print" alt="">
                 <div>
                   <p class="font-display font-bold navy-text text-sm">${room ? escapeHtml(room.name) : escapeHtml(it.roomName)}</p>
-                  <p class="text-xs text-slate-500">${escapeHtml(bookingItemPeriodText(it))} ${it.participants ? '· ' + it.participants + ' peserta' : ''} ${isPricedTier(b.priorityTier) ? '· ' + (Number(it.amount) > 0 ? priceFmt(it.amount) : 'Tarif belum ditetapkan') : ''}</p>
+                  <p class="text-xs text-slate-500">${escapeHtml(bookingItemPeriodText(it))} ${it.participants ? '· ' + escapeHtml(it.participants) + ' peserta' : ''} ${isPricedTier(b.priorityTier) ? '· ' + (Number(it.amount) > 0 ? priceFmt(it.amount) : 'Tarif belum ditetapkan') : ''}</p>
                 </div>
               </div>`;
             }).join('')}
@@ -1245,7 +1239,7 @@ function openBookingModal(groupId, adminMode){
             <div><p class="text-xs text-slate-400 mb-0.5">Penyelenggara</p><p class="font-medium navy-text">${escapeHtml(b.org)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Email</p><p class="font-medium navy-text break-all">${escapeHtml(b.email)}</p></div>
             <div><p class="text-xs text-slate-400 mb-0.5">Telepon</p><p class="font-medium navy-text">${escapeHtml(b.phone)}</p></div>
-            <div><p class="text-xs text-slate-400 mb-0.5">Jumlah Peserta</p><p class="font-medium navy-text">${b.participants} orang</p></div>
+            <div><p class="text-xs text-slate-400 mb-0.5">Jumlah Peserta</p><p class="font-medium navy-text">${escapeHtml(b.participants)} orang</p></div>
             ${b.priorityTier ? `<div><p class="text-xs text-slate-400 mb-0.5">Kategori Pemesan</p><p class="font-medium navy-text">${escapeHtml(tierLabel(b.priorityTier))}</p></div>` : ''}
             ${isPricedTier(b.priorityTier) ? `<div><p class="text-xs text-slate-400 mb-0.5">Total Estimasi Biaya</p><p class="font-medium navy-text">${priceFmt(b.amount || 0)} <span class="text-xs text-slate-400 font-normal">(Transfer Bank)</span></p></div>` : ''}
             <div class="col-span-2"><p class="text-xs text-slate-400 mb-0.5">Kegiatan</p><p class="font-medium navy-text">${escapeHtml(b.purpose)}</p></div>
@@ -1430,6 +1424,7 @@ async function submitBooking(e){
   if(!purpose){ setFieldError('bk-purpose','Kegiatan wajib diisi.'); ok = false; } else setFieldError('bk-purpose', null);
   if(consent && !consent.checked){ toast('Anda perlu menyetujui persyaratan penggunaan data sebelum mengirim.', 'error'); ok = false; }
   if(bookingCart.some(itemConflictsWithStored)){ toast('Ada ruangan yang bentrok jadwal — perbaiki sebelum mengirim.', 'error'); ok = false; }
+  if(bookingCart.some(it => it.date < todayKey())){ toast('Tanggal mulai tidak boleh di masa lalu.', 'error'); ok = false; }
 
   document.getElementById('conflict-warning').classList.add('hidden');
   if(!ok){ toast('Periksa kembali data yang belum lengkap.', 'error'); return; }
@@ -1500,7 +1495,7 @@ async function submitBooking(e){
             <img src="${room ? room.img : ''}" class="w-16 h-12 rounded-md object-cover flex-shrink-0" alt="">
             <div>
               <p class="font-display font-bold navy-text text-sm">${room ? escapeHtml(room.name) : escapeHtml(it.roomName)}</p>
-              <p class="text-xs text-slate-500">${escapeHtml(bookingItemPeriodText(it))} ${it.participants ? '· ' + it.participants + ' peserta' : ''}</p>
+              <p class="text-xs text-slate-500">${escapeHtml(bookingItemPeriodText(it))} ${it.participants ? '· ' + escapeHtml(it.participants) + ' peserta' : ''}</p>
             </div>
           </div>`;
         }).join('')}
@@ -1599,7 +1594,7 @@ function renderHistory(){
           <p class="font-display font-bold navy-text">${escapeHtml(groupRoomNamesSummary(b))}</p>
           ${statusBadge(b.status)}
         </div>
-        <p class="text-xs text-slate-500">${escapeHtml(groupItemsSummary(b))} · ${b.participants} peserta</p>
+        <p class="text-xs text-slate-500">${escapeHtml(groupItemsSummary(b))} · ${escapeHtml(b.participants)} peserta</p>
         <p class="text-xs text-slate-400 mt-1">Ref: ${escapeHtml(b.ref)}${b.priorityTier ? ' · ' + escapeHtml(tierLabel(b.priorityTier)) : ''}${isPricedTier(b.priorityTier) ? ' · ' + priceFmt(b.amount || 0) : ''}${proofCount(b) ? ` · <span style="color:var(--ok)" class="font-semibold">Bukti transfer terkirim</span>` : ''}</p>
       </div>
       <div class="flex items-center gap-2" onclick="event.stopPropagation()">
@@ -1914,7 +1909,7 @@ function renderAdminTable(){
       <td>${escapeHtml(groupRoomNamesSummary(b))}</td>
       <td>${escapeHtml(groupItemsSummary(b))}</td>
       <td>${escapeHtml(b.name)}</td>
-      <td>${b.participants}</td>
+      <td>${escapeHtml(b.participants)}</td>
       <td>${isPricedTier(b.priorityTier) ? priceFmt(b.amount || 0) : '-'}</td>
       <td>${statusBadge(b.status)}${proofCount(b) ? `<span class="block text-[10px] font-semibold mt-1" style="color:var(--ok)">Bukti transfer diunggah</span>` : ''}</td>
       <td onclick="event.stopPropagation()">
@@ -2096,7 +2091,7 @@ function renderEditItems(){
               ${room ? '' : `<option value="${escapeHtml(item.roomId)}" selected>${escapeHtml(item.roomName || item.roomId)}</option>`}
             </select></div>
           <div><label class="block text-xs font-semibold navy-text mb-1">Jumlah peserta</label>
-            <input type="number" min="0" value="${item.participants || ''}" placeholder="${room ? 'Maks ' + room.capacity : ''}" oninput="updateEditItem('${item.cid}','participants',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
+            <input type="number" min="0" value="${escapeHtml(item.participants || '')}" placeholder="${room ? 'Maks ' + room.capacity : ''}" oninput="updateEditItem('${item.cid}','participants',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
           <div><label class="block text-xs font-semibold navy-text mb-1">Tanggal mulai</label>
             <input type="date" value="${item.date}" onchange="updateEditItem('${item.cid}','date',this.value)" class="w-full border border-slate-300 rounded-md px-3 py-2 text-sm"></div>
           <div><label class="block text-xs font-semibold navy-text mb-1">Tanggal selesai</label>
